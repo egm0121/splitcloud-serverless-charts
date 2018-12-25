@@ -1,0 +1,18 @@
+{
+  "name": "splitcloud-serverless-charts",
+  "version": "1.0.0",
+  "description": "charts based on ga reports for most listened songs on SplitCloud app",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "googleapis": "36.0.0"
+  },
+  "devDependencies": {
+    "eslint": "^5.11.0",
+    "prettier": "^1.15.3"
+  }
+}
