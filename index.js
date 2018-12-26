@@ -95,7 +95,6 @@ function extractResponseRows(response) {
     const [totalPlays, uniquePlays] = row.metrics[0].values;
     return {
       id: row.dimensions[0],
-      debug_id: row.dimensions[0],
       splitcloud_total_plays: totalPlays,
       splitcloud_unique_plays: uniquePlays,
     };
@@ -107,7 +106,10 @@ generateAuthClient()
   .then(extractResponseRows)
   .then(hydrateSoundcloudTracks)
   .then(tracks => {
-    console.log('FINAL TRACKS', tracks);
     fs.writeFileSync('./top_splitcloud_tracks.json',JSON.stringify(tracks));
+    return tracks;
+  })
+  .then(tracks => {
+    tracks.map(t => console.log(t.id,t.title,t.splitcloud_total_plays,t.splitcloud_unique_plays));
   })
 
