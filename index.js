@@ -4,7 +4,6 @@ const fs = require('fs');
 const privatekey = require('./key/splitcloud-lambda-04bda8c26386.json');
 const soundcloudkey = require('./key/soundcloud_key.json');
 
-
 const SC_API_ENDPOINT = 'api.soundcloud.com';
 function generateAuthClient() {
   const jwtClient = new google.auth.JWT(privatekey.client_email, null, privatekey.private_key, [
@@ -62,11 +61,13 @@ async function runSample(authClient) {
   });
   return res;
 }
-async function fetchScTrackById(trackId){
-  const trackUrl = `http://${SC_API_ENDPOINT}/tracks/${trackId}?client_id=${soundcloudkey.SC_CLIENT_ID}`;
+async function fetchScTrackById(trackId) {
+  const trackUrl = `http://${SC_API_ENDPOINT}/tracks/${trackId}?client_id=${
+    soundcloudkey.SC_CLIENT_ID
+  }`;
   return axios({ method: 'GET', url: trackUrl, timeout: 2000 });
 }
-async function hydrateSoundcloudTracks(trackList){
+async function hydrateSoundcloudTracks(trackList) {
   const finalTracks = {};
   return trackList
     .map(track => {
@@ -74,21 +75,25 @@ async function hydrateSoundcloudTracks(trackList){
       resolveTrack.fetch = () => fetchScTrackById(track.id);
       return resolveTrack;
     })
-    .slice(0,10)
-    .reduce((prevPromise, nextTrackObj,idx,initList) => {
-      const currTrackObj = initList[idx-1];
-      return prevPromise.then(resp => {
-        if (resp) {
-          console.log('hydrate track', currTrackObj.id, 'sc id', resp.data.id);
-          finalTracks[currTrackObj.id] = Object.assign({}, currTrackObj, resp.data);
-        }
-        return nextTrackObj.fetch();
-      }).catch(err => {
-          console.warn('sc track ' + currTrackObj.id + ' retrival failed', err.message);
+    .reduce((prevPromise, nextTrackObj, idx, initList) => {
+      const currTrackObj = initList[idx - 1];
+      return prevPromise
+        .then(resp => {
+          if (resp) {
+            finalTracks[currTrackObj.id] = Object.assign({}, currTrackObj, resp.data);
+          }
+          return nextTrackObj.fetch();
+        })
+        .catch(err => {
+          console.warn(`sc track ${currTrackObj.id} retrival failed`, err.message);
           return Promise.resolve();
-      });
+        });
     }, Promise.resolve())
-    .then(() => Object.values(finalTracks));
+    .then(() =>
+      Object.values(finalTracks).sort(
+        (a, b) => b.splitcloud_unique_plays - a.splitcloud_unique_plays
+      )
+    );
 }
 function extractResponseRows(response) {
   return response.data.reports[0].data.rows.map(row => {
@@ -106,10 +111,11 @@ generateAuthClient()
   .then(extractResponseRows)
   .then(hydrateSoundcloudTracks)
   .then(tracks => {
-    fs.writeFileSync('./top_splitcloud_tracks.json',JSON.stringify(tracks));
+    fs.writeFileSync('./top_splitcloud_tracks.json', JSON.stringify(tracks));
     return tracks;
   })
   .then(tracks => {
-    tracks.map(t => console.log(t.id,t.title,t.splitcloud_total_plays,t.splitcloud_unique_plays));
-  })
-
+    tracks.map(t =>
+      console.log(t.id, t.title, t.splitcloud_total_plays, t.splitcloud_unique_plays)
+    );
+  });
