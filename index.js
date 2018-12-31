@@ -11,7 +11,6 @@ function generateAuthClient() {
   ]);
   // authenticate request
   return jwtClient.authorize().then(resToken => {
-    console.log('Successfully connected!', resToken);
     const oauth2Client = new google.auth.OAuth2();
     oauth2Client.setCredentials({
       access_token: resToken.access_token,
@@ -20,7 +19,7 @@ function generateAuthClient() {
   });
 }
 
-async function runSample(authClient) {
+async function fetchAnalyticsReport(authClient) {
   const analyticsreporting = google.analyticsreporting({
     version: 'v4',
     auth: authClient,
@@ -65,7 +64,7 @@ async function fetchScTrackById(trackId) {
   const trackUrl = `http://${SC_API_ENDPOINT}/tracks/${trackId}?client_id=${
     soundcloudkey.SC_CLIENT_ID
   }`;
-  return axios({ method: 'GET', url: trackUrl, timeout: 2000 });
+  return axios({ method: 'GET', url: trackUrl, timeout: 1000 });
 }
 async function hydrateSoundcloudTracks(trackList) {
   const finalTracks = {};
@@ -100,22 +99,29 @@ function extractResponseRows(response) {
     const [totalPlays, uniquePlays] = row.metrics[0].values;
     return {
       id: row.dimensions[0],
-      splitcloud_total_plays: totalPlays,
-      splitcloud_unique_plays: uniquePlays,
+      splitcloud_total_plays: parseInt(totalPlays, 10),
+      splitcloud_unique_plays: parseInt(uniquePlays, 10),
     };
   });
 }
-
-generateAuthClient()
-  .then(runSample)
-  .then(extractResponseRows)
-  .then(hydrateSoundcloudTracks)
-  .then(tracks => {
-    fs.writeFileSync('./top_splitcloud_tracks.json', JSON.stringify(tracks));
-    return tracks;
-  })
-  .then(tracks => {
-    tracks.map(t =>
-      console.log(t.id, t.title, t.splitcloud_total_plays, t.splitcloud_unique_plays)
-    );
-  });
+module.exports = {
+  getTopChart() {
+    return generateAuthClient()
+      .then(fetchAnalyticsReport)
+      .then(extractResponseRows)
+      .then(hydrateSoundcloudTracks);
+  },
+  saveChartToFile(jsonFileName = './top_splitcloud_tracks.json') {
+    return this.getTopChart()
+      .then(tracks => {
+        fs.writeFileSync(jsonFileName, JSON.stringify(tracks));
+        return tracks;
+      })
+      .then(tracks => {
+        tracks.map(t =>
+          console.log(t.id, t.title, t.splitcloud_total_plays, t.splitcloud_unique_plays)
+        );
+        return tracks;
+      });
+  },
+};
