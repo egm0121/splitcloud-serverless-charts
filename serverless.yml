@@ -14,6 +14,7 @@
 service: splitcloud-serverless-charts-service # NOTE: update this with your service name
 
 custom:
+  myStage: ${opt:stage, self:provider.stage}
   bucket: "www.splitcloud-app.com"
 # You can pin your service to only deploy with a specific Serverless version
 # Check out our docs for more details
@@ -22,7 +23,7 @@ custom:
 provider:
   name: aws
   runtime: nodejs8.10
-  timeout: 20
+  timeout: 60
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -67,6 +68,7 @@ functions:
     handler: handler.hello
     environment:
       BUCKET: ${self:custom.bucket}
+      STAGE: ${self:custom.myStage}
     events:
       - schedule:
           rate: cron(0 18 ? * MON *)

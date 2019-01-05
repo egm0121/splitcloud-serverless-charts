@@ -1,6 +1,7 @@
 const { google } = require('googleapis');
 const axios = require('axios');
 const fs = require('fs');
+const moment = require('moment');
 const privatekey = require('./key/splitcloud-lambda-04bda8c26386.json');
 const soundcloudkey = require('./key/soundcloud_key.json');
 
@@ -19,7 +20,7 @@ function generateAuthClient() {
   });
 }
 
-async function fetchAnalyticsReport(authClient) {
+async function fetchAnalyticsReport(authClient, limit = 50) {
   const analyticsreporting = google.analyticsreporting({
     version: 'v4',
     auth: authClient,
@@ -53,7 +54,7 @@ async function fetchAnalyticsReport(authClient) {
             { fieldName: 'ga:uniqueEvents', sortOrder: 'DESCENDING' },
             { fieldName: 'ga:totalEvents', sortOrder: 'DESCENDING' },
           ],
-          pageSize: '50',
+          pageSize: `${limit}`,
         },
       ],
     },
@@ -88,11 +89,7 @@ async function hydrateSoundcloudTracks(trackList) {
           return Promise.resolve();
         });
     }, Promise.resolve())
-    .then(() =>
-      Object.values(finalTracks).sort(
-        (a, b) => b.splitcloud_unique_plays - a.splitcloud_unique_plays
-      )
-    );
+    .then(() => Object.values(finalTracks));
 }
 function extractResponseRows(response) {
   return response.data.reports[0].data.rows.map(row => {
@@ -104,12 +101,50 @@ function extractResponseRows(response) {
     };
   });
 }
+function decayTimeFunc(x) {
+  return Math.exp(-13 * x * x);
+}
+function calulateBaseScore(item) {
+  return Math.floor(
+    item.splitcloud_total_plays + item.splitcloud_unique_plays * 2 + Math.log(item.playback_count)
+  );
+}
+function calculateTrendingScore(item) {
+  const daysDistance = Math.min(moment().diff(moment(new Date(item.created_at)), 'days'), 1535);
+  const decayFactor = decayTimeFunc(daysDistance / 365);
+  return Object.assign({}, item, {
+    score: calulateBaseScore(item) * decayFactor,
+    decayFactor,
+    daysDistance,
+  });
+}
+function calculatePopularityScore(item) {
+  return Object.assign({}, item, { score: calulateBaseScore(item) });
+}
+function byScore(a, b) {
+  return b.score - a.score;
+}
+function sortByPopularity(rows) {
+  return rows.map(calculatePopularityScore).sort(byScore);
+}
+function sortByPopularityWithDecay(rows) {
+  return rows.map(calculateTrendingScore).sort(byScore);
+}
 module.exports = {
-  getTopChart() {
+  getTopChart(limit = 50) {
     return generateAuthClient()
-      .then(fetchAnalyticsReport)
+      .then(authClient => fetchAnalyticsReport(authClient, limit))
       .then(extractResponseRows)
-      .then(hydrateSoundcloudTracks);
+      .then(hydrateSoundcloudTracks)
+      .then(sortByPopularity);
+  },
+  getTrendingChart() {
+    return this.getTopChart(100)
+      .then(sortByPopularityWithDecay)
+      .then(chart => chart.slice(0, 50));
+  },
+  sortTrendingTracks(tracks) {
+    return sortByPopularityWithDecay(tracks);
   },
   saveChartToFile(jsonFileName = './top_splitcloud_tracks.json') {
     return this.getTopChart()
@@ -119,7 +154,7 @@ module.exports = {
       })
       .then(tracks => {
         tracks.map(t =>
-          console.log(t.id, t.title, t.splitcloud_total_plays, t.splitcloud_unique_plays)
+          console.log(t.id, t.title, t.splitcloud_total_plays, t.splitcloud_unique_plays, t.score)
         );
         return tracks;
       });
