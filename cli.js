@@ -1,5 +1,7 @@
 const { performance } = require('perf_hooks');
+const moment = require('moment');
 const chartService = require('./index');
+
 const logTracks = tracks => {
   tracks.map(t =>
     console.log(
@@ -15,9 +17,10 @@ const logTracks = tracks => {
 };
 (async () => {
   const timeStart = performance.now();
-  console.log('TRENDING');
+  const currDate = moment().format('L');
+  console.log('TRENDING on ', currDate);
   await chartService.getTrendingChart().then(logTracks);
-  console.log('POPULAR');
+  console.log('POPULAR on ', currDate);
   await chartService.getTopChart().then(logTracks);
   console.log('Time taken', performance.now() - timeStart);
 })();

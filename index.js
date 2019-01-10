@@ -65,7 +65,7 @@ async function fetchScTrackById(trackId) {
   const trackUrl = `http://${SC_API_ENDPOINT}/tracks/${trackId}?client_id=${
     soundcloudkey.SC_CLIENT_ID
   }`;
-  return axios({ method: 'GET', url: trackUrl, timeout: 1000 });
+  return axios({ method: 'GET', url: trackUrl, timeout: 1500 });
 }
 async function hydrateSoundcloudTracks(trackList) {
   const finalTracks = {};

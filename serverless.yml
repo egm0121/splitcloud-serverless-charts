@@ -15,7 +15,12 @@ service: splitcloud-serverless-charts-service # NOTE: update this with your serv
 
 custom:
   myStage: ${opt:stage, self:provider.stage}
+  prod: 
+    schedule: cron(0 18 ? * MON *)
+  dev: 
+    schedule: 
   bucket: "www.splitcloud-app.com"
+  
 # You can pin your service to only deploy with a specific Serverless version
 # Check out our docs for more details
 # frameworkVersion: "=X.X.X"
@@ -68,12 +73,10 @@ functions:
     handler: handler.hello
     environment:
       BUCKET: ${self:custom.bucket}
-      STAGE: ${self:custom.myStage}
+      STAGE: ${self:custom.myStage} 
     events:
-      - schedule:
-          rate: cron(0 18 ? * MON *)
-          #rate: cron(*/10 * * * ? *)
-          enabled: true
+      - schedule: ${self:custom.${self:custom.myStage}.schedule}
+         
 #    The following are a few example events you can configure
 #    NOTE: Please make sure to change your handler code to work with those events
 #    Check the event documentation for details
