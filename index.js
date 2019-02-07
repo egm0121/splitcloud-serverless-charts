@@ -1,32 +1,14 @@
-const { google } = require('googleapis');
 const axios = require('axios');
 const fs = require('fs');
 const moment = require('moment');
-const privatekey = require('./key/splitcloud-lambda-04bda8c26386.json');
 const soundcloudkey = require('./key/soundcloud_key.json');
+const GAReporting = require('./reportingClient');
 
 const SC_API_ENDPOINT = 'api.soundcloud.com';
-function generateAuthClient() {
-  const jwtClient = new google.auth.JWT(privatekey.client_email, null, privatekey.private_key, [
-    'https://www.googleapis.com/auth/analytics.readonly',
-  ]);
-  // authenticate request
-  return jwtClient.authorize().then(resToken => {
-    const oauth2Client = new google.auth.OAuth2();
-    oauth2Client.setCredentials({
-      access_token: resToken.access_token,
-    });
-    return oauth2Client;
-  });
-}
 
-async function fetchAnalyticsReport(authClient, limit = 50) {
-  const analyticsreporting = google.analyticsreporting({
-    version: 'v4',
-    auth: authClient,
-  });
-
-  const res = await analyticsreporting.reports.batchGet({
+async function fetchAnalyticsReport(limit = 50) {
+  const reportingClient = await GAReporting.initReportingClient();
+  const res = await reportingClient.reports.batchGet({
     requestBody: {
       reportRequests: [
         {
@@ -132,8 +114,7 @@ function sortByPopularityWithDecay(rows) {
 }
 module.exports = {
   getTopChart(limit = 50) {
-    return generateAuthClient()
-      .then(authClient => fetchAnalyticsReport(authClient, limit))
+    return fetchAnalyticsReport(limit)
       .then(extractResponseRows)
       .then(hydrateSoundcloudTracks)
       .then(sortByPopularity);

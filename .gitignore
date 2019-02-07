@@ -2,3 +2,4 @@ node_modules/
 key/
 top_splitcloud*.json
 .serverless
+app_config*.json

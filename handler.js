@@ -1,24 +1,10 @@
-const AWS = require('aws-sdk');
 const moment = require('moment');
 const chartService = require('./index');
+const selectActiveStreamToken = require('./activeStreamToken');
+const helpers = require('./helpers');
 
-const isDEV = process.env.STAGE === 'dev';
-const s3 = new AWS.S3();
+const saveToS3 = helpers.saveFileToS3;
 
-async function saveToS3(keyName, data) {
-  const [path, extension] = keyName.split('.');
-  const finalKeyName = `${path}${isDEV ? '_dev' : ''}.${extension}`;
-  console.log('will write to s3 key:', finalKeyName);
-  return s3
-    .putObject({
-      Bucket: process.env.BUCKET,
-      ContentType: 'application/json',
-      CacheControl: 'max-age=0,must-revalidate',
-      Key: finalKeyName,
-      Body: JSON.stringify(data),
-    })
-    .promise();
-}
 module.exports.hello = async () => {
   console.log('Splitcloud-serverless-charts service was called');
   const topChartData = await chartService.getTopChart();
@@ -45,3 +31,14 @@ module.exports.hello = async () => {
     },
   };
 };
+
+module.exports.selectActiveToken = async () => {
+  const newToken = await selectActiveStreamToken();
+  return {
+    statuCode: 200,
+    body: {
+      success: true,
+      token: newToken,
+    },
+  };
+}
