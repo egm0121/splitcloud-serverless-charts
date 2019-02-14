@@ -30,12 +30,18 @@ async function readFileFromS3(keyName) {
       })
       .promise();
   } catch (err) {
-    console.error(err);
+    console.error('readFileFromS3 failed with error:', err);
+    throw err;
   }
   return resp.Body.toString();
 }
 async function readJSONFromS3(keyName) {
-  const contents = await readFileFromS3(keyName);
+  let contents;
+  try {
+    contents = await readFileFromS3(keyName);
+  } catch (err) {
+    throw err;
+  }
   return JSON.parse(contents);
 }
 module.exports = {

@@ -4,11 +4,18 @@ const availableStreamTokens = require('./key/all_stream_tokens.json');
 const activeDevToken = require('./app_config.json');
 const helpers = require('./helpers');
 
+const INITIAL_ACTIVE_TOKEN = availableStreamTokens[1].SC_CLIENT_ID;
 const MAX_USAGE_PER_DAY = 13000;
 
 async function getActiveToken() {
   if (process.env.BUCKET) {
-    const jsonData = await helpers.readJSONFromS3('app/app_config.json');
+    let jsonData;
+    try {
+      jsonData = await helpers.readJSONFromS3('app/app_config.json');
+    } catch (err) {
+      console.log('error reading active token - app/app_config.json');
+      return false;
+    }
     return jsonData.STREAM_CLIENT_ID;
   }
   return activeDevToken.STREAM_CLIENT_ID;
@@ -77,6 +84,10 @@ async function selectActiveStreamToken() {
   const tokensUsageObj = getUsageByToken(tokenUsage.data);
   const activeToken = await getActiveToken();
   console.log('current Stream Token in usage', activeToken);
+  if (!activeToken) {
+    console.log('no active token found, setting default:', INITIAL_ACTIVE_TOKEN);
+    return setActiveToken(INITIAL_ACTIVE_TOKEN);
+  }
   console.log(tokensUsageObj);
   if (tokensUsageObj[activeToken] > MAX_USAGE_PER_DAY) {
     const tokensUsageMap = Object.keys(tokensUsageObj)
