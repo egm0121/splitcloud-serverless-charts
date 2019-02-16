@@ -34,13 +34,12 @@ function getUsageByToken(data) {
     obj[row.dimensions[0]] = parseInt(row.metrics[0].values[0], 10); //eslint-disable-line
     return obj;
   }, {});
-  availableStreamTokens.map(tokenObj => {
+  const validTokensMap = {};
+  availableStreamTokens.forEach(tokenObj => {
     const token = tokenObj.SC_CLIENT_ID;
-    if (!(token in tokenWithUsage)) {
-      tokenWithUsage[token] = 0;
-    }
+    validTokensMap[token] = tokenWithUsage[token] || 0;
   });
-  return tokenWithUsage;
+  return validTokensMap;
 }
 async function selectActiveStreamToken() {
   const reportingClient = await GAReporting.initReportingClient();
