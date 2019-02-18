@@ -18,9 +18,11 @@ custom:
   prod: 
     schedule: cron(0 18 ? * MON *)
     schedule_token: rate(15 minutes)
+    schedule_discovery: rate(1 day)
   dev: 
     schedule: 
     schedule_token:
+    schedule_discovery:
   bucket: "www.splitcloud-app.com"
   
 # You can pin your service to only deploy with a specific Serverless version
@@ -85,6 +87,13 @@ functions:
       STAGE: ${self:custom.myStage} 
     events:
       - schedule: ${self:custom.${self:custom.myStage}.schedule_token}
+  discovery:
+    handler: handler.updateDiscoveryApi
+    environment:
+      BUCKET: ${self:custom.bucket}
+      STAGE: ${self:custom.myStage} 
+    events:
+      - schedule: ${self:custom.${self:custom.myStage}.schedule_discovery}
          
 #    The following are a few example events you can configure
 #    NOTE: Please make sure to change your handler code to work with those events

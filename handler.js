@@ -1,6 +1,7 @@
 const moment = require('moment');
 const chartService = require('./index');
 const selectActiveStreamToken = require('./activeStreamToken');
+const discoveryApi = require('./discoverApi');
 const helpers = require('./helpers');
 
 const saveToS3 = helpers.saveFileToS3;
@@ -35,10 +36,21 @@ module.exports.hello = async () => {
 module.exports.selectActiveToken = async () => {
   const newToken = await selectActiveStreamToken();
   return {
-    statuCode: 200,
+    statusCode: 200,
     body: {
       success: true,
       token: newToken,
     },
   };
+};
+
+module.exports.updateDiscoveryApi = async () => {
+  const discovery = await discoveryApi();
+  return {
+    statusCode: 200,
+    body: {
+      success: true,
+      discovery,
+    }
+  }
 }

@@ -2,6 +2,7 @@ const { performance } = require('perf_hooks');
 const moment = require('moment');
 const chartService = require('./index');
 const selectActiveStreamToken = require('./activeStreamToken');
+const discoverApi = require('./discoverApi');
 
 const logTracks = tracks => {
   tracks.map(t =>
@@ -17,12 +18,13 @@ const logTracks = tracks => {
   return tracks;
 };
 (async () => {
-  const timeStart = performance.now();
-  const currDate = moment().format('L');
-  console.log('TRENDING on ', currDate);
-  await chartService.getTrendingChart().then(logTracks);
-  console.log('POPULAR on ', currDate);
-  await chartService.getTopChart().then(logTracks);
-  console.log('Time taken', performance.now() - timeStart);
+  // const timeStart = performance.now();
+  // const currDate = moment().format('L');
+  // console.log('TRENDING on ', currDate);
+  // await chartService.getTrendingChart().then(logTracks);
+  // console.log('POPULAR on ', currDate);
+  // await chartService.getTopChart().then(logTracks);
+  // console.log('Time taken', performance.now() - timeStart);
   // await selectActiveStreamToken();
+  await discoverApi();
 })();
