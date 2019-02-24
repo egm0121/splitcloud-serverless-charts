@@ -26,5 +26,15 @@ const logTracks = tracks => {
   // await chartService.getTopChart().then(logTracks);
   // console.log('Time taken', performance.now() - timeStart);
   // await selectActiveStreamToken();
-  await discoverApi();
+  /*
+  [ 
+    { 
+      "sectionName" : "SplitCloud Spotlight",
+      "sectionDescription": "Exclusive playlists selected by SplitCloud",
+      "playlists" : [203981501]
+    }
+  ]
+  */
+  const playlists = require('./discover_playlists_payload_dev.json');
+  await discoverApi(playlists);
 })();

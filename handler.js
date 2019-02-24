@@ -45,12 +45,13 @@ module.exports.selectActiveToken = async () => {
 };
 
 module.exports.updateDiscoveryApi = async () => {
-  const discovery = await discoveryApi();
+  const splitcloudSections = await helpers.readJSONFromS3('app/discover_playlists_payload.json');
+  const discovery = await discoveryApi(splitcloudSections);
   return {
     statusCode: 200,
     body: {
       success: true,
       discovery,
-    }
-  }
-}
+    },
+  };
+};
