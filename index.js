@@ -5,17 +5,17 @@ const soundcloudkey = require('./key/soundcloud_key.json');
 const GAReporting = require('./reportingClient');
 
 const SC_API_ENDPOINT = 'api.soundcloud.com';
-
-async function fetchAnalyticsReport(limit = 50) {
+const MAX_TRACK_DURATION = 25 * 60 * 1000; // 20min
+async function fetchAnalyticsReport(limit, country, startDate = '7daysAgo') {
   const reportingClient = await GAReporting.initReportingClient();
-  const res = await reportingClient.reports.batchGet({
+  const reportRequest = {
     requestBody: {
       reportRequests: [
         {
           viewId: '152777884',
           dateRanges: [
             {
-              startDate: '7daysAgo',
+              startDate,
               endDate: '0daysAgo',
             },
           ],
@@ -40,7 +40,21 @@ async function fetchAnalyticsReport(limit = 50) {
         },
       ],
     },
-  });
+  };
+  if (country) {
+    reportRequest.requestBody.reportRequests[0].dimensionFilterClauses = [
+      {
+        filters: [
+          {
+            dimensionName: 'ga:country',
+            operator: 'EXACT',
+            expressions: [country],
+          },
+        ],
+      },
+    ];
+  }
+  const res = await reportingClient.reports.batchGet(reportRequest);
   return res;
 }
 async function fetchScTrackById(trackId) {
@@ -88,7 +102,7 @@ function decayTimeFunc(x) {
 }
 function calulateBaseScore(item) {
   return Math.floor(
-    item.splitcloud_total_plays + item.splitcloud_unique_plays * 2 + Math.log(item.playback_count)
+    item.splitcloud_unique_plays * 2 + Math.log(item.playback_count)
   );
 }
 function calculateTrendingScore(item) {
@@ -112,11 +126,15 @@ function sortByPopularity(rows) {
 function sortByPopularityWithDecay(rows) {
   return rows.map(calculateTrendingScore).sort(byScore);
 }
+function filterMaxDuration(max){
+  return (t) => t.duration <= max; 
+}
 module.exports = {
-  getTopChart(limit = 50) {
-    return fetchAnalyticsReport(limit)
+  getTopChart(limit = 75, country = false) {
+    return fetchAnalyticsReport(limit, country)
       .then(extractResponseRows)
       .then(hydrateSoundcloudTracks)
+      .then((t) => t.filter(filterMaxDuration(MAX_TRACK_DURATION)))
       .then(sortByPopularity);
   },
   getTrendingChart() {
