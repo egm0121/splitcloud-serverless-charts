@@ -5,20 +5,24 @@
   "main": "index.js",
   "scripts": {
     "start": "node cli.js",
+    "extend-sls-timeout": "export AWS_CLIENT_TIMEOUT=90000",
     "deploy:dev": "serverless deploy -v --stage dev",
     "deploy:prod": "serverless deploy -v --stage prod",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "discovery:dev" : "serverless invoke -f discovery -l --stage dev",
-    "discovery:prod" : "serverless invoke -f discovery -l --stage prod",
+    "discovery:dev": "serverless invoke -f discovery -l --stage dev",
+    "discovery:prod": "serverless invoke -f discovery -l --stage prod",
     "lint": "eslint \"{,!(node_modules)/**/}*.js\"",
     "format": "prettier --config ./.prettierrc  --write \"{,!(node_modules)/**/}*.js\"",
-    "pre-commit": "npm run format && npm run lint"
+    "pre-commit": "npm run format && npm run lint",
+    "cli": "node -r esm cli.js"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "aws-sdk": "2.382.0",
     "axios": "0.18.0",
+    "egm0121-rn-common-lib": "git+ssh://git@github.com/egm0121/egm0121-rn-common-lib.git#release/v3.2",
+    "esm": "^3.2.25",
     "googleapis": "36.0.0",
     "moment": "2.23.0"
   },
@@ -31,6 +35,7 @@
     "eslint-plugin-prettier": "^3.0.0",
     "eslint-plugin-react": "^7.11.1",
     "husky": "^1.2.1",
-    "prettier": "^1.15.3"
+    "prettier": "^1.15.3",
+    "serverless-domain-manager": "^3.3.0"
   }
 }

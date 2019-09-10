@@ -35,20 +35,20 @@ const logTracks = tracks => {
   // await chartService.getTrendingChart().then(logTracks);
   // const country = undefined;
   // console.log('POPULAR on ', currDate, ' country ', country);
-  // await chartService.getTopChart(undefined, country, '7daysAgo').then(logTracks);
+  await chartService.getTrendingChart(75,undefined).then(logTracks);
   // console.log('Time taken', performance.now() - timeStart);
   // await selectActiveStreamToken();
   // const playlists = require('./discover_playlists_payload_dev.json');
   // await discoverApi(playlists);
-  console.log('Average songs playback per day NEW USERS');
-  console.log(await reportStats.getAvgEventCount('30daysAgo',undefined,'NEW_USERS'));
-  console.log('Average songs playback per day RETURNING USERS');
-  console.log(await reportStats.getAvgEventCount('30daysAgo',undefined,'RETURN_USERS'));
+  // console.log('Average songs playback per day NEW USERS');
+  // console.log(await reportStats.getAvgEventCount('30daysAgo',undefined,'NEW_USERS'));
+  // console.log('Average songs playback per day RETURNING USERS');
+  // console.log(await reportStats.getAvgEventCount('30daysAgo',undefined,'RETURN_USERS'));
   
   // console.log('Average positive Actions per day RETURNING USERS');
   // console.log(await reportStats.getAvgEventCount('30daysAgo',undefined,'RETURN_USERS','POSITIVE-ACTION'));
-  console.log('Average songs playback per user per month ALL_USERS');
-  console.log(await reportStats.getAvgEventCount('2019-01-01','0daysAgo','ALL_USERS','PLAYBACK-COMPLETED','ga:yearMonth'));
+  // console.log('Average songs playback per user per month ALL_USERS');
+  // console.log(await reportStats.getAvgEventCount('2019-01-01','0daysAgo','ALL_USERS','PLAYBACK-COMPLETED','ga:yearMonth'));
   // console.log('Average positive Actions per day NEW USERS');
   // const positiveInt = await reportStats.getAvgEventCount('30daysAgo',undefined,'NEW_USERS','POSITIVE-ACTION');
   // console.log(positiveInt.map((obj) => (obj.hitMax = obj.average / 30) && obj ));

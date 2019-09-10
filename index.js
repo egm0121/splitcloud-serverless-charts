@@ -1,6 +1,7 @@
 const axios = require('axios');
 const fs = require('fs');
 const moment = require('moment');
+const cacheDecorator = require('egm0121-rn-common-lib/helpers/cacheDecorator').default;
 const soundcloudkey = require('./key/soundcloud_key.json');
 const GAReporting = require('./reportingClient');
 
@@ -101,9 +102,7 @@ function decayTimeFunc(x) {
   return Math.exp(-13 * x * x);
 }
 function calulateBaseScore(item) {
-  return Math.floor(
-    item.splitcloud_unique_plays * 2 + Math.log(item.playback_count)
-  );
+  return Math.floor(item.splitcloud_unique_plays * 2 + Math.log(item.playback_count));
 }
 function calculateTrendingScore(item) {
   const daysDistance = Math.min(moment().diff(moment(new Date(item.created_at)), 'days'), 1535);
@@ -126,25 +125,37 @@ function sortByPopularity(rows) {
 function sortByPopularityWithDecay(rows) {
   return rows.map(calculateTrendingScore).sort(byScore);
 }
-function filterMaxDuration(max){
-  return (t) => t.duration <= max; 
+function filterMaxDuration(max) {
+  return t => t.duration <= max;
 }
-module.exports = {
-  getTopChart(limit = 75, country = false) {
+class ChartsService {
+  constructor() {
+    this.getTopChart = cacheDecorator.withCache(
+      this.getTopChart.bind(this),
+      'get-top-chart',
+      0,
+      true
+    );
+  }
+
+  getTopChart(limit = 75, country = '') {
     return fetchAnalyticsReport(limit, country)
       .then(extractResponseRows)
       .then(hydrateSoundcloudTracks)
-      .then((t) => t.filter(filterMaxDuration(MAX_TRACK_DURATION)))
+      .then(t => t.filter(filterMaxDuration(MAX_TRACK_DURATION)))
       .then(sortByPopularity);
-  },
-  getTrendingChart() {
-    return this.getTopChart(100)
+  }
+
+  getTrendingChart(limit = 100, country = '') {
+    return this.getTopChart(limit, country)
       .then(sortByPopularityWithDecay)
       .then(chart => chart.slice(0, 50));
-  },
+  }
+
   sortTrendingTracks(tracks) {
     return sortByPopularityWithDecay(tracks);
-  },
+  }
+
   saveChartToFile(jsonFileName = './top_splitcloud_tracks.json') {
     return this.getTopChart()
       .then(tracks => {
@@ -157,5 +168,6 @@ module.exports = {
         );
         return tracks;
       });
-  },
-};
+  }
+}
+module.exports = new ChartsService();

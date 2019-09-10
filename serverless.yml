@@ -14,16 +14,26 @@
 service: splitcloud-serverless-charts-service # NOTE: update this with your service name
 
 custom:
+  domains:
+    prod: rest.splitcloud-app.com
+    dev: dev-rest.splitcloud-app.com
   myStage: ${opt:stage, self:provider.stage}
   prod: 
     schedule: cron(0 18 ? * MON *)
     schedule_token: rate(15 minutes)
     schedule_discovery: rate(1 day)
+    schedule_country_charts: cron(0 19 ? * MON *)
   dev: 
     schedule: 
     schedule_token:
     schedule_discovery:
+    schedule_country_charts:
   bucket: "www.splitcloud-app.com"
+  customDomain:
+    domainName: ${self:custom.domains.${self:custom.myStage}}
+    basePath: ''
+    stage: "${self:custom.myStage}"
+    createRoute53Record: true
   
 # You can pin your service to only deploy with a specific Serverless version
 # Check out our docs for more details
@@ -32,7 +42,7 @@ custom:
 provider:
   name: aws
   runtime: nodejs8.10
-  timeout: 60
+  timeout: 200
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -80,6 +90,22 @@ functions:
       STAGE: ${self:custom.myStage} 
     events:
       - schedule: ${self:custom.${self:custom.myStage}.schedule}
+  charts_endpoint:
+    handler: handler.chartsEndpoint
+    environment:
+      BUCKET: ${self:custom.bucket}
+      STAGE: ${self:custom.myStage} 
+    events:
+      - http:
+          path: charts
+          method: get
+  country_charts:
+    handler: handler.updateCountryCharts
+    environment:
+      BUCKET: ${self:custom.bucket}
+      STAGE: ${self:custom.myStage} 
+    events:
+      - schedule: ${self:custom.${self:custom.myStage}.schedule_country_charts}
   token:
     handler: handler.selectActiveToken
     environment:
@@ -94,7 +120,8 @@ functions:
       STAGE: ${self:custom.myStage} 
     events:
       - schedule: ${self:custom.${self:custom.myStage}.schedule_discovery}
-         
+plugins:
+  - serverless-domain-manager
 #    The following are a few example events you can configure
 #    NOTE: Please make sure to change your handler code to work with those events
 #    Check the event documentation for details
