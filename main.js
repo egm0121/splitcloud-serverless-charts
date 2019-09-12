@@ -53,7 +53,9 @@ module.exports.updateCountryCharts = async () => {
       console.log(`error while updating country(${countryCode}) charts:`, err);
     }
   }
-  for(let countryCode of countryCodesArr) {
+  // eslint-disable-next-line
+  for (let countryCode of countryCodesArr) {
+    // eslint-disable-next-line no-await-in-loop
     await generateChartsForCountry(countryCode);
   }
   console.log('try to store data to s3 file bucketName:', process.env.BUCKET);
