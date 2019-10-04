@@ -38,7 +38,7 @@ module.exports.hello = async () => {
 module.exports.updateCountryCharts = async () => {
   console.log('Splitcloud-serverless-charts updateCountyCharts');
   const countryCodesArr = Object.keys(constants.TOP_COUNTRIES);
-  const generateChartsForCountry = async countryCode  => {
+  const generateChartsForCountry = async countryCode => {
     const countryName = constants.TOP_COUNTRIES[countryCode];
     try {
       console.log(`Get top and trending charts for ${countryName}...`);
@@ -101,7 +101,7 @@ module.exports.chartsEndpoint = async (event, context, callback) => {
   const hasCountryPlaylist = Object.keys(constants.TOP_COUNTRIES).includes(clientCountry);
   const playlistFilename = hasCountryPlaylist
     ? `charts/weekly_${playlistKind}_country_${clientCountry}.json`
-    : `charts/weekly_trending.json`;
+    : `charts/weekly_${playlistKind}.json`;
   console.log('serve playlist from s3', playlistFilename);
   const playlistPayload = await helpers.readFileFromS3(playlistFilename);
   const resp = {
