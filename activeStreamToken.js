@@ -93,8 +93,15 @@ async function selectActiveStreamToken() {
       .map(key => [key, tokensUsageObj[key]])
       .sort((a, b) => a[1] - b[1]);
     console.log('setting active token to :', tokensUsageMap[0][0]);
-    setActiveToken(tokensUsageMap[0][0]);
+    await setActiveToken(tokensUsageMap[0][0]);
     return tokensUsageMap[0][0];
+  }
+  if (
+    activeToken !== INITIAL_ACTIVE_TOKEN &&
+    tokensUsageObj[INITIAL_ACTIVE_TOKEN] < MAX_USAGE_PER_DAY
+  ) {
+    console.log(`Reset to initial active token ${INITIAL_ACTIVE_TOKEN}`);
+    await setActiveToken(INITIAL_ACTIVE_TOKEN);
   }
   console.log(`active token ${activeToken} is still below hit limit`);
   return activeToken;

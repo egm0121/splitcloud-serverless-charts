@@ -1,6 +1,7 @@
 node_modules/
 key/
 top_splitcloud*.json
+*.code-workspace
 .serverless
 app_config*.json
 discover_*.json
