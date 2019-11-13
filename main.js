@@ -91,7 +91,7 @@ module.exports.updateDiscoveryApi = async () => {
 };
 // API methods
 module.exports.chartsEndpoint = async (event, context, callback) => {
-  const clientCountry = event.headers['CloudFront-Viewer-Country'];
+  const clientCountry = event.queryStringParameters.region || event.headers['CloudFront-Viewer-Country'];
   const playlistKind = event.queryStringParameters.kind;
   if (!['popular', 'trending'].includes(playlistKind)) {
     callback(null, {
@@ -111,9 +111,9 @@ module.exports.chartsEndpoint = async (event, context, callback) => {
   callback(null, resp);
 };
 
-module.exports.topRegions = async (event, context, callback) => {
+module.exports.topRegions = (event, context, callback) => {
   callback(null, {
     statusCode: 200,
-    body: constants.TOP_COUNTRIES,
+    body: JSON.stringify(constants.TOP_COUNTRIES),
   });
 };
