@@ -110,3 +110,10 @@ module.exports.chartsEndpoint = async (event, context, callback) => {
   };
   callback(null, resp);
 };
+
+module.exports.topRegions = async (event, context, callback) => {
+  callback(null, {
+    statusCode: 200,
+    body: constants.TOP_COUNTRIES,
+  });
+};

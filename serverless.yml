@@ -99,6 +99,15 @@ functions:
       - http:
           path: charts
           method: get
+  top_regions:
+    handler: handler.topRegions
+    environment:
+      BUCKET: ${self:custom.bucket}
+      STAGE: ${self:custom.myStage} 
+    events:
+      - http:
+          path: regions
+          method: get
   country_charts:
     handler: handler.updateCountryCharts
     environment:
