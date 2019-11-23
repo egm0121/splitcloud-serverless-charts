@@ -89,9 +89,14 @@ module.exports.updateDiscoveryApi = async () => {
     },
   };
 };
-// API methods
+/**
+ *
+ * REST API methods
+ *
+ * * */
 module.exports.chartsEndpoint = async (event, context, callback) => {
-  const clientCountry = event.queryStringParameters.region || event.headers['CloudFront-Viewer-Country'];
+  const clientCountry =
+    helpers.getQueryParam(event, 'region') || event.headers['CloudFront-Viewer-Country'];
   const playlistKind = event.queryStringParameters.kind;
   if (!['popular', 'trending'].includes(playlistKind)) {
     callback(null, {
@@ -115,5 +120,21 @@ module.exports.topRegions = (event, context, callback) => {
   callback(null, {
     statusCode: 200,
     body: JSON.stringify(constants.TOP_COUNTRIES),
+  });
+};
+
+module.exports.radioCountryCodes = (event, context, callback) => {
+  const radioCountryList = constants.RADIO_COUNTRY_CODES;
+  const clientCountry =
+    helpers.getQueryParam(event, 'region') || event.headers['CloudFront-Viewer-Country'];
+  const currentCountryCode = radioCountryList.find(item => item.value === clientCountry)
+    ? clientCountry
+    : 'US';
+  callback(null, {
+    statusCode: 200,
+    body: JSON.stringify({
+      list: radioCountryList,
+      current: currentCountryCode,
+    }),
   });
 };
