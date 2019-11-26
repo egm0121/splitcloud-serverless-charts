@@ -117,6 +117,19 @@ functions:
       - http:
           path: radio/countrycodes
           method: get
+  radioListByCountrycode:
+    handler: handler.radioListByCountryCode
+    environment:
+      BUCKET: ${self:custom.bucket}
+      STAGE: ${self:custom.myStage} 
+    events:
+      - http:
+          path: radio/list/countrycode/{countrycode}
+          method: get
+          request:
+            parameters:
+              paths:
+                countrycode: true
   country_charts:
     handler: handler.updateCountryCharts
     environment:

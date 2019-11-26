@@ -1,3 +1,4 @@
+import RadioApi from './radioApi';
 
 const moment = require('moment');
 const chartService = require('./index');
@@ -94,6 +95,9 @@ module.exports.updateDiscoveryApi = async () => {
  * REST API methods
  *
  * * */
+/**
+ * /regions
+ */
 module.exports.chartsEndpoint = async (event, context, callback) => {
   const clientCountry =
     helpers.getQueryParam(event, 'region') || event.headers['CloudFront-Viewer-Country'];
@@ -115,14 +119,18 @@ module.exports.chartsEndpoint = async (event, context, callback) => {
   };
   callback(null, resp);
 };
-
+/**
+ * /regions
+ */
 module.exports.topRegions = (event, context, callback) => {
   callback(null, {
     statusCode: 200,
     body: JSON.stringify(constants.TOP_COUNTRIES),
   });
 };
-
+/**
+ * /radio/countrycodes
+ */
 module.exports.radioCountryCodes = (event, context, callback) => {
   const radioCountryList = constants.RADIO_COUNTRY_CODES;
   const clientCountry =
@@ -137,4 +145,30 @@ module.exports.radioCountryCodes = (event, context, callback) => {
       current: currentCountryCode,
     }),
   });
+};
+/**
+ * /radio/list/countrycode/{countrycode}
+ */
+module.exports.radioListByCountryCode = async (event, context, callback) => {
+  const radioInstance = new RadioApi();
+  const countryCode = event.pathParameters.countrycode;
+  try {
+    const stationsBlacklist = constants.STATIONS_BLACKLIST;
+    const resp = await radioInstance.getStationsByCountryCode({
+      countryCode,
+    });
+    const radioList = resp.data.filter(station => !stationsBlacklist[station.id]);
+    if (constants.STATIONS_CUSTOM[countryCode]) {
+      radioList.push(...constants.STATIONS_CUSTOM[countryCode]);
+    }
+    callback(null, {
+      statusCode: 200,
+      body: JSON.stringify(radioList),
+    });
+  } catch (err) {
+    callback(null, {
+      statusCode: 500,
+      body: err.toString(),
+    });
+  }
 };
