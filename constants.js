@@ -151,7 +151,7 @@ module.exports = {
     { name: 'PF', value: 'PF', stationcount: '1' },
     { name: 'PG', value: 'PG', stationcount: '4' },
     { name: 'PH', value: 'PH', stationcount: '15' },
-    { name: 'PK', value: 'PK', stationcount: '23' },
+    // { name: 'PK', value: 'PK', stationcount: '23' },
     { name: 'PL', value: 'PL', stationcount: '732' },
     { name: 'PR', value: 'PR', stationcount: '23' },
     { name: 'PS', value: 'PS', stationcount: '12' },
