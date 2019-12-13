@@ -1,3 +1,4 @@
+/* eslint-disable class-methods-use-this */
 const axios = require('axios');
 const fs = require('fs');
 const moment = require('moment');
@@ -7,7 +8,13 @@ const GAReporting = require('./reportingClient');
 
 const SC_API_ENDPOINT = 'api.soundcloud.com';
 const MAX_TRACK_DURATION = 25 * 60 * 1000; // 20min
-async function fetchAnalyticsReport(limit, country, startDate = '7daysAgo') {
+async function fetchAnalyticsReport(
+  limit,
+  country,
+  startDate = '7daysAgo',
+  deviceId = false,
+  category
+) {
   const reportingClient = await GAReporting.initReportingClient();
   const reportRequest = {
     requestBody: {
@@ -55,21 +62,49 @@ async function fetchAnalyticsReport(limit, country, startDate = '7daysAgo') {
       },
     ];
   }
+  if (deviceId) {
+    reportRequest.requestBody.reportRequests[0].dimensionFilterClauses = [
+      {
+        filters: [
+          {
+            dimensionName: 'ga:dimension2',
+            operator: 'EXACT',
+            expressions: [deviceId],
+          },
+        ],
+      },
+    ];
+  }
+  if (deviceId && category) {
+    reportRequest.requestBody.reportRequests[0].dimensionFilterClauses.push({
+      filters: [
+        {
+          dimensionName: 'ga:eventCategory',
+          operator: 'EXACT',
+          expressions: [category],
+        },
+      ],
+    });
+  }
   const res = await reportingClient.reports.batchGet(reportRequest);
   return res;
 }
-async function fetchScTrackById(trackId) {
-  const trackUrl = `http://${SC_API_ENDPOINT}/tracks/${trackId}?client_id=${
-    soundcloudkey.SC_CLIENT_ID
-  }`;
+async function fetchScTrackById(trackId, scApiToken = soundcloudkey.SC_CLIENT_ID) {
+  console.log(`fetchScTrackById ${trackId} with token ${scApiToken}`);
+  const trackUrl = `http://${SC_API_ENDPOINT}/tracks/${trackId}?client_id=${scApiToken}`;
   return axios({ method: 'GET', url: trackUrl, timeout: 1500 });
 }
-async function hydrateSoundcloudTracks(trackList) {
+async function hydrateSoundcloudTracks(trackList, scApiToken) {
   const finalTracks = {};
   return trackList
     .map(track => {
       const resolveTrack = Object.assign({}, track);
-      resolveTrack.fetch = () => fetchScTrackById(track.id);
+      resolveTrack.fetch = () => {
+       return fetchScTrackById(track.id, scApiToken).catch(err => {
+        console.warn(`sc track ${track.id} retrival failed`, err.message);
+        return Promise.resolve();
+       });
+      };
       return resolveTrack;
     })
     .reduce((prevPromise, nextTrackObj, idx, initList) => {
@@ -80,23 +115,26 @@ async function hydrateSoundcloudTracks(trackList) {
             finalTracks[currTrackObj.id] = Object.assign({}, currTrackObj, resp.data);
           }
           return nextTrackObj.fetch();
-        })
-        .catch(err => {
-          console.warn(`sc track ${currTrackObj.id} retrival failed`, err.message);
-          return Promise.resolve();
         });
     }, Promise.resolve())
     .then(() => Object.values(finalTracks));
 }
 function extractResponseRows(response) {
-  return response.data.reports[0].data.rows.map(row => {
-    const [totalPlays, uniquePlays] = row.metrics[0].values;
-    return {
-      id: row.dimensions[0],
-      splitcloud_total_plays: parseInt(totalPlays, 10),
-      splitcloud_unique_plays: parseInt(uniquePlays, 10),
-    };
-  });
+  try {
+    return response.data.reports[0].data.rows.map(row => {
+      const [totalPlays, uniquePlays] = row.metrics[0].values;
+      return {
+        id: row.dimensions[0],
+        splitcloud_total_plays: parseInt(totalPlays, 10),
+        splitcloud_unique_plays: parseInt(uniquePlays, 10),
+      };
+    });
+  } catch (err) {
+    return [];
+  }
+}
+function filterBySCValidId(item) {
+  return !isNaN(parseInt(item.id, 10));
 }
 function decayTimeFunc(x) {
   return Math.exp(-13 * x * x);
@@ -122,6 +160,9 @@ function byScore(a, b) {
 function sortByPopularity(rows) {
   return rows.map(calculatePopularityScore).sort(byScore);
 }
+function sortByTotalPlays(rows) {
+  return rows.sort((a, b) => b.splitcloud_total_plays - a.splitcloud_total_plays);
+}
 function sortByPopularityWithDecay(rows) {
   return rows.map(calculateTrendingScore).sort(byScore);
 }
@@ -141,6 +182,7 @@ class ChartsService {
   getTopChart(limit = 75, country = '') {
     return fetchAnalyticsReport(limit, country)
       .then(extractResponseRows)
+      .then(t => t.filter(filterBySCValidId))
       .then(hydrateSoundcloudTracks)
       .then(t => t.filter(filterMaxDuration(MAX_TRACK_DURATION)))
       .then(sortByPopularity);
@@ -150,6 +192,16 @@ class ChartsService {
     return this.getTopChart(limit, country)
       .then(sortByPopularityWithDecay)
       .then(chart => chart.slice(0, 50));
+  }
+
+  getPopularTracksByDeviceId(limit = 10, startDate, deviceId, side) {
+    const category = side ? `side-${side}` : null;
+    return fetchAnalyticsReport(limit, null, startDate, deviceId, category)
+        .then(extractResponseRows)
+        .then(t => t.filter(filterBySCValidId))
+        .then(t => hydrateSoundcloudTracks(t, soundcloudkey.BATCH_FETCHING_KEY))
+        .then(t => t.filter(filterMaxDuration(MAX_TRACK_DURATION)))
+        .then(sortByTotalPlays);
   }
 
   sortTrendingTracks(tracks) {

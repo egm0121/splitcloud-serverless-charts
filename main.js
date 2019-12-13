@@ -172,3 +172,43 @@ module.exports.radioListByCountryCode = async (event, context, callback) => {
     });
   }
 };
+/**
+ * /wrapped/{year}/{deviceId}/{side}
+ */
+module.exports.yearWrappedTopList = async (event, context, callback) => {
+  const { year, deviceId, side } = event.pathParameters;
+  const sideUpper = (side || '').toUpperCase();
+  const jsonCacheFileName = `charts/wrapped/${year}/${deviceId}_${sideUpper}.json`;
+  let trackList;
+  try {
+    trackList = await helpers.readJSONFromS3(jsonCacheFileName);
+  } catch (err) {
+    console.log('no cache found for', jsonCacheFileName, 'generating...');
+  }
+  if (trackList) {
+    return callback(null, {
+      statusCode: 200,
+      body: JSON.stringify(trackList),
+    });
+  }
+  try {
+    trackList = await chartService.getPopularTracksByDeviceId(
+      10,
+      `${year}-01-01`,
+      deviceId,
+      sideUpper
+    );
+    if (trackList.length) {
+      await saveToS3(jsonCacheFileName, trackList);
+    }
+    callback(null, {
+      statusCode: 200,
+      body: JSON.stringify(trackList),
+    });
+  } catch (error) {
+    callback(null, {
+      statusCode: 500,
+      body: JSON.stringify({ error: error.toString(), trace: error.stack }),
+    });
+  }
+};

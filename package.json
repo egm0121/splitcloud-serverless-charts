@@ -14,7 +14,8 @@
     "lint": "eslint \"{,!(node_modules)/**/}*.js\"",
     "format": "prettier --config ./.prettierrc  --write \"{,!(node_modules)/**/}*.js\"",
     "pre-commit": "npm run format && npm run lint",
-    "cli": "node -r esm cli.js"
+    "cli": "node -r esm cli.js",
+    "prefetch": "node -r esm ./scripts/prefetchWrapped.js"
   },
   "author": "",
   "license": "ISC",
@@ -24,7 +25,8 @@
     "egm0121-rn-common-lib": "git+ssh://git@github.com/egm0121/egm0121-rn-common-lib.git#release/v3.2",
     "esm": "^3.2.25",
     "googleapis": "36.0.0",
-    "moment": "2.23.0"
+    "moment": "2.23.0",
+    "neat-csv": "^5.1.0"
   },
   "devDependencies": {
     "eslint": "^5.11.0",

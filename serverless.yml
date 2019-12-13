@@ -130,6 +130,21 @@ functions:
             parameters:
               paths:
                 countrycode: true
+  yearWrapped:
+    handler: handler.yearWrappedTopList
+    environment:
+      BUCKET: ${self:custom.bucket}
+      STAGE: ${self:custom.myStage} 
+    events:
+      - http:
+          path: wrapped/{year}/{deviceId}/{side}
+          method: get
+          request:
+            parameters:
+              paths:
+                year: true
+                deviceId: true
+                side: true
   country_charts:
     handler: handler.updateCountryCharts
     environment:
