@@ -19,7 +19,7 @@ const BATCH_SIZE = 4;
 (async () => {
   const idsMap = await neatCsv(fs.readFileSync(csvFilePath));
   const validIds = idsMap
-    .filter(item => parseInt(item[1], 10) >= 50)
+    .filter(item => item[1] && parseInt(item[1].replace(/\D/, ''), 10) >= 50)
     .map(i => i[0])
     .slice(0, MAX_LIMIT);
 
@@ -37,6 +37,7 @@ const BATCH_SIZE = 4;
       return allResolved;
     }
   });
+  console.log(toThunkList.length,'  Batch to process');
   // eslint-disable-next-line
   for(let chunk of toThunkList){
     // eslint-disable-next-line no-await-in-loop

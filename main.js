@@ -173,10 +173,11 @@ module.exports.radioListByCountryCode = async (event, context, callback) => {
   }
 };
 /**
- * /wrapped/{year}/{deviceId}/{side}
+ * /wrapped/{year}/{deviceId}/{side}?cache_only=1
  */
 module.exports.yearWrappedTopList = async (event, context, callback) => {
   const { year, deviceId, side } = event.pathParameters;
+  const fromCacheOnly = helpers.getQueryParam(event, 'cache_only');
   const sideUpper = (side || '').toUpperCase();
   const jsonCacheFileName = `charts/wrapped/${year}/${deviceId}_${sideUpper}.json`;
   let trackList;
@@ -189,6 +190,12 @@ module.exports.yearWrappedTopList = async (event, context, callback) => {
     return callback(null, {
       statusCode: 200,
       body: JSON.stringify(trackList),
+    });
+  }
+  if (fromCacheOnly) {
+    return callback(null, {
+      statusCode: 204,
+      body: JSON.stringify([]),
     });
   }
   try {
