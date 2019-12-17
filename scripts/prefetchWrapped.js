@@ -35,6 +35,7 @@ const fetchScreensForId = async id => {
 
 const csvFilePath = __dirname + '/splitcloud-app_total_x_device_20190101-20191210.csv';
 const MAX_LIMIT = Infinity;
+const MIN_BATCH = 36;
 const BATCH_SIZE = 2;
 (async () => {
   const idsMap = await neatCsv(fs.readFileSync(csvFilePath));
@@ -53,6 +54,7 @@ const BATCH_SIZE = 2;
   const toThunkList = batchOfIds.map((batch, idx) => {
     return async () => {
       console.log('prefetch batch nbr:', idx, 'of ', batchOfIds.length);
+      if (idx < MIN_BATCH) return Promise.resolve();
       const allResolved = await Promise.all(
         batch.map(id => {
           // fetchSidesForId(id);
@@ -60,7 +62,7 @@ const BATCH_SIZE = 2;
         })
       );
       return allResolved;
-    }
+    };
   });
   console.log(toThunkList.length,'  Batch to process');
   // eslint-disable-next-line

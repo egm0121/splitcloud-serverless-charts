@@ -41,7 +41,7 @@ custom:
 
 provider:
   name: aws
-  runtime: nodejs8.10
+  runtime: nodejs10.x
   timeout: 200
   iamRoleStatements:
     - Effect: Allow
