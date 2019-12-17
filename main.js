@@ -8,6 +8,10 @@ const helpers = require('./helpers');
 const constants = require('./constants');
 
 const saveToS3 = helpers.saveFileToS3;
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Credentials': true,
+};
 
 module.exports.hello = async () => {
   console.log('Splitcloud-serverless-charts service was called');
@@ -179,6 +183,7 @@ module.exports.yearWrappedTopList = async (event, context, callback) => {
   const { year, deviceId, side } = event.pathParameters;
   const fromCacheOnly = helpers.getQueryParam(event, 'cache_only');
   const sideUpper = (side || '').toUpperCase();
+
   const jsonCacheFileName = `charts/wrapped/${year}/${deviceId}_${sideUpper}.json`;
   let trackList;
   try {
@@ -189,12 +194,18 @@ module.exports.yearWrappedTopList = async (event, context, callback) => {
   if (trackList) {
     return callback(null, {
       statusCode: 200,
+      headers: {
+        ...corsHeaders,
+      },
       body: JSON.stringify(trackList),
     });
   }
   if (fromCacheOnly) {
     return callback(null, {
       statusCode: 204,
+      headers: {
+        ...corsHeaders,
+      },
       body: JSON.stringify([]),
     });
   }
@@ -210,11 +221,17 @@ module.exports.yearWrappedTopList = async (event, context, callback) => {
     }
     callback(null, {
       statusCode: 200,
+      headers: {
+        ...corsHeaders,
+      },
       body: JSON.stringify(trackList),
     });
   } catch (error) {
     callback(null, {
       statusCode: 500,
+      headers: {
+        ...corsHeaders,
+      },
       body: JSON.stringify({ error: error.toString(), trace: error.stack }),
     });
   }

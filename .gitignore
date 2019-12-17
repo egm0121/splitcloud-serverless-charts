@@ -6,3 +6,5 @@ top_splitcloud*.json
 app_config*.json
 discover_*.json
 *.csv
+*.zip
+/screenshots
