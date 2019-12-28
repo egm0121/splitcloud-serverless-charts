@@ -35,7 +35,7 @@ const fetchScreensForId = async id => {
 
 const csvFilePath = __dirname + '/splitcloud-app_total_x_device_20190101-20191210.csv';
 const MAX_LIMIT = Infinity;
-const MIN_BATCH = 36;
+const MIN_BATCH = 649;
 const BATCH_SIZE = 2;
 (async () => {
   const idsMap = await neatCsv(fs.readFileSync(csvFilePath));

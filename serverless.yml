@@ -41,7 +41,7 @@ custom:
 
 provider:
   name: aws
-  runtime: nodejs10.x
+  runtime: nodejs8.10
   timeout: 200
   iamRoleStatements:
     - Effect: Allow
@@ -108,6 +108,19 @@ functions:
       - http:
           path: regions
           method: get
+  log_collector:
+    handler: handler.logCollector
+    environment:
+      BUCKET: ${self:custom.bucket}
+      STAGE: ${self:custom.myStage} 
+    events:
+      - http:
+          path: app/feedback/{deviceid}
+          method: POST
+          request:
+            parameters:
+              paths:
+                deviceid: true
   radio_countrycodes:
     handler: handler.radioCountryCodes
     environment:

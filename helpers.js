@@ -5,7 +5,7 @@ const s3 = new AWS.S3();
 const getQueryParam = (event, param) => {
   return event.queryStringParameters && event.queryStringParameters[param];
 };
-async function saveFileToS3(keyName, data) {
+async function saveFileToS3(keyName, data, stringify = true) {
   const [path, extension] = keyName.split('.');
   const finalKeyName = `${path}${isDEV ? '_dev' : ''}.${extension}`;
   console.log('will write to s3 key:', finalKeyName);
@@ -15,7 +15,7 @@ async function saveFileToS3(keyName, data) {
       ContentType: 'application/json',
       CacheControl: 'max-age=0,must-revalidate',
       Key: finalKeyName,
-      Body: JSON.stringify(data),
+      Body: stringify ? JSON.stringify(data) : data,
     })
     .promise();
 }

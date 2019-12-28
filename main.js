@@ -177,6 +177,24 @@ module.exports.radioListByCountryCode = async (event, context, callback) => {
   }
 };
 /**
+ * /app/feedback/{deviceid}
+ */
+module.exports.logCollector = async (event, context, callback) => {
+  // eslint-disable-next-line no-unused-vars
+  const { deviceid } = event.pathParameters;
+  const logDataJson = event.body;
+  // eslint-disable-next-line prettier/prettier
+  const date = (new Date()).toISOString();
+  await saveToS3(`feedback_logs/${date}/${deviceid}`, logDataJson, false);
+  return callback(null, {
+    statusCode: 200,
+    headers: {
+      ...corsHeaders,
+    },
+    body: JSON.stringify({ success: true }),
+  });
+};
+/**
  * /wrapped/{year}/{deviceId}/{side}?cache_only=1
  */
 module.exports.yearWrappedTopList = async (event, context, callback) => {

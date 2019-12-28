@@ -3,7 +3,9 @@ const scKey = require('./key/soundcloud_key.json');
 const helpers = require('./helpers');
 
 const SC_API_ENDPOINT = 'http://api.soundcloud.com';
-const SC_GET_DISCOVERY = `http://api-v2.soundcloud.com/selections?client_id=${scKey.SC_CLIENT_ID}`;
+const SC_GET_DISCOVERY = `http://api-v2.soundcloud.com/mixed-selections?client_id=${
+  scKey.SC_CLIENT_ID
+}`;
 const fetchSoundCloudDiscovery = async () =>
   axios({ method: 'GET', url: SC_GET_DISCOVERY, timeout: 5000 });
 
@@ -22,7 +24,7 @@ async function resolveSCPlaylistById(scPlaylistId) {
   const hasPlayableTracks = payload.data && payload.data.tracks.filter(t => t.streamable).length;
   if (!hasPlayableTracks) return null;
   delete payload.data.tracks;
-  
+
   return payload.data;
 }
 
@@ -48,6 +50,44 @@ function validateEventData(data) {
   if (hasErrors) return false;
   return true;
 }
+function byValidPlaylist(playlist) {
+  return !!playlist && playlist.kind === 'playlist';
+}
+function normalizePlaylistUser(playlist) {
+  if (!playlist) return playlist;
+  if (playlist && !playlist.user) {
+    return {
+      ...playlist,
+      user: {
+        avatar_url: 'https://i1.sndcdn.com/avatars-000600496689-dbv36h-large.jpg',
+        first_name: '',
+        full_name: '',
+        id: 603473631,
+        kind: 'user',
+        last_modified: '2019-12-17T18:17:23Z',
+        last_name: '',
+        permalink: 'soundcloud-scenes',
+        permalink_url: 'https://soundcloud.com/soundcloud-scenes',
+        uri: 'https://api.soundcloud.com/users/603473631',
+        urn: 'soundcloud:users:603473631',
+        username: 'Scenes',
+      },
+    };
+  }
+  return playlist;
+}
+function byValidSections(item) {
+  return item && item.playlists && item.playlists.length;
+}
+function normalizeScPlaylists(item) {
+  if (!item || !item.items || !item.items.collection) return item;
+  const normalized = {
+    ...item,
+    playlists: item.items.collection.filter(byValidPlaylist).map(normalizePlaylistUser),
+  };
+  delete normalized.items;
+  return normalized;
+}
 module.exports = async function discoverApi(eventData) {
   if (eventData && !validateEventData(eventData)) {
     throw new Error('Event Data did not pass validation');
@@ -62,7 +102,11 @@ module.exports = async function discoverApi(eventData) {
         )
       )
     : [];
-  apiData.collection = [...allSectionsResolved, ...apiData.collection];
+
+  apiData.collection = [
+    ...allSectionsResolved,
+    ...apiData.collection.map(normalizeScPlaylists).filter(byValidSections),
+  ];
   console.log('allSectionsResolved', allSectionsResolved);
   if (process.env.BUCKET) {
     const s3Path = 'app/api/discovery.json';
