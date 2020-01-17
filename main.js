@@ -184,8 +184,8 @@ module.exports.logCollector = async (event, context, callback) => {
   const { deviceid } = event.pathParameters;
   const logDataJson = event.body;
   // eslint-disable-next-line prettier/prettier
-  const date = (new Date()).toISOString().split('T')[0];
-  await saveToS3(`feedback_logs/${date}/${deviceid}`, logDataJson, false);
+  const [date, time] = (new Date()).toISOString().split('T');
+  await saveToS3(`feedback_logs/${date}/${deviceid}-${time}.json`, logDataJson, false);
   return callback(null, {
     statusCode: 200,
     headers: {
