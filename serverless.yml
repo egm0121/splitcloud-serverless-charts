@@ -41,7 +41,7 @@ custom:
 
 provider:
   name: aws
-  runtime: nodejs8.10
+  runtime: nodejs12.x
   timeout: 200
   iamRoleStatements:
     - Effect: Allow
@@ -157,6 +157,21 @@ functions:
             parameters:
               paths:
                 year: true
+                deviceId: true
+                side: true
+  ctaEndpoint:
+    handler: handler.ctaEndpoint
+    environment:
+      BUCKET: ${self:custom.bucket}
+      STAGE: ${self:custom.myStage} 
+    events:
+      - http:
+          path: cta/{deviceId}/{side}
+          method: get
+          cors: true
+          request:
+            parameters:
+              paths:
                 deviceId: true
                 side: true
   country_charts:
