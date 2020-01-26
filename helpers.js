@@ -51,4 +51,5 @@ module.exports = {
   readFileFromS3,
   readJSONFromS3,
   getQueryParam,
+  isDEV,
 };

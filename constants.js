@@ -1,12 +1,12 @@
 module.exports = {
   TOP_COUNTRIES: {
-    US: 'United States',
-    DE: 'Germany',
-    JP: 'Japan',
-    UK: 'United Kingdom',
     IN: 'India',
-    TH: 'Thailand',
+    PK: 'Pakistan',
     MX: 'Mexico',
+    DE: 'Germany',
+    US: 'United States',
+    MA: 'Morocco',
+    EG: 'Egypt',
   },
   RADIO_COUNTRY_CODES: [
     { name: 'AD', value: 'AD', stationcount: '5' },
