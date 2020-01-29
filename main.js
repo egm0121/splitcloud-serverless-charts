@@ -47,8 +47,8 @@ module.exports.updateCountryCharts = async () => {
     const countryName = constants.TOP_COUNTRIES[countryCode];
     try {
       console.log(`Get top and trending charts for ${countryName}...`);
-      const topChartData = await chartService.getTopChart(75,countryName);
-      const trendingChartData = await chartService.getTrendingChart(75,countryName);
+      const topChartData = await chartService.getTopChart(75, countryName);
+      const trendingChartData = await chartService.getTrendingChart(75, countryName);
       if (topChartData.length && trendingChartData.length) {
         console.log(`Save to s3 top and trending charts for ${countryName}...L:${topChartData.length}`)
         await saveToS3(`charts/weekly_popular_country_${countryCode}.json`, topChartData);

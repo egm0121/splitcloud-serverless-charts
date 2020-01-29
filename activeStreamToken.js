@@ -1,4 +1,5 @@
 const fs = require('fs');
+const axios = require('axios');
 const GAReporting = require('./reportingClient');
 const availableStreamTokens = require('./key/all_stream_tokens.json');
 const activeDevToken = require('./app_config.json');
@@ -6,6 +7,7 @@ const helpers = require('./helpers');
 
 const INITIAL_ACTIVE_TOKEN = availableStreamTokens[1].SC_CLIENT_ID;
 const MAX_USAGE_PER_DAY = 13000;
+const TEST_TRACK_URL = 'https://api.soundcloud.com/tracks/397263444/stream';
 
 async function getActiveToken() {
   if (process.env.BUCKET) {
@@ -19,6 +21,21 @@ async function getActiveToken() {
     return jsonData.STREAM_CLIENT_ID;
   }
   return activeDevToken.STREAM_CLIENT_ID;
+}
+
+async function checkTokenIsValid(token) {
+  let isValid = true;
+  try {
+    const url = `${TEST_TRACK_URL}?client_id=${token}`;
+    console.log('checkToken url:', url);
+    const resp = await axios({ method: 'HEAD', url });
+    console.log('checkToken got response', resp.status);
+    isValid = resp.status !== 429;
+  } catch (err) {
+    console.log('checkToken got error', err.response && err.response.status);
+    isValid = err.response && err.response.status !== 429;
+  }
+  return isValid;
 }
 
 async function setActiveToken(currToken) {
@@ -41,13 +58,14 @@ function getUsageByToken(data) {
   });
   return validTokensMap;
 }
+
 async function selectActiveStreamToken() {
   const reportingClient = await GAReporting.initReportingClient();
   const tokenUsage = await reportingClient.reports.batchGet({
     requestBody: {
       reportRequests: [
         {
-          viewId: '152777884',
+          viewId: '210440147',
           dateRanges: [
             {
               startDate: '0daysAgo',
@@ -87,21 +105,15 @@ async function selectActiveStreamToken() {
     console.log('no active token found, setting default:', INITIAL_ACTIVE_TOKEN);
     return setActiveToken(INITIAL_ACTIVE_TOKEN);
   }
-  console.log(tokensUsageObj);
-  if (tokensUsageObj[activeToken] > MAX_USAGE_PER_DAY) {
+  const isTokenStillValid = await checkTokenIsValid(activeToken);
+  console.log(tokensUsageObj, 'isTokenStillValid', activeToken, isTokenStillValid);
+  if (tokensUsageObj[activeToken] > MAX_USAGE_PER_DAY || !isTokenStillValid) {
     const tokensUsageMap = Object.keys(tokensUsageObj)
       .map(key => [key, tokensUsageObj[key]])
       .sort((a, b) => a[1] - b[1]);
     console.log('setting active token to :', tokensUsageMap[0][0]);
     await setActiveToken(tokensUsageMap[0][0]);
     return tokensUsageMap[0][0];
-  }
-  if (
-    activeToken !== INITIAL_ACTIVE_TOKEN &&
-    tokensUsageObj[INITIAL_ACTIVE_TOKEN] < MAX_USAGE_PER_DAY
-  ) {
-    console.log(`Reset to initial active token ${INITIAL_ACTIVE_TOKEN}`);
-    await setActiveToken(INITIAL_ACTIVE_TOKEN);
   }
   console.log(`active token ${activeToken} is still below hit limit`);
   return activeToken;
