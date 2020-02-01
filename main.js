@@ -258,15 +258,17 @@ module.exports.yearWrappedTopList = async (event, context, callback) => {
  *  /cta/{deviceId}/{side}
  */
 module.exports.ctaEndpoint = async (event, context, callback) => {
-  if (helpers.isDEV) {
+  const { deviceId } = event.pathParameters;
+  const isAndroidId = deviceId.length === 16;
+  if (isAndroidId) {
     return callback(null, {
       statusCode: 200,
       headers: {
         ...corsHeaders,
       },
       body: JSON.stringify({
-        ctaLabel: 'SplitCloud Giveaway!',
-        ctaUrl: 'http://www.splitcloud-app.com/privacy.html',
+        ctaLabel: '⭐️ SplitCloud Giveaway!',
+        ctaUrl: 'http://www.splitcloud-app.com/giveaway.html',
       }),
     });
   }
