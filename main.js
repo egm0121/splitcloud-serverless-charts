@@ -267,7 +267,7 @@ module.exports.ctaEndpoint = async (event, context, callback) => {
         ...corsHeaders,
       },
       body: JSON.stringify({
-        ctaLabel: '⭐️ SplitCloud Giveaway!',
+        ctaLabel: '🎉 Remove Ads Promotion!',
         ctaUrl: 'http://www.splitcloud-app.com/giveaway.html',
       }),
     });
