@@ -29,12 +29,11 @@ async function checkTokenIsValid(token) {
     const url = `${TEST_TRACK_URL}?client_id=${token}`;
     console.log('checkToken url:', url);
     const resp = await axios({
-      method: 'head',
+      method: 'get',
       url,
-      maxRedirects: 0,
       validateStatus: status => status >= 200 && status <= 302,
     });
-    console.log('checkToken got response', resp.status);
+    console.log('checkToken got response', resp.status, resp.headers);
     isValid = resp.status !== 429;
   } catch (err) {
     console.log('checkToken got error', err.response && err.response.status);
