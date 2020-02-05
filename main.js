@@ -39,35 +39,76 @@ module.exports.hello = async () => {
     },
   };
 };
-
-module.exports.updateCountryCharts = async () => {
-  console.log('Splitcloud-serverless-charts updateCountyCharts');
+module.exports.countryChartsPublisher = async () => {
   const countryCodesArr = Object.keys(constants.TOP_COUNTRIES);
-  const generateChartsForCountry = async countryCode => {
-    const countryName = constants.TOP_COUNTRIES[countryCode];
+  const promises = countryCodesArr.map(cCode => {
+    const cName = constants.TOP_COUNTRIES[cCode];
+    console.log(`send job for country ${cName} queue`, process.env.COUNTRY_CHARTS_QUEUE);
+    return helpers.sqs
+      .sendMessage({
+        DelaySeconds: 5,
+        MessageAttributes: {
+          countryCode: {
+            DataType: 'String',
+            StringValue: cCode,
+          },
+          countryName: {
+            DataType: 'String',
+            StringValue: cName,
+          },
+        },
+        MessageBody: `Compute top and trending charts for country ${cName}`,
+        QueueUrl: process.env.COUNTRY_CHARTS_QUEUE,
+      })
+      .promise();
+  });
+  const results = await Promise.all(promises);
+  return {
+    statusCode: 200,
+    body: results,
+  };
+};
+module.exports.countryChartsSubscribe = async event => {
+  const messageAttr = event.Records[0].messageAttributes;
+  const countryCodeString = messageAttr.countryCode.stringValue;
+  const countryNameString = messageAttr.countryName.stringValue;
+  console.log('messages x invoke', event.Records.length);
+  console.log('Process country chart request:', { countryCodeString, countryNameString });
+
+  const generateChartsForCountry = async (countryCode, countryName) => {
     try {
       console.log(`Get top and trending charts for ${countryName}...`);
       const topChartData = await chartService.getTopChart(75, countryName);
       const trendingChartData = await chartService.getTrendingChart(75, countryName);
-      if (topChartData.length && trendingChartData.length) {
-        console.log(`Save to s3 top and trending charts for ${countryName}...L:${topChartData.length}`)
-        await saveToS3(`charts/weekly_popular_country_${countryCode}.json`, topChartData);
-        await saveToS3(`charts/weekly_trending_country_${countryCode}.json`, trendingChartData);
+      if (!topChartData.length && !trendingChartData.length) {
+        console.log(`Empty charts, skip country ${countryCode}`);
+        return false;
       }
+      console.log(`Save to s3 top and trending charts for ${countryName}...`);
+      await saveToS3(`charts/country/weekly_popular_country_${countryCode}.json`, topChartData);
+      await saveToS3(
+        `charts/country/weekly_trending_country_${countryCode}.json`,
+        trendingChartData
+      );
     } catch (err) {
       console.log(`error while updating country(${countryCode}) charts:`, err);
     }
+    return true;
+  };
+
+  const success = await generateChartsForCountry(countryCodeString, countryNameString);
+  if (!success) {
+    return {
+      statusCode: 204,
+      error: {
+        message: `empty charts, will skip country ${countryCodeString}`,
+      },
+    };
   }
-  // eslint-disable-next-line
-  for (let countryCode of countryCodesArr) {
-    // eslint-disable-next-line no-await-in-loop
-    await generateChartsForCountry(countryCode);
-  }
-  console.log('try to store data to s3 file bucketName:', process.env.BUCKET);
   return {
     statusCode: 200,
     body: {
-      success: Object.keys(constants.TOP_COUNTRIES),
+      countryCodeString,
     },
   };
 };
@@ -110,10 +151,11 @@ module.exports.chartsEndpoint = async (event, context, callback) => {
     callback(null, {
       statusCode: 400,
     });
+    return;
   }
   const hasCountryPlaylist = Object.keys(constants.TOP_COUNTRIES).includes(clientCountry);
   const playlistFilename = hasCountryPlaylist
-    ? `charts/weekly_${playlistKind}_country_${clientCountry}.json`
+    ? `charts/country/weekly_${playlistKind}_country_${clientCountry}.json`
     : `charts/weekly_${playlistKind}.json`;
   console.log('serve playlist from s3', playlistFilename);
   const playlistPayload = await helpers.readFileFromS3(playlistFilename);

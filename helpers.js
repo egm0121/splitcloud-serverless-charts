@@ -1,10 +1,12 @@
 const AWS = require('aws-sdk');
 
+AWS.config.update({ region: 'us-east-1' });
 const isDEV = process.env.STAGE === 'dev';
 const s3 = new AWS.S3();
 const getQueryParam = (event, param) => {
   return event.queryStringParameters && event.queryStringParameters[param];
 };
+const sqs = new AWS.SQS({ apiVersion: 'latest' });
 async function saveFileToS3(keyName, data, stringify = true) {
   const [path, extension] = keyName.split('.');
   const finalKeyName = `${path}${isDEV ? '_dev' : ''}.${extension}`;
@@ -52,4 +54,5 @@ module.exports = {
   readJSONFromS3,
   getQueryParam,
   isDEV,
+  sqs,
 };

@@ -23,11 +23,15 @@ custom:
     schedule_token: rate(10 minutes)
     schedule_discovery: rate(1 day)
     schedule_country_charts: cron(0 19 ? * MON *)
+    country_charts_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/splitcloud_charts_by_region"
+    country_charts_arn: "arn:aws:sqs:us-east-1:348868901434:splitcloud_charts_by_region"
   dev: 
     schedule: 
     schedule_token:
     schedule_discovery:
     schedule_country_charts:
+    country_charts_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/splitcloud_charts_by_region_dev"
+    country_charts_arn: "arn:aws:sqs:us-east-1:348868901434:splitcloud_charts_by_region_dev"
   bucket: "www.splitcloud-app.com"
   customDomain:
     domainName: ${self:custom.domains.${self:custom.myStage}}
@@ -48,6 +52,13 @@ provider:
       Action:
         - s3:PutObject
       Resource: "arn:aws:s3:::${self:custom.bucket}/*"
+    - Effect: "Allow"
+      Action:
+      - sqs:SendMessage
+      - sqs:GetQueueUrl
+      - sqs:ReceiveMessage
+      - sqs:DeleteMessage
+      Resource: ${self:custom.${self:custom.myStage}.country_charts_arn}
 # you can overwrite defaults here
 #  stage: dev
 #  region: us-east-1
@@ -90,6 +101,26 @@ functions:
       STAGE: ${self:custom.myStage} 
     events:
       - schedule: ${self:custom.${self:custom.myStage}.schedule}
+  country_charts_pub:
+    handler: handler.countryChartsPublisher
+    environment:
+      BUCKET: ${self:custom.bucket}
+      COUNTRY_CHARTS_QUEUE: ${self:custom.${self:custom.myStage}.country_charts_queue}
+      STAGE: ${self:custom.myStage} 
+    events:
+      - schedule: ${self:custom.${self:custom.myStage}.schedule_country_charts}
+  country_charts_sub:
+    handler: handler.countryChartsSubscribe
+    timeout: 120
+    reservedConcurrency: 2
+    environment:
+      BUCKET: ${self:custom.bucket}
+      COUNTRY_CHARTS_QUEUE: ${self:custom.${self:custom.myStage}.country_charts_queue}
+      STAGE: ${self:custom.myStage}
+    events:
+      - sqs:
+          arn: ${self:custom.${self:custom.myStage}.country_charts_arn}
+          batchSize: 1
   charts_endpoint:
     handler: handler.chartsEndpoint
     environment:
@@ -174,13 +205,6 @@ functions:
               paths:
                 deviceId: true
                 side: true
-  country_charts:
-    handler: handler.updateCountryCharts
-    environment:
-      BUCKET: ${self:custom.bucket}
-      STAGE: ${self:custom.myStage} 
-    events:
-      - schedule: ${self:custom.${self:custom.myStage}.schedule_country_charts}
   token:
     handler: handler.selectActiveToken
     environment:

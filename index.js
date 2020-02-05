@@ -90,7 +90,6 @@ async function fetchAnalyticsReport(
   return res;
 }
 async function fetchScTrackById(trackId, scApiToken = soundcloudkey.SC_CLIENT_ID) {
-  console.log(`fetchScTrackById ${trackId} with token ${scApiToken}`);
   const trackUrl = `http://${SC_API_ENDPOINT}/tracks/${trackId}?client_id=${scApiToken}`;
   return axios({ method: 'GET', url: trackUrl, timeout: 1500 });
 }
