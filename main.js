@@ -224,10 +224,15 @@ module.exports.radioListByCountryCode = async (event, context, callback) => {
 module.exports.logCollector = async (event, context, callback) => {
   // eslint-disable-next-line no-unused-vars
   const { deviceid } = event.pathParameters;
-  const logDataJson = event.body;
+  const logDataJson = JSON.parse(event.body);
+  let logStr = '';
+  logStr += logDataJson.deviceInfo.join('\n');
+  logStr += '\nLOGS\n';
+  logStr += logDataJson.deviceLogs.join('\n');
   // eslint-disable-next-line prettier/prettier
   const [date, time] = (new Date()).toISOString().split('T');
-  await saveToS3(`feedback_logs/${date}/${deviceid}-${time}.json`, logDataJson, false);
+  const timeNoMillis = time.split('.')[0];
+  await saveToS3(`feedback_logs/${date}/${deviceid}-${timeNoMillis}.log`, logStr, false);
   return callback(null, {
     statusCode: 200,
     headers: {
