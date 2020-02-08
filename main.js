@@ -1,6 +1,5 @@
 import RadioApi from './radioApi';
 
-const moment = require('moment');
 const chartService = require('./index');
 const selectActiveStreamToken = require('./activeStreamToken');
 const discoveryApi = require('./discoverApi');
@@ -13,36 +12,14 @@ const corsHeaders = {
   'Access-Control-Allow-Credentials': true,
 };
 
-module.exports.hello = async () => {
-  console.log('Splitcloud-serverless-charts service was called');
-  const topChartData = await chartService.getTopChart();
-  const trendingChartData = await chartService.getTrendingChart();
-  console.log('try to store data to s3 file bucketName:', process.env.BUCKET);
-  let retValue;
-  let retValueCopy;
-  const weekOfYear = moment().format('W');
-  try {
-    if (topChartData.length && trendingChartData.length) {
-      console.log('Valide response detected, will update charts');
-      retValue = await saveToS3('charts/weekly_popular.json', topChartData);
-      retValueCopy = await saveToS3(`charts/weekly_trending.json`, trendingChartData);
-    }
-    await saveToS3(`charts/weekly_popular_${weekOfYear}.json`, topChartData);
-    await saveToS3(`charts/weekly_trending_${weekOfYear}.json`, trendingChartData);
-  } catch (err) {
-    console.log('Uploaded chart to S3 err:', err);
-  }
-  return {
-    statusCode: 200,
-    body: {
-      success: [retValue, retValueCopy],
-    },
-  };
-};
 module.exports.countryChartsPublisher = async () => {
-  const countryCodesArr = Object.keys(constants.TOP_COUNTRIES);
+  const topCountryMap = {
+    ...constants.TOP_COUNTRIES,
+    GLOBAL: 'GLOBAL',
+  };
+  const countryCodesArr = Object.keys(topCountryMap);
   const promises = countryCodesArr.map(cCode => {
-    const cName = constants.TOP_COUNTRIES[cCode];
+    const cName = topCountryMap[cCode];
     console.log(`send job for country ${cName} queue`, process.env.COUNTRY_CHARTS_QUEUE);
     return helpers.sqs
       .sendMessage({
@@ -78,8 +55,11 @@ module.exports.countryChartsSubscribe = async event => {
   const generateChartsForCountry = async (countryCode, countryName) => {
     try {
       console.log(`Get top and trending charts for ${countryName}...`);
-      const topChartData = await chartService.getTopChart(75, countryName);
-      const trendingChartData = await chartService.getTrendingChart(75, countryName);
+      const isGlobal = countryCode === 'GLOBAL';
+      const tracksCount = isGlobal ? 50 : 100;
+      const maybeCountryName = isGlobal ? undefined : countryCode;
+      const topChartData = await chartService.getTopChart(tracksCount, maybeCountryName);
+      const trendingChartData = await chartService.getTrendingChart(tracksCount, maybeCountryName);
       if (!topChartData.length && !trendingChartData.length) {
         console.log(`Empty charts, skip country ${countryCode}`);
         return false;
@@ -144,7 +124,7 @@ module.exports.updateDiscoveryApi = async () => {
  * /regions
  */
 module.exports.chartsEndpoint = async (event, context, callback) => {
-  const clientCountry =
+  let clientCountry =
     helpers.getQueryParam(event, 'region') || event.headers['CloudFront-Viewer-Country'];
   const playlistKind = event.queryStringParameters.kind;
   if (!['popular', 'trending'].includes(playlistKind)) {
@@ -154,9 +134,11 @@ module.exports.chartsEndpoint = async (event, context, callback) => {
     return;
   }
   const hasCountryPlaylist = Object.keys(constants.TOP_COUNTRIES).includes(clientCountry);
-  const playlistFilename = hasCountryPlaylist
-    ? `charts/country/weekly_${playlistKind}_country_${clientCountry}.json`
-    : `charts/weekly_${playlistKind}.json`;
+  if (!hasCountryPlaylist) {
+    clientCountry = 'GLOBAL';
+  }
+  const playlistFilename = `charts/country/weekly_${playlistKind}_country_${clientCountry}.json`;
+
   console.log('serve playlist from s3', playlistFilename);
   const playlistPayload = await helpers.readFileFromS3(playlistFilename);
   const resp = {

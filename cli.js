@@ -33,14 +33,14 @@ const logTracks = tracks => {
   return tracks;
 };
 (async () => {
-  // const timeStart = performance.now();
-  // const currDate = moment().format('L');
-  //console.log('TRENDING on ', currDate);
+  const timeStart = performance.now();
+  const currDate = moment().format('L');
+  console.log('TRENDING on ', currDate);
   // await chartService.getTrendingChart().then(logTracks);
   // const country = undefined;
   // console.log('POPULAR on ', currDate, ' country ', country);
-  // await chartService.getTrendingChart(15,undefined).then(logTracks);
-  // console.log('Time taken', performance.now() - timeStart);
+  await chartService.getTrendingChart(100,'US').then(logTracks);
+  console.log('Time taken', performance.now() - timeStart);
   // await selectActiveStreamToken();
   // const playlists = require('./discover_playlists_payload_dev.json');
   // await discoverApi(playlists);
@@ -66,21 +66,21 @@ const logTracks = tracks => {
   // const deviceId = 'F9BB27D4-6C26-44E4-8665-47E70B7D555F';
   // const topTracks = await chartService.getPopularTracksByDeviceId(20, '2019-01-01', deviceId, 'R');
   // logTracks(topTracks);
-  const grabScreenshot = async (year = '2019', deviceId, side) => {
-    const targetUrl = `http://www.splitcloud-app.com/wrapped.html?id=${deviceId}&year=${year}&side=${side}&t=3`;
-    let apiCall = 'https://api.rasterwise.com/v1/get-screenshot';
-    apiCall += `?apikey=${getScreenshots.API_KEY}`;
-    apiCall += `&url=${encodeURIComponent(targetUrl)}`;
-    apiCall += `&height=960&width=540&waitfor=true`;
-    console.log('apiCall is', apiCall);
-    const resp = await axios({ method: 'GET', url: apiCall, timeout: 30000 });
-    console.log(resp.data);
-    return axios({ method: 'GET', url: resp.data.screenshotImage, responseType: 'stream' }).then(
-      imgResp =>
-        imgResp.data.pipe(
-          fs.createWriteStream(`./screenshots/screenshot_${year}_${deviceId}_${side}.png`)
-        )
-    );
-  };
-  await grabScreenshot('2019', 'CFF14B99-B153-490D-A9C2-DBB892FDFB87', 'L');
-})();
+  //   const grabScreenshot = async (year = '2019', deviceId, side) => {
+  //     const targetUrl = `http://www.splitcloud-app.com/wrapped.html?id=${deviceId}&year=${year}&side=${side}&t=3`;
+  //     let apiCall = 'https://api.rasterwise.com/v1/get-screenshot';
+  //     apiCall += `?apikey=${getScreenshots.API_KEY}`;
+  //     apiCall += `&url=${encodeURIComponent(targetUrl)}`;
+  //     apiCall += `&height=960&width=540&waitfor=true`;
+  //     console.log('apiCall is', apiCall);
+  //     const resp = await axios({ method: 'GET', url: apiCall, timeout: 30000 });
+  //     console.log(resp.data);
+  //     return axios({ method: 'GET', url: resp.data.screenshotImage, responseType: 'stream' }).then(
+  //       imgResp =>
+  //         imgResp.data.pipe(
+  //           fs.createWriteStream(`./screenshots/screenshot_${year}_${deviceId}_${side}.png`)
+  //         )
+  //     );
+  //   };
+  //   await grabScreenshot('2019', 'CFF14B99-B153-490D-A9C2-DBB892FDFB87', 'L');
+  // })();
