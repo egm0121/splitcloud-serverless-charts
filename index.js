@@ -13,7 +13,8 @@ async function fetchAnalyticsReport(
   country,
   startDate = '7daysAgo',
   deviceId = false,
-  category
+  category,
+  eventAction = 'playback-completed'
 ) {
   const reportingClient = await GAReporting.initReportingClient();
   const reportRequest = {
@@ -49,6 +50,19 @@ async function fetchAnalyticsReport(
       ],
     },
   };
+  if (eventAction) {
+    reportRequest.requestBody.reportRequests[0].dimensionFilterClauses = [
+      {
+        filters: [
+          {
+            dimensionName: 'ga:eventAction',
+            operator: 'EXACT',
+            expressions: [eventAction],
+          },
+        ],
+      },
+    ];
+  }
   if (country) {
     reportRequest.requestBody.reportRequests[0].dimensionFilterClauses = [
       {

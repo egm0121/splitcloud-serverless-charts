@@ -39,7 +39,7 @@ const logTracks = tracks => {
   // await chartService.getTrendingChart().then(logTracks);
   // const country = undefined;
   // console.log('POPULAR on ', currDate, ' country ', country);
-  await chartService.getTrendingChart(100,'US').then(logTracks);
+  await chartService.getTrendingChart(100, 'United States').then(logTracks);
   console.log('Time taken', performance.now() - timeStart);
   // await selectActiveStreamToken();
   // const playlists = require('./discover_playlists_payload_dev.json');
@@ -83,4 +83,4 @@ const logTracks = tracks => {
   //     );
   //   };
   //   await grabScreenshot('2019', 'CFF14B99-B153-490D-A9C2-DBB892FDFB87', 'L');
-  // })();
+})();
