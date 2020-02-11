@@ -149,8 +149,14 @@ function extractResponseRows(response) {
 function filterBySCValidId(item) {
   return !isNaN(parseInt(item.id, 10));
 }
+/**
+ * Calculate the decay factor used for trending score
+ * @param {*} x number of days ago / 365
+ */
 function decayTimeFunc(x) {
-  return Math.exp(-13 * x * x);
+  // this graph gives highest possible value (1) to tracks published between 0 and 14 days ago,
+  // then steeply exponetialy falls to 0 when days ago are getting near to 365 or more
+  return Math.exp(-20 * x) * 2.5;
 }
 function calulateBaseScore(item) {
   return Math.floor(item.splitcloud_unique_plays * 2 + Math.log(item.playback_count));
@@ -192,13 +198,23 @@ class ChartsService {
     );
   }
 
+  getMostLikedChart(limit = 75, country = '') {
+    return fetchAnalyticsReport(limit, country, '7daysAgo', false, false, 'ADD_PLAYLIST_ITEM')
+      .then(extractResponseRows)
+      .then(t => t.filter(filterBySCValidId))
+      .then(hydrateSoundcloudTracks)
+      .then(t => t.filter(filterMaxDuration(MAX_TRACK_DURATION)))
+      .then(sortByPopularity);
+  }
+
   getTopChart(limit = 75, country = '') {
     return fetchAnalyticsReport(limit, country)
       .then(extractResponseRows)
       .then(t => t.filter(filterBySCValidId))
       .then(hydrateSoundcloudTracks)
       .then(t => t.filter(filterMaxDuration(MAX_TRACK_DURATION)))
-      .then(sortByPopularity);
+      .then(sortByPopularity)
+      .then(chart => chart.slice(0, 50));
   }
 
   getTrendingChart(limit = 100, country = '') {

@@ -56,10 +56,13 @@ module.exports.countryChartsSubscribe = async event => {
     try {
       console.log(`Get top and trending charts for ${countryName}...`);
       const isGlobal = countryCode === 'GLOBAL';
-      const tracksCount = isGlobal ? 50 : 100;
-      const maybeCountryName = isGlobal ? undefined : countryCode;
+      const tracksCount = 100;
+      const maybeCountryName = isGlobal ? undefined : countryName;
       const topChartData = await chartService.getTopChart(tracksCount, maybeCountryName);
-      const trendingChartData = await chartService.getTrendingChart(tracksCount, maybeCountryName);
+      const trendingChartData = await chartService.getTrendingChart(
+        tracksCount * 2, // fetch twice the songs since we value very recent tracks with low unique plays
+        maybeCountryName
+      );
       if (!topChartData.length && !trendingChartData.length) {
         console.log(`Empty charts, skip country ${countryCode}`);
         return false;
@@ -296,7 +299,7 @@ module.exports.ctaEndpoint = async (event, context, callback) => {
         ...corsHeaders,
       },
       body: JSON.stringify({
-        ctaLabel: '🎉 Remove Ads Promotion!',
+        ctaLabel: '🎉 Remove Ads FREE!',
         ctaUrl: 'http://www.splitcloud-app.com/giveaway.html',
       }),
     });
