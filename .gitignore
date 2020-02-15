@@ -8,3 +8,4 @@ discover_*.json
 *.csv
 *.zip
 /screenshots
+test-event.json

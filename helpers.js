@@ -48,6 +48,14 @@ async function readJSONFromS3(keyName) {
   }
   return JSON.parse(contents);
 }
+function arrayInPlaceShuffle(array) {
+  // eslint-disable-next-line no-plusplus
+  for (let i = array.length - 1; i > 0; i--) {
+    const rand = Math.floor(Math.random() * (i + 1));
+    // eslint-disable-next-line no-param-reassign
+    [array[i], array[rand]] = [array[rand], array[i]];
+  }
+}
 module.exports = {
   saveFileToS3,
   readFileFromS3,
@@ -55,4 +63,5 @@ module.exports = {
   getQueryParam,
   isDEV,
   sqs,
+  arrayInPlaceShuffle,
 };

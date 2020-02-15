@@ -144,6 +144,15 @@ functions:
             parameters:
               paths:
                 deviceid: true
+  exploreRelated:
+    handler: handler.exploreRelated
+    environment:
+      BUCKET: ${self:custom.bucket}
+      STAGE: ${self:custom.myStage} 
+    events:
+      - http:
+          path: explore/related
+          method: POST
   radio_countrycodes:
     handler: handler.radioCountryCodes
     environment:

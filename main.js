@@ -292,22 +292,52 @@ module.exports.yearWrappedTopList = async (event, context, callback) => {
 module.exports.ctaEndpoint = async (event, context, callback) => {
   const { deviceId } = event.pathParameters;
   const isAndroidId = deviceId.length === 16;
-  if (isAndroidId) {
-    return callback(null, {
-      statusCode: 200,
-      headers: {
-        ...corsHeaders,
-      },
-      body: JSON.stringify({
-        ctaLabel: '🎉 Remove Ads FREE!',
-        ctaUrl: 'http://www.splitcloud-app.com/giveaway.html',
-      }),
-    });
-  }
+  // if (isAndroidId) {
+  //   return callback(null, {
+  //     statusCode: 200,
+  //     headers: {
+  //       ...corsHeaders,
+  //     },
+  //     body: JSON.stringify({
+  //       ctaLabel: '❗️Last Day 🔑 FREE Giveaway!',
+  //       ctaUrl: 'http://www.splitcloud-app.com/giveaway.html',
+  //     }),
+  //   });
+  // }
   return callback(null, {
     statusCode: 204,
     headers: {
       ...corsHeaders,
     },
+  });
+};
+
+/**
+ * [POST] /explore/related
+ */
+module.exports.exploreRelated = async (event, context, callback) => {
+  const sourceTrackIds = JSON.parse(event.body) || [];
+  if (!sourceTrackIds.length) {
+    return callback(null, {
+      statusCode: 204,
+      headers: {
+        ...corsHeaders,
+      },
+    });
+  }
+  const allRelatedReq = sourceTrackIds.map(trackId => chartService.fetchRelatedTracksById(trackId));
+  const responsesArr = await Promise.all(allRelatedReq);
+  const relatedTrackList = responsesArr.reduce((acc, resp) => {
+    const oneTrackRelatedArr = resp.data;
+    acc.push(...oneTrackRelatedArr);
+    return acc;
+  }, []);
+  helpers.arrayInPlaceShuffle(relatedTrackList);
+  return callback(null, {
+    statusCode: 200,
+    headers: {
+      ...corsHeaders,
+    },
+    body: JSON.stringify(relatedTrackList),
   });
 };

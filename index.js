@@ -107,28 +107,33 @@ async function fetchScTrackById(trackId, scApiToken = soundcloudkey.SC_CLIENT_ID
   const trackUrl = `http://${SC_API_ENDPOINT}/tracks/${trackId}?client_id=${scApiToken}`;
   return axios({ method: 'GET', url: trackUrl, timeout: 1500 });
 }
+
+async function fetchRelatedTracksById(trackId, scApiToken = soundcloudkey.SC_CLIENT_ID) {
+  const relatedUrl = `http://${SC_API_ENDPOINT}/tracks/${trackId}/related?client_id=${scApiToken}`;
+  return axios({ method: 'GET', url: relatedUrl, timeout: 1500 });
+}
+
 async function hydrateSoundcloudTracks(trackList, scApiToken) {
   const finalTracks = {};
   return trackList
     .map(track => {
       const resolveTrack = Object.assign({}, track);
       resolveTrack.fetch = () => {
-       return fetchScTrackById(track.id, scApiToken).catch(err => {
-        console.warn(`sc track ${track.id} retrival failed`, err.message);
-        return Promise.resolve();
-       });
+        return fetchScTrackById(track.id, scApiToken).catch(err => {
+          console.warn(`sc track ${track.id} retrival failed`, err.message);
+          return Promise.resolve();
+        });
       };
       return resolveTrack;
     })
     .reduce((prevPromise, nextTrackObj, idx, initList) => {
       const currTrackObj = initList[idx - 1];
-      return prevPromise
-        .then(resp => {
-          if (resp) {
-            finalTracks[currTrackObj.id] = Object.assign({}, currTrackObj, resp.data);
-          }
-          return nextTrackObj.fetch();
-        });
+      return prevPromise.then(resp => {
+        if (resp) {
+          finalTracks[currTrackObj.id] = Object.assign({}, currTrackObj, resp.data);
+        }
+        return nextTrackObj.fetch();
+      });
     }, Promise.resolve())
     .then(() => Object.values(finalTracks));
 }
@@ -226,11 +231,11 @@ class ChartsService {
   getPopularTracksByDeviceId(limit = 10, startDate, deviceId, side) {
     const category = side ? `side-${side}` : null;
     return fetchAnalyticsReport(limit, null, startDate, deviceId, category)
-        .then(extractResponseRows)
-        .then(t => t.filter(filterBySCValidId))
-        .then(t => hydrateSoundcloudTracks(t, soundcloudkey.BATCH_FETCHING_KEY))
-        .then(t => t.filter(filterMaxDuration(MAX_TRACK_DURATION)))
-        .then(sortByTotalPlays);
+      .then(extractResponseRows)
+      .then(t => t.filter(filterBySCValidId))
+      .then(t => hydrateSoundcloudTracks(t, soundcloudkey.BATCH_FETCHING_KEY))
+      .then(t => t.filter(filterMaxDuration(MAX_TRACK_DURATION)))
+      .then(sortByTotalPlays);
   }
 
   sortTrendingTracks(tracks) {
@@ -249,6 +254,10 @@ class ChartsService {
         );
         return tracks;
       });
+  }
+
+  fetchRelatedTracksById(id) {
+    return fetchRelatedTracksById(id);
   }
 }
 module.exports = new ChartsService();
