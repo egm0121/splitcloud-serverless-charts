@@ -12,6 +12,7 @@ const corsHeaders = {
   'Access-Control-Allow-Credentials': true,
 };
 
+const MIN_TRACK_DURATION = 30 * 1e3;
 module.exports.countryChartsPublisher = async () => {
   const topCountryMap = {
     ...constants.TOP_COUNTRIES,
@@ -316,23 +317,36 @@ module.exports.ctaEndpoint = async (event, context, callback) => {
  * [POST] /explore/related
  */
 module.exports.exploreRelated = async (event, context, callback) => {
-  const sourceTrackIds = JSON.parse(event.body) || [];
+  let sourceTrackIds = JSON.parse(event.body) || [];
   if (!sourceTrackIds.length) {
-    return callback(null, {
-      statusCode: 204,
-      headers: {
-        ...corsHeaders,
-      },
-    });
+    let clientCountry =
+      helpers.getQueryParam(event, 'region') || event.headers['CloudFront-Viewer-Country'];
+
+    const hasCountryPlaylist = Object.keys(constants.TOP_COUNTRIES).includes(clientCountry);
+    if (!hasCountryPlaylist) clientCountry = 'GLOBAL';
+    const playlistFilename = `charts/country/weekly_popular_country_${clientCountry}.json`;
+    const playlistPayload = await helpers.readJSONFromS3(playlistFilename);
+    sourceTrackIds = playlistPayload.slice(0, 10).map(t => t.id);
+    console.log(
+      `No sourceTracks, setting them from popular chart for country ${clientCountry}`,
+      sourceTrackIds
+    );
   }
   const allRelatedReq = sourceTrackIds.map(trackId => chartService.fetchRelatedTracksById(trackId));
   const responsesArr = await Promise.all(allRelatedReq);
-  const relatedTrackList = responsesArr.reduce((acc, resp) => {
+  let relatedTrackList = responsesArr.reduce((acc, resp) => {
     const oneTrackRelatedArr = resp.data;
     acc.push(...oneTrackRelatedArr);
     return acc;
   }, []);
+
   helpers.arrayInPlaceShuffle(relatedTrackList);
+  const uniqueSet = new Set();
+  relatedTrackList = relatedTrackList.filter(track => {
+    if (uniqueSet.has(track.id)) return false;
+    uniqueSet.add(track.id);
+    return track.duration > MIN_TRACK_DURATION && !sourceTrackIds.includes(track.id);
+  });
   return callback(null, {
     statusCode: 200,
     headers: {
