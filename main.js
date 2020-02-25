@@ -317,7 +317,8 @@ module.exports.ctaEndpoint = async (event, context, callback) => {
  * [POST] /explore/related
  */
 module.exports.exploreRelated = async (event, context, callback) => {
-  let sourceTrackIds = JSON.parse(event.body) || [];
+  const reqJson = JSON.parse(event.body) || [];
+  let sourceTrackIds = reqJson.slice(0, 10); // fetch at most 10 related playlists
   if (!sourceTrackIds.length) {
     let clientCountry =
       helpers.getQueryParam(event, 'region') || event.headers['CloudFront-Viewer-Country'];
@@ -345,7 +346,7 @@ module.exports.exploreRelated = async (event, context, callback) => {
   relatedTrackList = relatedTrackList.filter(track => {
     if (uniqueSet.has(track.id)) return false;
     uniqueSet.add(track.id);
-    return track.duration > MIN_TRACK_DURATION && !sourceTrackIds.includes(track.id);
+    return track.duration > MIN_TRACK_DURATION && !reqJson.includes(track.id);
   });
   return callback(null, {
     statusCode: 200,
