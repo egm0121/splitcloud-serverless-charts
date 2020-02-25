@@ -318,21 +318,22 @@ module.exports.ctaEndpoint = async (event, context, callback) => {
  */
 module.exports.exploreRelated = async (event, context, callback) => {
   const reqJson = JSON.parse(event.body) || [];
-  let sourceTrackIds = reqJson.slice(0, 10); // fetch at most 10 related playlists
-  if (!sourceTrackIds.length) {
-    let clientCountry =
-      helpers.getQueryParam(event, 'region') || event.headers['CloudFront-Viewer-Country'];
+  let sourceTrackIds = reqJson.slice(0, 8); // fetch at most 10 related playlists
+  let clientCountry =
+    helpers.getQueryParam(event, 'region') || event.headers['CloudFront-Viewer-Country'];
 
-    const hasCountryPlaylist = Object.keys(constants.TOP_COUNTRIES).includes(clientCountry);
-    if (!hasCountryPlaylist) clientCountry = 'GLOBAL';
-    const playlistFilename = `charts/country/weekly_popular_country_${clientCountry}.json`;
-    const playlistPayload = await helpers.readJSONFromS3(playlistFilename);
-    sourceTrackIds = playlistPayload.slice(0, 10).map(t => t.id);
-    console.log(
-      `No sourceTracks, setting them from popular chart for country ${clientCountry}`,
-      sourceTrackIds
-    );
-  }
+  const hasCountryPlaylist = Object.keys(constants.TOP_COUNTRIES).includes(clientCountry);
+  if (!hasCountryPlaylist) clientCountry = 'GLOBAL';
+  const playlistFilename = `charts/country/weekly_trending_country_${clientCountry}.json`;
+  const playlistPayload = await helpers.readJSONFromS3(playlistFilename);
+  const topTrackIds = playlistPayload.slice(0, 10).map(t => t.id);
+  console.log(`fetching trending chart for country ${clientCountry}`);
+  const fillNbr = 10 - sourceTrackIds.length;
+  console.log(
+    `use ${sourceTrackIds.length} sourceTracks and ${fillNbr} charts track to generate lists`
+  );
+  sourceTrackIds = [...sourceTrackIds, ...topTrackIds.slice(0, fillNbr)];
+  console.log('final source tracks', sourceTrackIds);
   const allRelatedReq = sourceTrackIds.map(trackId => chartService.fetchRelatedTracksById(trackId));
   const responsesArr = await Promise.all(allRelatedReq);
   let relatedTrackList = responsesArr.reduce((acc, resp) => {
@@ -343,11 +344,17 @@ module.exports.exploreRelated = async (event, context, callback) => {
 
   helpers.arrayInPlaceShuffle(relatedTrackList);
   const uniqueSet = new Set();
-  relatedTrackList = relatedTrackList.filter(track => {
-    if (uniqueSet.has(track.id)) return false;
-    uniqueSet.add(track.id);
-    return track.duration > MIN_TRACK_DURATION && !reqJson.includes(track.id);
-  });
+  relatedTrackList = relatedTrackList
+    .filter(track => {
+      if (uniqueSet.has(track.id)) return false;
+      uniqueSet.add(track.id);
+      return track.duration > MIN_TRACK_DURATION && !reqJson.includes(track.id);
+    })
+    .map(track => {
+      // eslint-disable-next-line no-param-reassign
+      track.description = '';
+      return track;
+    });
   return callback(null, {
     statusCode: 200,
     headers: {
