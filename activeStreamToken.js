@@ -110,15 +110,28 @@ async function selectActiveStreamToken() {
     return setActiveToken(INITIAL_ACTIVE_TOKEN);
   }
   const isTokenStillValid = await checkTokenIsValid(activeToken);
+  const isTokenPastUsageLimit = tokensUsageObj[activeToken] >= MAX_USAGE_PER_DAY;
   console.log(tokensUsageObj, 'isTokenStillValid', activeToken, isTokenStillValid);
-  if (!isTokenStillValid) {
+  if (!isTokenStillValid || isTokenPastUsageLimit) {
+    console.log('current token failed validation', { isTokenStillValid, isTokenPastUsageLimit });
     const tokensUsageMap = Object.keys(tokensUsageObj)
       .map(key => [key, tokensUsageObj[key]])
-      .sort((a, b) => a[1] - b[1]);
-    const newToken =
-      tokensUsageMap[0][0] !== activeToken ? tokensUsageMap[0][0] : tokensUsageMap[1][0];
-    console.log('setting active token to :', newToken);
-    await setActiveToken(newToken);
+      .filter(tokenInfo => tokenInfo[0] !== activeToken) // filter out current token
+      .sort((a, b) => a[1] - b[1]); // sort by least used first
+
+    let newToken;
+    // eslint-disable-next-line no-restricted-syntax
+    for (const currTokenInfo of tokensUsageMap) {
+      console.log('potential new token, validate it', currTokenInfo[0]);
+      // eslint-disable-next-line no-await-in-loop
+      if (await checkTokenIsValid(currTokenInfo[0])) {
+        console.log('valid new token found', currTokenInfo[0], 'set it as active');
+        [newToken] = currTokenInfo;
+        // eslint-disable-next-line no-await-in-loop
+        await setActiveToken(newToken);
+        break;
+      }
+    }
     return newToken;
   }
   console.log(`active token ${activeToken} is still below hit limit`);

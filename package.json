@@ -6,8 +6,9 @@
   "scripts": {
     "start": "node cli.js",
     "extend-sls-timeout": "export AWS_CLIENT_TIMEOUT=90000",
-    "deploy:dev": "serverless deploy -v --stage dev",
-    "deploy:prod": "serverless deploy -v --stage prod",
+    "validate-config": "node ./scripts/validate-config-format",
+    "deploy:dev": "npm run validate-config && serverless deploy -v --stage dev",
+    "deploy:prod": "npm run validate-config && serverless deploy -v --stage prod",
     "test": "echo \"Error: no test specified\" && exit 1",
     "discovery:dev": "serverless invoke -f discovery -l --stage dev",
     "discovery:prod": "serverless invoke -f discovery -l --stage prod",
