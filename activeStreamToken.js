@@ -132,6 +132,9 @@ async function selectActiveStreamToken() {
         break;
       }
     }
+    if (!newToken) {
+      console.log(JSON.stringify({ logAlarm: 'allTokenExpired', isError: true }));
+    }
     return newToken;
   }
   console.log(`active token ${activeToken} is still below hit limit`);
