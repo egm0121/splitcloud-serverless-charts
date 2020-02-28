@@ -318,7 +318,7 @@ module.exports.ctaEndpoint = async (event, context, callback) => {
  */
 module.exports.exploreRelated = async (event, context, callback) => {
   const reqJson = JSON.parse(event.body) || [];
-  console.log('get related track, total input tracks:', reqJson.length);
+  console.log(JSON.stringify({ logMetric: 'inputTrackNbr', tracksLength: reqJson.length }));
   let sourceTrackIds = reqJson.slice(0, 8); // fetch at most 10 related playlists
   let clientCountry =
     helpers.getQueryParam(event, 'region') || event.headers['CloudFront-Viewer-Country'];
