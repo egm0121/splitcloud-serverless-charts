@@ -293,18 +293,18 @@ module.exports.yearWrappedTopList = async (event, context, callback) => {
 module.exports.ctaEndpoint = async (event, context, callback) => {
   const { deviceId } = event.pathParameters;
   const isAndroidId = deviceId.length === 16;
-  // if (isAndroidId) {
-  //   return callback(null, {
-  //     statusCode: 200,
-  //     headers: {
-  //       ...corsHeaders,
-  //     },
-  //     body: JSON.stringify({
-  //       ctaLabel: '❗️Last Day 🔑 FREE Giveaway!',
-  //       ctaUrl: 'http://www.splitcloud-app.com/giveaway.html',
-  //     }),
-  //   });
-  // }
+  if (isAndroidId) {
+    return callback(null, {
+      statusCode: 200,
+      headers: {
+        ...corsHeaders,
+      },
+      body: JSON.stringify({
+        ctaLabel: '🔑 Remove Ads FREE!',
+        ctaUrl: 'http://www.splitcloud-app.com/giveaway.html',
+      }),
+    });
+  }
   return callback(null, {
     statusCode: 204,
     headers: {
