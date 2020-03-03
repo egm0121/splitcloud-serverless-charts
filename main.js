@@ -338,7 +338,9 @@ module.exports.exploreRelated = async (event, context, callback) => {
   sourceTrackIds = [...sourceTrackIds, ...topTrackIds.slice(0, fillNbr)];
 
   console.log('final source tracks', sourceTrackIds);
-  const allRelatedReq = sourceTrackIds.map(trackId => chartService.fetchRelatedTracksById(trackId));
+  const allRelatedReq = sourceTrackIds.map(trackId =>
+    chartService.fetchRelatedTracksById(trackId).catch(() => Promise.resolve({ data: [] }))
+  );
   const responsesArr = await Promise.all(allRelatedReq);
   let relatedTrackList = responsesArr.reduce((acc, resp) => {
     const oneTrackRelatedArr = resp.data;
