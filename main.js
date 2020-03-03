@@ -300,7 +300,7 @@ module.exports.ctaEndpoint = async (event, context, callback) => {
         ...corsHeaders,
       },
       body: JSON.stringify({
-        ctaLabel: '🔑 Remove Ads FREE!',
+        ctaLabel: '🔔 Free App Giweaway!',
         ctaUrl: 'http://www.splitcloud-app.com/giveaway.html',
       }),
     });
@@ -317,9 +317,11 @@ module.exports.ctaEndpoint = async (event, context, callback) => {
  * [POST] /explore/related
  */
 module.exports.exploreRelated = async (event, context, callback) => {
-  const reqJson = JSON.parse(event.body) || [];
-  console.log(JSON.stringify({ logMetric: 'inputTrackNbr', tracksLength: reqJson.length }));
-  let sourceTrackIds = reqJson.slice(0, 8); // fetch at most 10 related playlists
+  // eslint-disable-next-line prefer-const
+  let allInputTracks = JSON.parse(event.body) || [];
+  console.log(JSON.stringify({ logMetric: 'inputTrackNbr', tracksLength: allInputTracks.length }));
+  helpers.arrayInPlaceShuffle(allInputTracks); // shuffle input tracks
+  let sourceTrackIds = allInputTracks.slice(0, 8); // fetch at most 10 related playlists
   let clientCountry =
     helpers.getQueryParam(event, 'region') || event.headers['CloudFront-Viewer-Country'];
 
@@ -334,6 +336,7 @@ module.exports.exploreRelated = async (event, context, callback) => {
     `use ${sourceTrackIds.length} sourceTracks and ${fillNbr} charts track to generate lists`
   );
   sourceTrackIds = [...sourceTrackIds, ...topTrackIds.slice(0, fillNbr)];
+
   console.log('final source tracks', sourceTrackIds);
   const allRelatedReq = sourceTrackIds.map(trackId => chartService.fetchRelatedTracksById(trackId));
   const responsesArr = await Promise.all(allRelatedReq);
@@ -342,14 +345,13 @@ module.exports.exploreRelated = async (event, context, callback) => {
     acc.push(...oneTrackRelatedArr);
     return acc;
   }, []);
-
   helpers.arrayInPlaceShuffle(relatedTrackList);
   const uniqueSet = new Set();
   relatedTrackList = relatedTrackList
     .filter(track => {
       if (uniqueSet.has(track.id)) return false;
       uniqueSet.add(track.id);
-      return track.duration > MIN_TRACK_DURATION && !reqJson.includes(track.id);
+      return track.duration > MIN_TRACK_DURATION && !allInputTracks.includes(track.id);
     })
     .map(track => {
       // eslint-disable-next-line no-param-reassign
