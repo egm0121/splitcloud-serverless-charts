@@ -293,25 +293,36 @@ module.exports.yearWrappedTopList = async (event, context, callback) => {
 module.exports.ctaEndpoint = async (event, context, callback) => {
   const { deviceId } = event.pathParameters;
   const isAndroidId = deviceId.length === 16;
-  if (isAndroidId) {
-    return callback(null, {
-      statusCode: 200,
-      headers: {
-        ...corsHeaders,
-      },
-      body: JSON.stringify({
-        ctaLabel: '⏰ Giveaway Ending Soon!',
-        ctaUrl: 'http://www.splitcloud-app.com/giveaway.html',
-        ctaButtonColor: '#c9b545',
-      }),
-    });
-  }
   return callback(null, {
-    statusCode: 204,
+    statusCode: 200,
     headers: {
       ...corsHeaders,
     },
+    body: JSON.stringify({
+      ctaLabel: '⚠️ Help stop coronavirus',
+      ctaUrl: 'https://www.google.com/search?q=coronavirus+tips&fbx=dothefive',
+      ctaButtonColor: '#800000',
+    }),
   });
+  // if (isAndroidId) {
+  //   return callback(null, {
+  //     statusCode: 200,
+  //     headers: {
+  //       ...corsHeaders,
+  //     },
+  //     body: JSON.stringify({
+  //       ctaLabel: '⏰ Giveaway - Last Day!',
+  //       ctaUrl: 'http://www.splitcloud-app.com/giveaway.html',
+  //       ctaButtonColor: '#c9b545',
+  //     }),
+  //   });
+  // }
+  // return callback(null, {
+  //   statusCode: 204,
+  //   headers: {
+  //     ...corsHeaders,
+  //   },
+  // });
 };
 
 /**
