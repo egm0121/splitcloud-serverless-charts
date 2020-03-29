@@ -51,10 +51,15 @@ async function setActiveToken(currToken) {
 }
 function getUsageByToken(data) {
   const rows = data.reports[0].data.rows; //eslint-disable-line
-  const tokenWithUsage = rows.reduce((obj, row) => {
-    obj[row.dimensions[0]] = parseInt(row.metrics[0].values[0], 10); //eslint-disable-line
-    return obj;
-  }, {});
+  let tokenWithUsage = {};
+  if (rows && Array.isArray(rows)) {
+    tokenWithUsage = rows.reduce((obj, row) => {
+      obj[row.dimensions[0]] = parseInt(row.metrics[0].values[0], 10); //eslint-disable-line
+      return obj;
+    }, {});
+  } else {
+    console.log('got invalid token hits from GA', rows);
+  }
   const validTokensMap = {};
   availableStreamTokens.forEach(tokenObj => {
     const token = tokenObj.SC_CLIENT_ID;
