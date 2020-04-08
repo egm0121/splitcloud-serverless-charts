@@ -293,8 +293,8 @@ module.exports.yearWrappedTopList = async (event, context, callback) => {
 module.exports.ctaEndpoint = async (event, context, callback) => {
   const { deviceId } = event.pathParameters;
   const isAndroidId = deviceId.length === 16;
-  const ctaUrl = 'https://forms.gle/oAs22jxSUijji7fS7';
-  const ctaLabel = 'Give your feedback!';
+  const ctaUrl = 'http://www.splitcloud-app.com/playlist_feature.html';
+  const ctaLabel = '✨Custom Playlists! 🆕';
   const ctaButtonColor = '#2779bf';
   return callback(null, {
     statusCode: 200,
