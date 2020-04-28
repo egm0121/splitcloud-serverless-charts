@@ -294,7 +294,7 @@ module.exports.ctaEndpoint = async (event, context, callback) => {
   const { deviceId } = event.pathParameters;
   const isAndroidId = deviceId.length === 16;
   const ctaUrl = 'http://www.splitcloud-app.com/follow.html';
-  const ctaLabel = '✨Follow SplitCloud ✨';
+  const ctaLabel = '❤️ Follow our socials';
   const ctaButtonColor = '#2779bf';
   return callback(null, {
     statusCode: 200,
