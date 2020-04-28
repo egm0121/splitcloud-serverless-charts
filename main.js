@@ -302,7 +302,7 @@ module.exports.appConfigApi = async (event, context, callback) => {
       body: JSON.stringify({ STREAM_CLIENT_ID: 'invalidtokeninvalidtoken00000000' }),
     });
   }
-  const jsonCacheFileName = `app/app_config.json`;
+  const jsonCacheFileName = `app/app_config_v2.json`;
   let appConfig;
   try {
     appConfig = await helpers.readJSONFromS3(jsonCacheFileName);

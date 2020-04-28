@@ -6,6 +6,8 @@ const activeDevToken = require('./app_config.json');
 const helpers = require('./helpers');
 
 const INITIAL_ACTIVE_TOKEN = availableStreamTokens[1].SC_CLIENT_ID;
+const ACTIVE_TOKEN_S3_PATH = 'app/app_config.json';
+const ACTIVE_TOKEN_S3_PATH_V2 = 'app/app_config_v2.json';
 const MAX_USAGE_PER_DAY = 13000;
 const TEST_TRACK_URL = 'https://api.soundcloud.com/tracks/397263444/stream';
 
@@ -13,9 +15,9 @@ async function getActiveToken() {
   if (process.env.BUCKET) {
     let jsonData;
     try {
-      jsonData = await helpers.readJSONFromS3('app/app_config.json');
+      jsonData = await helpers.readJSONFromS3(ACTIVE_TOKEN_S3_PATH);
     } catch (err) {
-      console.log('error reading active token - app/app_config.json');
+      console.log('error reading active token -', ACTIVE_TOKEN_S3_PATH);
       return false;
     }
     return jsonData.STREAM_CLIENT_ID;
@@ -45,7 +47,10 @@ async function checkTokenIsValid(token) {
 async function setActiveToken(currToken) {
   const toSerialize = { STREAM_CLIENT_ID: currToken };
   if (process.env.BUCKET) {
-    return helpers.saveFileToS3('app/app_config.json', toSerialize);
+    return Promise.all([
+      helpers.saveFileToS3(ACTIVE_TOKEN_S3_PATH, toSerialize),
+      helpers.saveFileToS3(ACTIVE_TOKEN_S3_PATH_V2, toSerialize),
+    ]);
   }
   return fs.writeFileSync('./app_config.json', JSON.stringify(toSerialize));
 }
