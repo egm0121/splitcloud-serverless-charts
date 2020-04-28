@@ -162,6 +162,15 @@ functions:
       - http:
           path: radio/countrycodes
           method: get
+  app_config_api:
+    handler: handler.appConfigApi
+    environment:
+      BUCKET: ${self:custom.bucket}
+      STAGE: ${self:custom.myStage} 
+    events:
+      - http:
+          path: app/config
+          method: get
   radioListByCountrycode:
     handler: handler.radioListByCountryCode
     environment:

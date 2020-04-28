@@ -5,6 +5,7 @@ const selectActiveStreamToken = require('./activeStreamToken');
 const discoveryApi = require('./discoverApi');
 const helpers = require('./helpers');
 const constants = require('./constants');
+const semverCompare = require('semver-compare');
 
 const saveToS3 = helpers.saveFileToS3;
 const corsHeaders = {
@@ -284,6 +285,37 @@ module.exports.yearWrappedTopList = async (event, context, callback) => {
         ...corsHeaders,
       },
       body: JSON.stringify({ error: error.toString(), trace: error.stack }),
+    });
+  }
+};
+/**
+ *  /app/config
+ */
+module.exports.appConfigApi = async (event, context, callback) => {
+  const clientVersion = helpers.getQueryParam(event, 'v');
+  if (!clientVersion || semverCompare(clientVersion, '5.4.0') === -1) {
+    return callback(null, {
+      statusCode: 200,
+      headers: {
+        ...corsHeaders,
+      },
+      body: JSON.stringify({ STREAM_CLIENT_ID: 'invalidtokeninvalidtoken00000000' }),
+    });
+  }
+  const jsonCacheFileName = `app/app_config.json`;
+  let appConfig;
+  try {
+    appConfig = await helpers.readJSONFromS3(jsonCacheFileName);
+  } catch (err) {
+    console.warn('failed fetching client config');
+  }
+  if (appConfig) {
+    return callback(null, {
+      statusCode: 200,
+      headers: {
+        ...corsHeaders,
+      },
+      body: JSON.stringify(appConfig),
     });
   }
 };
