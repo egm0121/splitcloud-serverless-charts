@@ -339,25 +339,6 @@ module.exports.ctaEndpoint = async (event, context, callback) => {
       ctaButtonColor, // '#800000',
     }),
   });
-  // if (isAndroidId) {
-  //   return callback(null, {
-  //     statusCode: 200,
-  //     headers: {
-  //       ...corsHeaders,
-  //     },
-  //     body: JSON.stringify({
-  //       ctaLabel: '⏰ Giveaway - Last Day!',
-  //       ctaUrl: 'http://www.splitcloud-app.com/giveaway.html',
-  //       ctaButtonColor: '#c9b545',
-  //     }),
-  //   });
-  // }
-  // return callback(null, {
-  //   statusCode: 204,
-  //   headers: {
-  //     ...corsHeaders,
-  //   },
-  // });
 };
 
 /**

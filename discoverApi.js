@@ -93,8 +93,9 @@ module.exports = async function discoverApi(eventData) {
     throw new Error('Event Data did not pass validation');
   }
 
-  const apiResponse = await fetchSoundCloudDiscovery();
-  const apiData = apiResponse.data;
+  const apiResponse = {
+    collection: [],
+  };
   const allSectionsResolved = eventData
     ? await Promise.all(
         eventData.map(item =>
@@ -103,15 +104,12 @@ module.exports = async function discoverApi(eventData) {
       )
     : [];
 
-  apiData.collection = [
-    ...allSectionsResolved,
-    ...apiData.collection.map(normalizeScPlaylists).filter(byValidSections),
-  ];
+  apiResponse.collection = [...allSectionsResolved];
   console.log('allSectionsResolved', allSectionsResolved);
   if (process.env.BUCKET) {
     const s3Path = 'app/api/discovery.json';
     console.log('updated discovery api at path', s3Path);
-    return helpers.saveFileToS3(s3Path, apiData);
+    return helpers.saveFileToS3(s3Path, apiResponse);
   }
-  return apiData;
+  return apiResponse;
 };
