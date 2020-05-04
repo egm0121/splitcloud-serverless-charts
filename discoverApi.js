@@ -1,6 +1,7 @@
 const axios = require('axios');
 const scKey = require('./key/soundcloud_key.json');
 const helpers = require('./helpers');
+const constants = require('./constants');
 
 const SC_API_ENDPOINT = 'http://api.soundcloud.com';
 const SC_GET_DISCOVERY = `http://api-v2.soundcloud.com/mixed-selections?client_id=${
@@ -88,6 +89,47 @@ function normalizeScPlaylists(item) {
   delete normalized.items;
   return normalized;
 }
+async function getPlaylistFromChart(title, chartType, countryCode) {
+  const tracks = await helpers.readJSONFromS3(
+    `charts/country/weekly_${chartType.toLowerCase()}_country_${countryCode}.json`
+  );
+  return {
+    id: null,
+    user: {
+      permalink_url: 'https://soundcloud.com/splitcloud',
+      permalink: 'splitcloud',
+      username: 'SplitCloud',
+      uri: 'https://api.soundcloud.com/users/596081820',
+      id: 596081820,
+      kind: 'user',
+    },
+    artwork: tracks[0].artwork_url,
+    title,
+    tracks: tracks.slice(0, 10).map(t => {
+      t.description = '';
+      return t;
+    }),
+  };
+}
+async function generateSectionsForCountries(countriesList) {
+  const returnArr = [];
+  // eslint-disable-next-line no-restricted-syntax
+  for (const countryCode of Object.keys(countriesList)) {
+    const countryName = countriesList[countryCode];
+    console.log('generate section for ', countryCode, '-', countryName);
+    const topPlaylist = await getPlaylistFromChart(`Top 10`, 'POPULAR', countryCode);
+    const trendingPlaylist = await getPlaylistFromChart(`Trending`, 'TRENDING', countryCode);
+    console.log('got topPlaylist', topPlaylist);
+    returnArr.push({
+      urn: `splitcloud:selections:countrychart:${countryCode}`,
+      id: `splitcloud:selections:countrychart:${countryCode}`,
+      title: `${countryName} Charts`,
+      description: `The most listened in ${countryName}`,
+      playlists: [topPlaylist, trendingPlaylist],
+    });
+  }
+  return returnArr;
+}
 module.exports = async function discoverApi(eventData) {
   if (eventData && !validateEventData(eventData)) {
     throw new Error('Event Data did not pass validation');
@@ -103,8 +145,9 @@ module.exports = async function discoverApi(eventData) {
         )
       )
     : [];
-
-  apiResponse.collection = [...allSectionsResolved];
+  const discoveryCountries = constants.DISCOVERY_COUNTRIES;
+  const regionalTopSections = await generateSectionsForCountries(discoveryCountries);
+  apiResponse.collection = [...allSectionsResolved, ...regionalTopSections];
   console.log('allSectionsResolved', allSectionsResolved);
   if (process.env.BUCKET) {
     const s3Path = 'app/api/discovery.json';

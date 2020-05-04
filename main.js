@@ -1,11 +1,11 @@
 import RadioApi from './radioApi';
 
+const semverCompare = require('semver-compare');
 const chartService = require('./index');
 const selectActiveStreamToken = require('./activeStreamToken');
 const discoveryApi = require('./discoverApi');
 const helpers = require('./helpers');
 const constants = require('./constants');
-const semverCompare = require('semver-compare');
 
 const saveToS3 = helpers.saveFileToS3;
 const corsHeaders = {

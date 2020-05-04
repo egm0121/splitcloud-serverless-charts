@@ -1,4 +1,11 @@
 module.exports = {
+  DISCOVERY_COUNTRIES: {
+    IN: 'India',
+    MX: 'Mexico',
+    DE: 'Germany',
+    US: 'United States',
+    GB: 'United Kingdom',
+  },
   TOP_COUNTRIES: {
     IN: 'India',
     PK: 'Pakistan',
