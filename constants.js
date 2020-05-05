@@ -1,4 +1,11 @@
 module.exports = {
+  EMOJI_FLAGS: {
+    IN: '🇮🇳',
+    MX: '🇲🇽',
+    DE: '🇩🇪',
+    US: '🇺🇸',
+    GB: '🇬🇧',
+  },
   DISCOVERY_COUNTRIES: {
     IN: 'India',
     MX: 'Mexico',

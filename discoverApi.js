@@ -119,11 +119,12 @@ async function generateSectionsForCountries(countriesList) {
     console.log('generate section for ', countryCode, '-', countryName);
     const topPlaylist = await getPlaylistFromChart(`Top 10`, 'POPULAR', countryCode);
     const trendingPlaylist = await getPlaylistFromChart(`Trending`, 'TRENDING', countryCode);
+    const countryFlag = constants.EMOJI_FLAGS[countryCode];
     console.log('got topPlaylist', topPlaylist);
     returnArr.push({
       urn: `splitcloud:selections:countrychart:${countryCode}`,
       id: `splitcloud:selections:countrychart:${countryCode}`,
-      title: `${countryName} Charts`,
+      title: `${countryFlag} ${countryName} Charts`,
       description: `The most listened in ${countryName}`,
       playlists: [topPlaylist, trendingPlaylist],
     });
