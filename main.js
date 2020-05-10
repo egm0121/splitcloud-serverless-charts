@@ -6,6 +6,7 @@ const selectActiveStreamToken = require('./activeStreamToken');
 const discoveryApi = require('./discoverApi');
 const helpers = require('./helpers');
 const constants = require('./constants');
+const oldDevicesIdList = require('./key/old_device_ids.json');
 
 const saveToS3 = helpers.saveFileToS3;
 const corsHeaders = {
@@ -324,19 +325,25 @@ module.exports.appConfigApi = async (event, context, callback) => {
  */
 module.exports.ctaEndpoint = async (event, context, callback) => {
   const { deviceId } = event.pathParameters;
-  const isAndroidId = deviceId.length === 16;
-  const ctaUrl = 'http://www.splitcloud-app.com/follow.html';
-  const ctaLabel = '❤️ Follow our socials';
-  const ctaButtonColor = '#2779bf';
+  //  const isAndroidId = deviceId.length === 16;
+  let ctaUrl = 'http://www.splitcloud-app.com/follow.html';
+  let ctaLabel = '❤️ Follow our socials';
+  let ctaButtonColor = '#2779bf';
+
+  if (deviceId in oldDevicesIdList) {
+    ctaUrl = `http://www.splitcloud-app.com/?ref=upgrade&deviceId=${deviceId}`;
+    ctaLabel = 'Update your App!';
+    ctaButtonColor = '#FF7F50';
+  }
   return callback(null, {
     statusCode: 200,
     headers: {
       ...corsHeaders,
     },
     body: JSON.stringify({
-      ctaLabel, // '⚠️ Help stop coronavirus',
-      ctaUrl, // 'https://www.google.com/search?q=coronavirus+tips&fbx=dothefive',
-      ctaButtonColor, // '#800000',
+      ctaLabel,
+      ctaUrl,
+      ctaButtonColor,
     }),
   });
 };
