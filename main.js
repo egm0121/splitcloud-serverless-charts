@@ -328,7 +328,7 @@ module.exports.ctaEndpoint = async (event, context, callback) => {
   //  const isAndroidId = deviceId.length === 16;
   let ctaUrl = 'http://www.splitcloud-app.com/follow.html';
   let ctaLabel = '❤️ Follow our socials';
-  let ctaButtonColor = '#2779bf';
+  let ctaButtonColor = '#3293e7';
 
   if (deviceId in oldDevicesIdList) {
     ctaUrl = `http://www.splitcloud-app.com/?ref=upgrade&deviceId=${deviceId}`;
