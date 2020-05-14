@@ -6,14 +6,14 @@ const selectActiveStreamToken = require('./activeStreamToken');
 const discoveryApi = require('./discoverApi');
 const helpers = require('./helpers');
 const constants = require('./constants');
-const oldDevicesIdList = require('./key/old_device_ids.json');
 
 const saveToS3 = helpers.saveFileToS3;
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Credentials': true,
 };
-
+const LATEST_VERSION = '5.6';
+const MIN_SUPPORTED_VERSION = '5.4.0';
 const MIN_TRACK_DURATION = 30 * 1e3;
 module.exports.countryChartsPublisher = async () => {
   const topCountryMap = {
@@ -294,7 +294,7 @@ module.exports.yearWrappedTopList = async (event, context, callback) => {
  */
 module.exports.appConfigApi = async (event, context, callback) => {
   const clientVersion = helpers.getQueryParam(event, 'v');
-  if (!clientVersion || semverCompare(clientVersion, '5.4.0') === -1) {
+  if (!clientVersion || semverCompare(clientVersion, MIN_SUPPORTED_VERSION) === -1) {
     return callback(null, {
       statusCode: 200,
       headers: {
@@ -325,14 +325,15 @@ module.exports.appConfigApi = async (event, context, callback) => {
  */
 module.exports.ctaEndpoint = async (event, context, callback) => {
   const { deviceId } = event.pathParameters;
+  const clientVersion = helpers.getQueryParam(event, 'appVersion');
   //  const isAndroidId = deviceId.length === 16;
   let ctaUrl = 'http://www.splitcloud-app.com/follow.html';
   let ctaLabel = '📢 Follow our socials ♥️';
   let ctaButtonColor = '#3293e7';
 
-  if (deviceId in oldDevicesIdList) {
+  if (!clientVersion || semverCompare(clientVersion, LATEST_VERSION) === -1) {
     ctaUrl = `http://www.splitcloud-app.com/?ref=upgrade&deviceId=${deviceId}`;
-    ctaLabel = 'Update your App!';
+    ctaLabel = 'Update SplitCloud Now!';
     ctaButtonColor = '#FF7F50';
   }
   return callback(null, {
