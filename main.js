@@ -328,7 +328,7 @@ module.exports.ctaEndpoint = async (event, context, callback) => {
   const clientVersion = helpers.getQueryParam(event, 'appVersion');
   //  const isAndroidId = deviceId.length === 16;
   let ctaUrl = 'http://www.splitcloud-app.com/follow.html';
-  let ctaLabel = 'Give us a like ♥️';
+  let ctaLabel = 'Give SplitCloud a like 💛';
   let ctaButtonColor = '#da3c3c'; // '#ff7600';
 
   if (!clientVersion || semverCompare(clientVersion, LATEST_VERSION) === -1) {
