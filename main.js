@@ -338,11 +338,11 @@ module.exports.ctaEndpoint = async (event, context, callback) => {
     ctaLabel = 'Update SplitCloud Now!';
     ctaButtonColor = '#FF7F50';
   }
-
-  if (clientCountry === 'IN' && isAndroidId) {
-    ctaUrl = `http://www.splitcloud-app.com/promo_IN_40.html?ref=promo_in_40&deviceId=${deviceId}`;
-    ctaLabel = 'Remove all Ads! ✨';
-    ctaButtonColor = '#da3c3c';
+  if (isAndroidId && clientCountry in constants.COUNTRY_PROMOTION) {
+    const promo = constants.COUNTRY_PROMOTION[clientCountry];
+    ctaUrl = `${promo.ctaUrl}?ref=promo_in_40&deviceId=${deviceId}`;
+    ctaLabel = promo.ctaLabel || 'Remove all Ads! ✨';
+    ctaButtonColor = promo.ctaButtonColor || '#da3c3c';
   }
   return callback(null, {
     statusCode: 200,

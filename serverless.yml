@@ -14,6 +14,8 @@
 service: splitcloud-serverless-charts-service # NOTE: update this with your service name
 
 custom:
+  serverless-offline:
+    httpPort: 7777
   domains:
     prod: rest.splitcloud-app.com
     dev: dev-rest.splitcloud-app.com
@@ -231,6 +233,7 @@ functions:
       - schedule: ${self:custom.${self:custom.myStage}.schedule_discovery}
 plugins:
   - serverless-domain-manager
+  - serverless-offline
 #    The following are a few example events you can configure
 #    NOTE: Please make sure to change your handler code to work with those events
 #    Check the event documentation for details

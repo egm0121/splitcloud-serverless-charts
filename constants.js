@@ -13,6 +13,20 @@ module.exports = {
     US: 'United States',
     GB: 'United Kingdom',
   },
+  COUNTRY_PROMOTION: {
+    IN: {
+      ctaUrl: 'http://www.splitcloud-app.com/promo_IN_40.html',
+    },
+    MX: {
+      ctaUrl: 'http://www.splitcloud-app.com/promo_MX.html',
+    },
+    RO: {
+      ctaUrl: 'http://www.splitcloud-app.com/promo_RO.html',
+    },
+    BR: {
+      ctaUrl: 'http://www.splitcloud-app.com/promo_BR.html',
+    },
+  },
   TOP_COUNTRIES: {
     IN: 'India',
     PK: 'Pakistan',
