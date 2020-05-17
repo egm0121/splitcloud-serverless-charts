@@ -326,7 +326,9 @@ module.exports.appConfigApi = async (event, context, callback) => {
 module.exports.ctaEndpoint = async (event, context, callback) => {
   const { deviceId } = event.pathParameters;
   const clientVersion = helpers.getQueryParam(event, 'appVersion');
-  //  const isAndroidId = deviceId.length === 16;
+  const clientCountry =
+    helpers.getQueryParam(event, 'region') || event.headers['CloudFront-Viewer-Country'];
+  const isAndroidId = deviceId.length === 16;
   let ctaUrl = 'http://www.splitcloud-app.com/follow.html';
   let ctaLabel = 'Give SplitCloud a like 💛';
   let ctaButtonColor = '#da3c3c'; // '#ff7600';
@@ -335,6 +337,12 @@ module.exports.ctaEndpoint = async (event, context, callback) => {
     ctaUrl = `http://www.splitcloud-app.com/?ref=upgrade&deviceId=${deviceId}`;
     ctaLabel = 'Update SplitCloud Now!';
     ctaButtonColor = '#FF7F50';
+  }
+
+  if (clientCountry === 'IN' && isAndroidId) {
+    ctaUrl = `http://www.splitcloud-app.com/promo_IN_40.html?ref=promo_in_40&deviceId=${deviceId}`;
+    ctaLabel = 'Remove all Ads! ✨';
+    ctaButtonColor = '#da3c3c';
   }
   return callback(null, {
     statusCode: 200,
