@@ -329,9 +329,14 @@ module.exports.ctaEndpoint = async (event, context, callback) => {
   const clientCountry =
     helpers.getQueryParam(event, 'region') || event.headers['CloudFront-Viewer-Country'];
   const isAndroidId = deviceId.length === 16;
-  let ctaUrl = 'http://www.splitcloud-app.com/follow.html';
+  const selectedVariant = helpers.selectVariantFromDeviceId(deviceId) ? 'A' : 'B';
+  let ctaButtonColor = selectedVariant === 'A' ? '#da3c3c' : '#ff7600';
+  let ctaUrl = `http://www.splitcloud-app.com/follow.html?ctaButtonColor=${ctaButtonColor}`;
   let ctaLabel = 'Give SplitCloud a like 💛';
-  let ctaButtonColor = '#da3c3c'; // '#ff7600';
+
+  console.log(
+    JSON.stringify({ method: 'ctaEndpoint', metric: `variant_${ctaButtonColor}`, value: 1 })
+  );
 
   if (!clientVersion || semverCompare(clientVersion, LATEST_VERSION) === -1) {
     ctaUrl = `http://www.splitcloud-app.com/?ref=upgrade&deviceId=${deviceId}`;

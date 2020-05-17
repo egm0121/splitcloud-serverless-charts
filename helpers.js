@@ -56,6 +56,11 @@ function arrayInPlaceShuffle(array) {
     [array[i], array[rand]] = [array[rand], array[i]];
   }
 }
+function selectVariantFromDeviceId(deviceId) {
+  const middDigit = parseInt(deviceId[Math.floor(deviceId.length / 2)], 16);
+  const lastDigit = parseInt(deviceId[deviceId.length - 1], 16);
+  return middDigit + lastDigit < 16;
+}
 module.exports = {
   saveFileToS3,
   readFileFromS3,
@@ -64,4 +69,5 @@ module.exports = {
   isDEV,
   sqs,
   arrayInPlaceShuffle,
+  selectVariantFromDeviceId,
 };
