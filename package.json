@@ -41,6 +41,7 @@
     "husky": "^1.2.1",
     "prettier": "^1.15.3",
     "serverless-domain-manager": "^3.3.0",
-    "serverless-offline": "^6.1.5"
+    "serverless-offline": "^6.1.5",
+    "serverless-prune-plugin": "^1.4.3"
   }
 }
