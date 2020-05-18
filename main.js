@@ -331,7 +331,9 @@ module.exports.ctaEndpoint = async (event, context, callback) => {
   const isAndroidId = deviceId.length === 16;
   const selectedVariant = helpers.selectVariantFromDeviceId(deviceId) ? 'A' : 'B';
   let ctaButtonColor = selectedVariant === 'A' ? '#da3c3c' : '#ff7600';
-  let ctaUrl = `http://www.splitcloud-app.com/follow.html?ctaButtonColor=${ctaButtonColor}`;
+  let ctaUrl = `http://www.splitcloud-app.com/follow.html?ctaButtonColor=${ctaButtonColor.substr(
+    1
+  )}`;
   let ctaLabel = 'Give SplitCloud a like 💛';
 
   console.log(
