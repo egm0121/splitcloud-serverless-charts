@@ -337,7 +337,7 @@ module.exports.ctaEndpoint = async (event, context, callback) => {
   let ctaLabel = 'Give SplitCloud a like 💛';
 
   console.log(
-    JSON.stringify({ method: 'ctaEndpoint', metric: `variant_${ctaButtonColor}`, value: 1 })
+    JSON.stringify({ method: 'ctaEndpoint', metric: `variant_${selectedVariant}`, value: 1 })
   );
 
   if (!clientVersion || semverCompare(clientVersion, LATEST_VERSION) === -1) {
