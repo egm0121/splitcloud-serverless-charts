@@ -347,8 +347,8 @@ module.exports.ctaEndpoint = async (event, context, callback) => {
   }
   if (isAndroidId && clientCountry in constants.COUNTRY_PROMOTION) {
     const promo = constants.COUNTRY_PROMOTION[clientCountry];
-    ctaUrl = `${promo.ctaUrl}?ref=promo_in_40&deviceId=${deviceId}`;
-    ctaLabel = promo.ctaLabel || 'Remove all Ads! ✨';
+    ctaUrl = `${promo.ctaUrl}?country=${clientCountry}&deviceId=${deviceId}`;
+    ctaLabel = promo.ctaLabel || '✨Remove Ads - 50% OFF ✨';
     ctaButtonColor = promo.ctaButtonColor || '#da3c3c';
   }
   return callback(null, {
