@@ -14,18 +14,6 @@ module.exports = {
     GB: 'United Kingdom',
   },
   COUNTRY_PROMOTION: {
-    MX: {
-      ctaUrl: 'http://www.splitcloud-app.com/promo_MX.html',
-    },
-    RO: {
-      ctaUrl: 'http://www.splitcloud-app.com/promo_RO.html',
-    },
-    US: {
-      ctaUrl: 'http://www.splitcloud-app.com/promo_RO.html',
-    },
-    FR: {
-      ctaUrl: 'http://www.splitcloud-app.com/promo_RO.html',
-    },
     BR: {
       ctaUrl: 'http://www.splitcloud-app.com/promo_BR.html',
     },
