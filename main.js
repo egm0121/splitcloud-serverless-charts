@@ -320,40 +320,66 @@ module.exports.appConfigApi = async (event, context, callback) => {
     });
   }
 };
+const ctaHandleEndOfLife = (event, context, callback) => {
+  const clientVersion = helpers.getQueryParam(event, 'appVersion');
+  const { deviceId } = event.pathParameters;
+  if (!clientVersion || semverCompare(clientVersion, LATEST_VERSION) === -1) {
+    callback(null, {
+      statusCode: 200,
+      headers: {
+        ...corsHeaders,
+      },
+      body: JSON.stringify({
+        ctaLabel: `http://www.splitcloud-app.com/?ref=upgrade&deviceId=${deviceId}`,
+        ctaUrl: 'Update SplitCloud Now!',
+        ctaButtonColor: '#FF7F50',
+      }),
+    });
+    return true;
+  }
+  return false;
+};
+
+const ctaHandleCountryPromotion = (event, context, callback) => {
+  const { deviceId } = event.pathParameters;
+  const isAndroidId = deviceId.length === 16;
+  const clientCountry =
+    helpers.getQueryParam(event, 'region') || event.headers['CloudFront-Viewer-Country'];
+  if (isAndroidId && clientCountry in constants.COUNTRY_PROMOTION) {
+    const promo = constants.COUNTRY_PROMOTION[clientCountry];
+    callback(null, {
+      statusCode: 200,
+      headers: {
+        ...corsHeaders,
+      },
+      body: JSON.stringify({
+        ctaLabel: promo.ctaLabel || '✨Remove Ads - 50% OFF ✨',
+        ctaUrl: `${promo.ctaUrl}?country=${clientCountry}&deviceId=${deviceId}`,
+        ctaButtonColor: promo.ctaButtonColor || '#da3c3c',
+      }),
+    });
+    return true;
+  }
+  return false;
+};
 /**
  *  /cta/{deviceId}/{side}
  */
 module.exports.ctaEndpoint = async (event, context, callback) => {
   const { deviceId } = event.pathParameters;
-  const clientVersion = helpers.getQueryParam(event, 'appVersion');
-  const clientCountry =
-    helpers.getQueryParam(event, 'region') || event.headers['CloudFront-Viewer-Country'];
-  const isAndroidId = deviceId.length === 16;
-  let selectedVariant = helpers.selectVariantFromDeviceId(deviceId) ? 'A' : 'B';
-  let ctaButtonColor = selectedVariant === 'A' ? '#2196F3' : '#da3c3c'; // variant
-  let ctaUrl = `http://www.splitcloud-app.com/follow.html?ctaButtonColor=${ctaButtonColor.substr(
-    1
-  )}`;
-  let ctaLabel = 'Give SplitCloud a like 💛';
-  if (!clientVersion || semverCompare(clientVersion, LATEST_VERSION) === -1) {
-    ctaUrl = `http://www.splitcloud-app.com/?ref=upgrade&deviceId=${deviceId}`;
-    ctaLabel = 'Update SplitCloud Now!';
-    ctaButtonColor = '#FF7F50';
-    selectedVariant = null;
-  }
-  if (isAndroidId && clientCountry in constants.COUNTRY_PROMOTION) {
-    const promo = constants.COUNTRY_PROMOTION[clientCountry];
-    ctaUrl = `${promo.ctaUrl}?country=${clientCountry}&deviceId=${deviceId}`;
-    ctaLabel = promo.ctaLabel || '✨Remove Ads - 50% OFF ✨';
-    ctaButtonColor = promo.ctaButtonColor || '#da3c3c';
-    selectedVariant = null;
-  }
-  if (selectedVariant) {
-    // only log json metric when selectedVariant for testing is used in CTA
-    console.log(
-      JSON.stringify({ method: 'ctaEndpoint', metric: `variant_${selectedVariant}`, value: 1 })
-    );
-  }
+  const ctaBgBlue = '#2196F3';
+  const ctaLabelA = "Let's be friends 😀";
+  const ctaLabelB = 'Follow SplitCloud ✨';
+
+  const selectedVariant = helpers.selectVariantFromDeviceId(deviceId) ? 'A' : 'B';
+  const ctaButtonColor = ctaBgBlue;
+  const ctaUrl = `http://www.splitcloud-app.com/follow.html?variant=${selectedVariant}`;
+  const ctaLabel = selectedVariant === 'A' ? ctaLabelA : ctaLabelB;
+  if (ctaHandleEndOfLife(event, context, callback)) return true;
+  if (ctaHandleCountryPromotion(event, context, callback)) return true;
+  console.log(
+    JSON.stringify({ method: 'ctaEndpoint', metric: `variant_${selectedVariant}`, value: 1 })
+  );
   return callback(null, {
     statusCode: 200,
     headers: {
