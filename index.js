@@ -7,6 +7,7 @@ const soundcloudkey = require('./key/soundcloud_key.json');
 const GAReporting = require('./reportingClient');
 
 const SC_API_ENDPOINT = 'api.soundcloud.com';
+const SC_V2_API_ENDPOINT = 'api-v2.soundcloud.com';
 const MAX_TRACK_DURATION = 25 * 60 * 1000; // 20min
 async function fetchAnalyticsReport(
   limit,
@@ -111,6 +112,12 @@ async function fetchScTrackById(trackId, scApiToken = soundcloudkey.SC_CLIENT_ID
 async function fetchRelatedTracksById(trackId, scApiToken = soundcloudkey.SC_CLIENT_ID) {
   const relatedUrl = `http://${SC_API_ENDPOINT}/tracks/${trackId}/related?client_id=${scApiToken}`;
   return axios({ method: 'GET', url: relatedUrl, timeout: 1500 });
+}
+
+async function fetchSoundCloudTrendingChart(scApiToken = soundcloudkey.SC_CLIENT_ID) {
+  const relatedUrl = `https://${SC_V2_API_ENDPOINT}/charts?limit=50&offset=0&streamable=true&kind=trending&genre=soundcloud:genres:all-music&=${scApiToken}`;
+  const chartData = axios({ method: 'GET', url: relatedUrl, timeout: 1500 });
+  return chartData.collection;
 }
 
 async function hydrateSoundcloudTracks(trackList, scApiToken) {
@@ -258,6 +265,10 @@ class ChartsService {
 
   fetchRelatedTracksById(id) {
     return fetchRelatedTracksById(id);
+  }
+
+  getScTrendingChart() {
+    return fetchSoundCloudTrendingChart();
   }
 }
 module.exports = new ChartsService();

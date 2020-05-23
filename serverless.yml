@@ -21,12 +21,14 @@ custom:
     dev: dev-rest.splitcloud-app.com
   myStage: ${opt:stage, self:provider.stage}
   prod: 
+    sc_charts_cache: rate(1 day)
     schedule_token: rate(5 minutes)
     schedule_discovery: rate(1 day)
     schedule_country_charts: cron(0 19 ? * MON *)
     country_charts_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/splitcloud_charts_by_region"
     country_charts_arn: "arn:aws:sqs:us-east-1:348868901434:splitcloud_charts_by_region"
   dev: 
+    sc_charts_cache: 
     schedule: 
     schedule_token:
     schedule_discovery:
@@ -232,6 +234,13 @@ functions:
       STAGE: ${self:custom.myStage} 
     events:
       - schedule: ${self:custom.${self:custom.myStage}.schedule_discovery}
+  chartsCache:
+    handler: handler.scChartsCache
+    environment:
+      BUCKET: ${self:custom.bucket}
+      STAGE: ${self:custom.myStage} 
+    events:
+      - schedule: ${self:custom.${self:custom.myStage}.sc_charts_cache}
 plugins:
   - serverless-domain-manager
   - serverless-offline
