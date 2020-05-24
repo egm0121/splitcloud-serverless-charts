@@ -378,7 +378,7 @@ module.exports.ctaEndpoint = async (event, context, callback) => {
 
   const selectedVariant = helpers.selectVariantFromDeviceId(deviceId) ? 'A' : 'B';
   const ctaButtonColor = ctaBgBlue;
-  const ctaUrl = `http://www.splitcloud-app.com/follow.html?variant=${selectedVariant}`;
+  const ctaUrl = `http://www.splitcloud-app.com/follow.html?variant=${selectedVariant}&v=2`;
   const ctaLabel = selectedVariant === 'A' ? ctaLabelA : ctaLabelB;
   if (ctaHandleEndOfLife(event, context, callback)) return true;
   if (ctaHandleCountryPromotion(event, context, callback)) return true;
