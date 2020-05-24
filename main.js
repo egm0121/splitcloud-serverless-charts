@@ -100,8 +100,8 @@ module.exports.countryChartsSubscribe = async event => {
 };
 
 module.exports.scChartsCache = async () => {
-  const scTrendingChart = await chartService.getScTrendingChart();
-  await saveToS3(`charts/soundcloud/weekly_trending.json`, scTrendingChart);
+  const chartData = await chartService.getScTrendingChart();
+  await saveToS3(`charts/soundcloud/weekly_trending.json`, chartData);
   return true;
 };
 module.exports.selectActiveToken = async () => {
