@@ -102,6 +102,7 @@ module.exports.countryChartsSubscribe = async event => {
 module.exports.scChartsCache = async () => {
   const scTrendingChart = await chartService.getScTrendingChart();
   await saveToS3(`charts/soundcloud/weekly_trending.json`, scTrendingChart);
+  return true;
 };
 module.exports.selectActiveToken = async () => {
   const newToken = await selectActiveStreamToken();
