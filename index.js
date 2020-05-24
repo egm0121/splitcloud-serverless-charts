@@ -116,7 +116,7 @@ async function fetchRelatedTracksById(trackId, scApiToken = soundcloudkey.SC_CLI
 
 async function fetchSoundCloudTrendingChart(scApiToken = soundcloudkey.SC_CLIENT_ID) {
   const relatedUrl = `https://${SC_V2_API_ENDPOINT}/charts?limit=50&offset=0&streamable=true&kind=trending&genre=soundcloud:genres:all-music&client_id=${scApiToken}`;
-  const chartData = axios({ method: 'GET', url: relatedUrl, timeout: 1500 });
+  const chartData = await axios({ method: 'GET', url: relatedUrl, timeout: 1500 });
   return chartData.data.collection;
 }
 
