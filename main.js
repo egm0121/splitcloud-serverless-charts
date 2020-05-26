@@ -397,7 +397,13 @@ module.exports.ctaEndpoint = async (event, context, callback) => {
     }),
   });
 };
-
+const getTrackTags = t => {
+  let separator = (t.tag_list.indexOf('"') > -1 && '"') || ' ';
+  separator = (t.tag_list.indexOf(',') > -1 && ',') || separator;
+  const rawTags = t.tag_list.split(separator).filter(tag => tag.length);
+  rawTags.push(t.genre);
+  return rawTags.map(tag => tag && tag.trim().toLowerCase());
+};
 /**
  * [POST] /explore/related
  */
@@ -421,7 +427,6 @@ module.exports.exploreRelated = async (event, context, callback) => {
     `use ${sourceTrackIds.length} sourceTracks and ${fillNbr} charts track to generate lists`
   );
   sourceTrackIds = [...sourceTrackIds, ...topTrackIds.slice(0, fillNbr)];
-
   console.log('final source tracks', sourceTrackIds);
   const allRelatedReq = sourceTrackIds.map(trackId =>
     chartService.fetchRelatedTracksById(trackId).catch(() => Promise.resolve({ data: [] }))
@@ -432,12 +437,14 @@ module.exports.exploreRelated = async (event, context, callback) => {
     acc.push(...oneTrackRelatedArr);
     return acc;
   }, []);
-  helpers.arrayInPlaceShuffle(relatedTrackList);
+
   const uniqueSet = new Set();
+  const relatedTagsSet = new Set();
   relatedTrackList = relatedTrackList
     .filter(track => {
       if (uniqueSet.has(track.id)) return false;
       uniqueSet.add(track.id);
+      getTrackTags(track).forEach(tag => relatedTagsSet.add(tag));
       return track.duration > MIN_TRACK_DURATION && !allInputTracks.includes(track.id);
     })
     .map(track => {
@@ -445,6 +452,21 @@ module.exports.exploreRelated = async (event, context, callback) => {
       track.description = '';
       return track;
     });
+  const recentSCTracks = await helpers.readJSONFromS3(`charts/soundcloud/weekly_trending.json`);
+  const recentRelated = recentSCTracks.filter(t => {
+    const hasTagMatch = getTrackTags(t).find(scTag => relatedTagsSet.has(scTag));
+    if (hasTagMatch) {
+      console.log(`adding track: ${t.title} because matched tag:`, hasTagMatch);
+      return true;
+    }
+    return false;
+  });
+  relatedTrackList.push(...recentRelated); // add sc recents tracks relevant for feed
+  // order all by recency
+  relatedTrackList.sort((ta, tb) => {
+    return new Date(ta.created_at) - new Date(tb.created_at);
+  });
+
   return callback(null, {
     statusCode: 200,
     headers: {

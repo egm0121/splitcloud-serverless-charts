@@ -174,6 +174,7 @@ function calulateBaseScore(item) {
   return Math.floor(item.splitcloud_unique_plays * 2 + Math.log(item.playback_count));
 }
 function calculateTrendingScore(item) {
+  // double check this
   const daysDistance = Math.min(moment().diff(moment(new Date(item.created_at)), 'days'), 1535);
   const decayFactor = decayTimeFunc(daysDistance / 365);
   return Object.assign({}, item, {
