@@ -398,11 +398,12 @@ module.exports.ctaEndpoint = async (event, context, callback) => {
   });
 };
 const getTrackTags = t => {
+  if (!t.tag_list) return [];
   let separator = (t.tag_list.indexOf('"') > -1 && '"') || ' ';
   separator = (t.tag_list.indexOf(',') > -1 && ',') || separator;
   const rawTags = t.tag_list.split(separator).filter(tag => tag.length);
   rawTags.push(t.genre);
-  return rawTags.map(tag => tag && tag.trim().toLowerCase());
+  return rawTags.map(tag => tag && tag.trim().toLowerCase()).filter(tag => tag && tag.length > 1);
 };
 /**
  * [POST] /explore/related
@@ -455,7 +456,8 @@ module.exports.exploreRelated = async (event, context, callback) => {
   const recentSCTracks = await helpers.readJSONFromS3(`charts/soundcloud/weekly_trending.json`);
   const recentRelated = recentSCTracks.filter(t => {
     const hasTagMatch = getTrackTags(t).find(scTag => relatedTagsSet.has(scTag));
-    if (hasTagMatch) {
+    // if tags are matching and track is unique, add it to results
+    if (hasTagMatch && !uniqueSet.has(t.id)) {
       console.log(`adding track: ${t.title} because matched tag:`, hasTagMatch);
       return true;
     }
@@ -464,7 +466,7 @@ module.exports.exploreRelated = async (event, context, callback) => {
   relatedTrackList.push(...recentRelated); // add sc recents tracks relevant for feed
   // order all by recency
   relatedTrackList.sort((ta, tb) => {
-    return new Date(ta.created_at) - new Date(tb.created_at);
+    return new Date(tb.created_at) - new Date(ta.created_at);
   });
 
   return callback(null, {
