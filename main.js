@@ -403,7 +403,9 @@ const getTrackTags = t => {
   separator = (t.tag_list.indexOf(',') > -1 && ',') || separator;
   const rawTags = t.tag_list.split(separator).filter(tag => tag.length);
   rawTags.push(t.genre);
-  return rawTags.map(tag => tag && tag.trim().toLowerCase()).filter(tag => tag && tag.length > 1);
+  return rawTags
+    .map(tag => tag && tag.trim().toLowerCase())
+    .filter(tag => tag && tag.length > 1 && !(tag in constants.TAGS_BLACKLIST));
 };
 /**
  * [POST] /explore/related
