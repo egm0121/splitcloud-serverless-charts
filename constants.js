@@ -2,6 +2,7 @@ module.exports = {
   TAGS_BLACKLIST: {
     '2020': true,
     scfirst: true,
+    getmoreplays: true,
   },
   EMOJI_FLAGS: {
     IN: '🇮🇳',

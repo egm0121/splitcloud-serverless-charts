@@ -407,6 +407,16 @@ const getTrackTags = t => {
     .map(tag => tag && tag.trim().toLowerCase())
     .filter(tag => tag && tag.length > 1 && !(tag in constants.TAGS_BLACKLIST));
 };
+const roundToWeek = d => {
+  d.setHours(0, 0, 0);
+  d.setDate(d.getDate() - (d.getDay() - 1));
+  return d;
+};
+const sortByDateDay = (ta, tb) => {
+  const dateB = roundToWeek(new Date(tb.created_at));
+  const dateA = roundToWeek(new Date(ta.created_at));
+  return dateB - dateA;
+};
 /**
  * [POST] /explore/related
  */
@@ -467,9 +477,7 @@ module.exports.exploreRelated = async (event, context, callback) => {
   });
   relatedTrackList.push(...recentRelated); // add sc recents tracks relevant for feed
   // order all by recency
-  relatedTrackList.sort((ta, tb) => {
-    return new Date(tb.created_at) - new Date(ta.created_at);
-  });
+  relatedTrackList.sort(sortByDateDay);
 
   return callback(null, {
     statusCode: 200,
