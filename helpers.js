@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const AWS = require('aws-sdk');
 
 AWS.config.update({ region: 'us-east-1' });
@@ -61,6 +62,13 @@ function selectVariantFromDeviceId(deviceId) {
   const lastDigit = parseInt(deviceId[deviceId.length - 1], 16);
   return middDigit + lastDigit < 16;
 }
+function selectVariantFromHash(str, variants = 2) {
+  const hash = crypto
+    .createHash('md5')
+    .update(str)
+    .digest('hex');
+  return parseInt(hash.substr(0, 8), 16) % variants;
+}
 module.exports = {
   saveFileToS3,
   readFileFromS3,
@@ -70,4 +78,5 @@ module.exports = {
   sqs,
   arrayInPlaceShuffle,
   selectVariantFromDeviceId,
+  selectVariantFromHash,
 };

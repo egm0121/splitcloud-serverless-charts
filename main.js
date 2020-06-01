@@ -376,7 +376,7 @@ module.exports.ctaEndpoint = async (event, context, callback) => {
   const ctaLabelA = "Let's be friends 😀";
   const ctaLabelB = 'Follow SplitCloud ✨';
 
-  const selectedVariant = helpers.selectVariantFromDeviceId(deviceId) ? 'A' : 'B';
+  const selectedVariant = helpers.selectVariantFromHash(deviceId) ? 'A' : 'B';
   const ctaButtonColor = ctaBgBlue;
   const ctaUrl = `http://www.splitcloud-app.com/follow.html?variant=${selectedVariant}&v=2`;
   const ctaLabel = selectedVariant === 'A' ? ctaLabelA : ctaLabelB;
