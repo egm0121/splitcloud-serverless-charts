@@ -12,9 +12,31 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Credentials': true,
 };
-const LATEST_VERSION = '5.6';
-const MIN_SUPPORTED_VERSION = '5.4.0';
+const LATEST_VERSION = '5.7';
+const MIN_SUPPORTED_VERSION = '5.6'; // specify M.m without patch to allow matching client versions without patch
 const MIN_TRACK_DURATION = 30 * 1e3;
+
+const isUnsupportedVersion = clientVersion => {
+  return !clientVersion || semverCompare(clientVersion, MIN_SUPPORTED_VERSION) === -1;
+};
+
+const blockUnsupportedVersions = (
+  handler,
+  errBody = { error: 'unsupported client version' },
+  errCode = 400
+) => (event, context, callback) => {
+  const clientVersion = helpers.getQueryParam(event, 'appVersion');
+  if (isUnsupportedVersion(clientVersion)) {
+    return callback(null, {
+      statusCode: errCode,
+      headers: {
+        ...corsHeaders,
+      },
+      body: JSON.stringify(errBody),
+    });
+  }
+  return handler(event, context, callback);
+};
 module.exports.countryChartsPublisher = async () => {
   const topCountryMap = {
     ...constants.TOP_COUNTRIES,
@@ -134,7 +156,7 @@ module.exports.updateDiscoveryApi = async () => {
 /**
  * /regions
  */
-module.exports.chartsEndpoint = async (event, context, callback) => {
+module.exports.chartsEndpoint = blockUnsupportedVersions(async (event, context, callback) => {
   let clientCountry =
     helpers.getQueryParam(event, 'region') || event.headers['CloudFront-Viewer-Country'];
   const playlistKind = event.queryStringParameters.kind;
@@ -157,20 +179,20 @@ module.exports.chartsEndpoint = async (event, context, callback) => {
     body: playlistPayload,
   };
   callback(null, resp);
-};
+});
 /**
  * /regions
  */
-module.exports.topRegions = (event, context, callback) => {
+module.exports.topRegions = blockUnsupportedVersions((event, context, callback) => {
   callback(null, {
     statusCode: 200,
     body: JSON.stringify(constants.TOP_COUNTRIES),
   });
-};
+});
 /**
  * /radio/countrycodes
  */
-module.exports.radioCountryCodes = (event, context, callback) => {
+module.exports.radioCountryCodes = blockUnsupportedVersions((event, context, callback) => {
   const radioCountryList = constants.RADIO_COUNTRY_CODES;
   const clientCountry =
     helpers.getQueryParam(event, 'region') || event.headers['CloudFront-Viewer-Country'];
@@ -184,33 +206,35 @@ module.exports.radioCountryCodes = (event, context, callback) => {
       current: currentCountryCode,
     }),
   });
-};
+});
 /**
  * /radio/list/countrycode/{countrycode}
  */
-module.exports.radioListByCountryCode = async (event, context, callback) => {
-  const radioInstance = new RadioApi();
-  const countryCode = event.pathParameters.countrycode;
-  try {
-    const stationsBlacklist = constants.STATIONS_BLACKLIST;
-    const resp = await radioInstance.getStationsByCountryCode({
-      countryCode,
-    });
-    const radioList = resp.data.filter(station => !stationsBlacklist[station.id]);
-    if (constants.STATIONS_CUSTOM[countryCode]) {
-      radioList.push(...constants.STATIONS_CUSTOM[countryCode]);
+module.exports.radioListByCountryCode = blockUnsupportedVersions(
+  async (event, context, callback) => {
+    const radioInstance = new RadioApi();
+    const countryCode = event.pathParameters.countrycode;
+    try {
+      const stationsBlacklist = constants.STATIONS_BLACKLIST;
+      const resp = await radioInstance.getStationsByCountryCode({
+        countryCode,
+      });
+      const radioList = resp.data.filter(station => !stationsBlacklist[station.id]);
+      if (constants.STATIONS_CUSTOM[countryCode]) {
+        radioList.push(...constants.STATIONS_CUSTOM[countryCode]);
+      }
+      callback(null, {
+        statusCode: 200,
+        body: JSON.stringify(radioList),
+      });
+    } catch (err) {
+      callback(null, {
+        statusCode: 500,
+        body: err.toString(),
+      });
     }
-    callback(null, {
-      statusCode: 200,
-      body: JSON.stringify(radioList),
-    });
-  } catch (err) {
-    callback(null, {
-      statusCode: 500,
-      body: err.toString(),
-    });
   }
-};
+);
 /**
  * /app/feedback/{deviceid}
  */
@@ -297,34 +321,28 @@ module.exports.yearWrappedTopList = async (event, context, callback) => {
 /**
  *  /app/config
  */
-module.exports.appConfigApi = async (event, context, callback) => {
-  const clientVersion = helpers.getQueryParam(event, 'v');
-  if (!clientVersion || semverCompare(clientVersion, MIN_SUPPORTED_VERSION) === -1) {
-    return callback(null, {
-      statusCode: 200,
-      headers: {
-        ...corsHeaders,
-      },
-      body: JSON.stringify({ STREAM_CLIENT_ID: 'invalidtokeninvalidtoken00000000' }),
-    });
-  }
-  const jsonCacheFileName = `app/app_config_v2.json`;
-  let appConfig;
-  try {
-    appConfig = await helpers.readJSONFromS3(jsonCacheFileName);
-  } catch (err) {
-    console.warn('failed fetching client config');
-  }
-  if (appConfig) {
-    return callback(null, {
-      statusCode: 200,
-      headers: {
-        ...corsHeaders,
-      },
-      body: JSON.stringify(appConfig),
-    });
-  }
-};
+module.exports.appConfigApi = blockUnsupportedVersions(
+  async (event, context, callback) => {
+    const jsonCacheFileName = `app/app_config_v2.json`;
+    let appConfig;
+    try {
+      appConfig = await helpers.readJSONFromS3(jsonCacheFileName);
+    } catch (err) {
+      console.warn('failed fetching client config');
+    }
+    if (appConfig) {
+      return callback(null, {
+        statusCode: 200,
+        headers: {
+          ...corsHeaders,
+        },
+        body: JSON.stringify(appConfig),
+      });
+    }
+  },
+  { STREAM_CLIENT_ID: 'invalidtokeninvalidtoken00000000' },
+  200
+);
 const ctaHandleEndOfLife = (event, context, callback) => {
   const clientVersion = helpers.getQueryParam(event, 'appVersion');
   const { deviceId } = event.pathParameters;
@@ -370,7 +388,7 @@ const ctaHandleCountryPromotion = (event, context, callback) => {
 /**
  *  /cta/{deviceId}/{side}
  */
-module.exports.ctaEndpoint = async (event, context, callback) => {
+module.exports.ctaEndpoint = blockUnsupportedVersions(async (event, context, callback) => {
   const { deviceId } = event.pathParameters;
   const ctaBgBlue = '#2196F3';
   const ctaLabelA = "Let's be friends 😀";
@@ -396,7 +414,7 @@ module.exports.ctaEndpoint = async (event, context, callback) => {
       ctaButtonColor,
     }),
   });
-};
+});
 const getTrackTags = t => {
   if (!t.tag_list) return [];
   let separator = (t.tag_list.indexOf('"') > -1 && '"') || ' ';
@@ -420,7 +438,7 @@ const sortByDateDay = (ta, tb) => {
 /**
  * [POST] /explore/related
  */
-module.exports.exploreRelated = async (event, context, callback) => {
+module.exports.exploreRelated = blockUnsupportedVersions(async (event, context, callback) => {
   // eslint-disable-next-line prefer-const
   let allInputTracks = JSON.parse(event.body) || [];
   console.log(JSON.stringify({ logMetric: 'inputTrackNbr', tracksLength: allInputTracks.length }));
@@ -486,4 +504,4 @@ module.exports.exploreRelated = async (event, context, callback) => {
     },
     body: JSON.stringify(relatedTrackList),
   });
-};
+});
