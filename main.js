@@ -210,31 +210,29 @@ module.exports.radioCountryCodes = blockUnsupportedVersions((event, context, cal
 /**
  * /radio/list/countrycode/{countrycode}
  */
-module.exports.radioListByCountryCode = blockUnsupportedVersions(
-  async (event, context, callback) => {
-    const radioInstance = new RadioApi();
-    const countryCode = event.pathParameters.countrycode;
-    try {
-      const stationsBlacklist = constants.STATIONS_BLACKLIST;
-      const resp = await radioInstance.getStationsByCountryCode({
-        countryCode,
-      });
-      const radioList = resp.data.filter(station => !stationsBlacklist[station.id]);
-      if (constants.STATIONS_CUSTOM[countryCode]) {
-        radioList.push(...constants.STATIONS_CUSTOM[countryCode]);
-      }
-      callback(null, {
-        statusCode: 200,
-        body: JSON.stringify(radioList),
-      });
-    } catch (err) {
-      callback(null, {
-        statusCode: 500,
-        body: err.toString(),
-      });
+module.exports.radioListByCountryCode = async (event, context, callback) => {
+  const radioInstance = new RadioApi();
+  const countryCode = event.pathParameters.countrycode;
+  try {
+    const stationsBlacklist = constants.STATIONS_BLACKLIST;
+    const resp = await radioInstance.getStationsByCountryCode({
+      countryCode,
+    });
+    const radioList = resp.data.filter(station => !stationsBlacklist[station.id]);
+    if (constants.STATIONS_CUSTOM[countryCode]) {
+      radioList.push(...constants.STATIONS_CUSTOM[countryCode]);
     }
+    callback(null, {
+      statusCode: 200,
+      body: JSON.stringify(radioList),
+    });
+  } catch (err) {
+    callback(null, {
+      statusCode: 500,
+      body: err.toString(),
+    });
   }
-);
+};
 /**
  * /app/feedback/{deviceid}
  */

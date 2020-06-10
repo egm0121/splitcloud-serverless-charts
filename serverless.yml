@@ -12,7 +12,10 @@
 # Happy Coding!
 
 service: splitcloud-serverless-charts-service # NOTE: update this with your service name
-
+package:
+  exclude:
+   - screenshots/**
+   - scripts
 custom:
   serverless-offline:
     httpPort: 7777
