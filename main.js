@@ -208,6 +208,7 @@ module.exports.radioCountryCodes = blockUnsupportedVersions((event, context, cal
   });
 });
 /**
+ * not provided appVersion by client until 5.8
  * /radio/list/countrycode/{countrycode}
  */
 module.exports.radioListByCountryCode = async (event, context, callback) => {

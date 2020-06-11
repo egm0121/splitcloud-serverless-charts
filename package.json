@@ -28,7 +28,8 @@
     "googleapis": "36.0.0",
     "moment": "2.23.0",
     "neat-csv": "^5.1.0",
-    "semver-compare": "^1.0.0"
+    "semver-compare": "^1.0.0",
+    "serverless-api-gateway-throttling": "^1.0.1"
   },
   "devDependencies": {
     "eslint": "^5.11.0",
