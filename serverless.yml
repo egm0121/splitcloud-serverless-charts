@@ -17,9 +17,6 @@ package:
    - screenshots/**
    - scripts
 custom:
-  apiGatewayThrottling:
-    maxRequestsPerSecond: 500
-    maxConcurrentRequests: 250
   serverless-offline:
     httpPort: 7777
   domains:
@@ -55,7 +52,7 @@ custom:
 provider:
   name: aws
   runtime: nodejs12.x
-  timeout: 200
+  timeout: 10
   versionFunctions: false
   iamRoleStatements:
     - Effect: Allow
@@ -106,6 +103,7 @@ provider:
 functions:
   country_charts_pub:
     handler: handler.countryChartsPublisher
+    timeout: 60
     environment:
       BUCKET: ${self:custom.bucket}
       COUNTRY_CHARTS_QUEUE: ${self:custom.${self:custom.myStage}.country_charts_queue}
@@ -143,6 +141,7 @@ functions:
           path: regions
           method: get
   log_collector:
+    timeout: 30
     handler: handler.logCollector
     environment:
       BUCKET: ${self:custom.bucket}
@@ -197,6 +196,7 @@ functions:
                 countrycode: true
   yearWrapped:
     handler: handler.yearWrappedTopList
+    timeout: 30
     environment:
       BUCKET: ${self:custom.bucket}
       STAGE: ${self:custom.myStage} 
@@ -228,6 +228,7 @@ functions:
                 side: true
   token:
     handler: handler.selectActiveToken
+    timeout: 30
     environment:
       BUCKET: ${self:custom.bucket}
       STAGE: ${self:custom.myStage} 
@@ -235,6 +236,7 @@ functions:
       - schedule: ${self:custom.${self:custom.myStage}.schedule_token}
   discovery:
     handler: handler.updateDiscoveryApi
+    timeout: 120
     environment:
       BUCKET: ${self:custom.bucket}
       STAGE: ${self:custom.myStage} 
@@ -242,6 +244,7 @@ functions:
       - schedule: ${self:custom.${self:custom.myStage}.schedule_discovery}
   chartsCache:
     handler: handler.scChartsCache
+    timeout: 30
     environment:
       BUCKET: ${self:custom.bucket}
       STAGE: ${self:custom.myStage} 
@@ -251,7 +254,7 @@ plugins:
   - serverless-domain-manager
   - serverless-offline
   - serverless-prune-plugin
-  - serverless-api-gateway-throttling
+ 
 
 #    The following are a few example events you can configure
 #    NOTE: Please make sure to change your handler code to work with those events
