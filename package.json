@@ -6,7 +6,10 @@
   "scripts": {
     "start": "node cli.js",
     "extend-sls-timeout": "export AWS_CLIENT_TIMEOUT=90000",
+    "set-aws-region": "export AWS_REGION=us-east-1",
     "validate-config": "node ./scripts/validate-config-format",
+    "predeploy:dev": "npm run set-aws-region",
+    "predeploy:prod": "npm run set-aws-region",
     "deploy:dev": "npm run validate-config && serverless deploy -v --stage dev",
     "deploy:prod": "npm run validate-config && serverless deploy -v --stage prod",
     "test": "echo \"Error: no test specified\" && exit 1",
