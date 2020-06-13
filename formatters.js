@@ -32,3 +32,15 @@ export const formatPlaylistPayload = scPlaylist => ({
     avatar_url: scPlaylist.user.avatar_url,
   },
 });
+
+export const formatRadioStationPayload = radioPayload => ({
+  id: radioPayload.id,
+  name: radioPayload.name,
+  url: radioPayload.url,
+  country: radioPayload.country,
+  tags: radioPayload.tags,
+  favicon: radioPayload.favicon,
+  homepage: radioPayload.homepage,
+  votes: radioPayload.votes,
+});
+export const formatRadioStationListPayload = radioArr => radioArr.map(formatRadioStationPayload);

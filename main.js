@@ -227,7 +227,7 @@ module.exports.radioListByCountryCode = async (event, context, callback) => {
     }
     callback(null, {
       statusCode: 200,
-      body: JSON.stringify(radioList),
+      body: JSON.stringify(formatters.formatRadioStationListPayload(radioList)),
     });
   } catch (err) {
     callback(null, {
