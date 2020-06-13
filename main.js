@@ -6,6 +6,7 @@ const selectActiveStreamToken = require('./activeStreamToken');
 const discoveryApi = require('./discoverApi');
 const helpers = require('./helpers');
 const constants = require('./constants');
+const formatters = require('./formatters');
 
 const saveToS3 = helpers.saveFileToS3;
 const corsHeaders = {
@@ -173,10 +174,10 @@ module.exports.chartsEndpoint = blockUnsupportedVersions(async (event, context, 
   const playlistFilename = `charts/country/weekly_${playlistKind}_country_${clientCountry}.json`;
 
   console.log('serve playlist from s3', playlistFilename);
-  const playlistPayload = await helpers.readFileFromS3(playlistFilename);
+  const playlistPayload = await helpers.readJSONFromS3(playlistFilename);
   const resp = {
     statusCode: 200,
-    body: playlistPayload,
+    body: JSON.stringify(formatters.formatTrackListPayload(playlistPayload)),
   };
   callback(null, resp);
 });
@@ -211,6 +212,7 @@ module.exports.radioCountryCodes = blockUnsupportedVersions((event, context, cal
  * not provided appVersion by client until 5.8
  * /radio/list/countrycode/{countrycode}
  */
+
 module.exports.radioListByCountryCode = async (event, context, callback) => {
   const radioInstance = new RadioApi();
   const countryCode = event.pathParameters.countrycode;
@@ -305,7 +307,7 @@ module.exports.yearWrappedTopList = async (event, context, callback) => {
       headers: {
         ...corsHeaders,
       },
-      body: JSON.stringify(trackList),
+      body: JSON.stringify(formatters.formatTrackListPayload(trackList)),
     });
   } catch (error) {
     callback(null, {
@@ -501,6 +503,6 @@ module.exports.exploreRelated = blockUnsupportedVersions(async (event, context, 
     headers: {
       ...corsHeaders,
     },
-    body: JSON.stringify(relatedTrackList),
+    body: JSON.stringify(formatters.formatTrackListPayload(relatedTrackList)),
   });
 });
