@@ -394,10 +394,15 @@ module.exports.ctaEndpoint = blockUnsupportedVersions(async (event, context, cal
   const ctaBgBlue = '#2196F3';
   const ctaLabelA = "Let's be friends 😀";
   const ctaLabelB = 'Follow SplitCloud ✨';
+  const isAndroidId = deviceId.length === 16;
 
   const selectedVariant = helpers.selectVariantFromHash(deviceId) ? 'A' : 'B';
   const ctaButtonColor = ctaBgBlue;
-  const ctaUrl = `http://www.splitcloud-app.com/follow.html?variant=${selectedVariant}&v=2`;
+  let ctaUrl = `http://www.splitcloud-app.com/follow.html`;
+  if (isAndroidId) {
+    ctaUrl = `http://www.splitcloud-app.com/follow_android_promo.html`;
+  }
+  ctaUrl = `${ctaUrl}?variant=${selectedVariant}&v=2`;
   const ctaLabel = selectedVariant === 'A' ? ctaLabelA : ctaLabelB;
   if (ctaHandleEndOfLife(event, context, callback)) return true;
   if (ctaHandleCountryPromotion(event, context, callback)) return true;
