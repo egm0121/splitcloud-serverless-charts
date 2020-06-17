@@ -75,7 +75,6 @@ module.exports.countryChartsSubscribe = async event => {
   const messageAttr = event.Records[0].messageAttributes;
   const countryCodeString = messageAttr.countryCode.stringValue;
   const countryNameString = messageAttr.countryName.stringValue;
-  console.log('messages x invoke', event.Records.length);
   console.log('Process country chart request:', { countryCodeString, countryNameString });
 
   const generateChartsForCountry = async (countryCode, countryName) => {
@@ -407,9 +406,6 @@ module.exports.ctaEndpoint = metricScope(metrics =>
     const ctaLabel = selectedVariant === 'A' ? ctaLabelA : ctaLabelB;
     if (ctaHandleEndOfLife(event, context, callback)) return true;
     if (ctaHandleCountryPromotion(event, context, callback)) return true;
-    console.log(
-      JSON.stringify({ method: 'ctaEndpoint', metric: `variant_${selectedVariant}`, value: 1 })
-    );
     metrics.setNamespace('ctaEndpoint');
     metrics.putMetric(`test_variant_${selectedVariant}`, 1);
     return callback(null, {
@@ -517,4 +513,4 @@ module.exports.exploreRelated = metricScope(metrics =>
       body: JSON.stringify(formatters.formatTrackListPayload(relatedTrackList)),
     });
   })
-)
+);

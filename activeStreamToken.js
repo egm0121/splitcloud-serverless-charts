@@ -143,7 +143,6 @@ async function selectActiveStreamToken(metricsLogger) {
     }
     if (!newToken) {
       console.log(JSON.stringify({ logAlarm: 'allTokenExpired', isError: true }));
-      metricsLogger.putMetric('allTokensExpired', 1);
     }
     return newToken;
   }
