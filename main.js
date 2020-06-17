@@ -1,5 +1,6 @@
 import RadioApi from './radioApi';
 
+const { metricScope } = require('aws-embedded-metrics');
 const semverCompare = require('semver-compare');
 const chartService = require('./index');
 const selectActiveStreamToken = require('./activeStreamToken');
@@ -17,15 +18,14 @@ const LATEST_VERSION = '5.7';
 const MIN_SUPPORTED_VERSION = '5.6'; // specify M.m without patch to allow matching client versions without patch
 const MIN_TRACK_DURATION = 30 * 1e3;
 
-const isUnsupportedVersion = clientVersion => {
-  return !clientVersion || semverCompare(clientVersion, MIN_SUPPORTED_VERSION) === -1;
-};
+const isUnsupportedVersion = clientVersion =>
+  !clientVersion || semverCompare(clientVersion, MIN_SUPPORTED_VERSION) === -1;
 
 const blockUnsupportedVersions = (
   handler,
   errBody = { error: 'unsupported client version' },
   errCode = 400
-) => (event, context, callback) => {
+) => async (event, context, callback) => {
   const clientVersion = helpers.getQueryParam(event, 'appVersion');
   if (isUnsupportedVersion(clientVersion)) {
     return callback(null, {
@@ -127,8 +127,8 @@ module.exports.scChartsCache = async () => {
   await saveToS3(`charts/soundcloud/weekly_trending.json`, chartData);
   return true;
 };
-module.exports.selectActiveToken = async () => {
-  const newToken = await selectActiveStreamToken();
+module.exports.selectActiveToken = metricScope(metrics => async () => {
+  const newToken = await selectActiveStreamToken(metrics);
   return {
     statusCode: 200,
     body: {
@@ -136,7 +136,7 @@ module.exports.selectActiveToken = async () => {
       token: newToken,
     },
   };
-};
+});
 
 module.exports.updateDiscoveryApi = async () => {
   const splitcloudSections = await helpers.readJSONFromS3('app/discover_playlists_payload.json');
@@ -389,38 +389,42 @@ const ctaHandleCountryPromotion = (event, context, callback) => {
 /**
  *  /cta/{deviceId}/{side}
  */
-module.exports.ctaEndpoint = blockUnsupportedVersions(async (event, context, callback) => {
-  const { deviceId } = event.pathParameters;
-  const ctaBgBlue = '#2196F3';
-  const ctaLabelA = "Let's be friends 😀";
-  const ctaLabelB = 'Follow SplitCloud ✨';
-  const isAndroidId = deviceId.length === 16;
+module.exports.ctaEndpoint = metricScope(metrics =>
+  blockUnsupportedVersions(async (event, context, callback) => {
+    const { deviceId } = event.pathParameters;
+    const ctaBgBlue = '#2196F3';
+    const ctaLabelA = "Let's be friends 😀";
+    const ctaLabelB = 'Follow SplitCloud ✨';
+    const isAndroidId = deviceId.length === 16;
 
-  const selectedVariant = helpers.selectVariantFromHash(deviceId) ? 'A' : 'B';
-  const ctaButtonColor = ctaBgBlue;
-  let ctaUrl = `http://www.splitcloud-app.com/follow.html`;
-  if (isAndroidId) {
-    ctaUrl = `http://www.splitcloud-app.com/follow_android_promo.html`;
-  }
-  ctaUrl = `${ctaUrl}?variant=${selectedVariant}&v=2`;
-  const ctaLabel = selectedVariant === 'A' ? ctaLabelA : ctaLabelB;
-  if (ctaHandleEndOfLife(event, context, callback)) return true;
-  if (ctaHandleCountryPromotion(event, context, callback)) return true;
-  console.log(
-    JSON.stringify({ method: 'ctaEndpoint', metric: `variant_${selectedVariant}`, value: 1 })
-  );
-  return callback(null, {
-    statusCode: 200,
-    headers: {
-      ...corsHeaders,
-    },
-    body: JSON.stringify({
-      ctaLabel,
-      ctaUrl,
-      ctaButtonColor,
-    }),
-  });
-});
+    const selectedVariant = helpers.selectVariantFromHash(deviceId) ? 'A' : 'B';
+    const ctaButtonColor = ctaBgBlue;
+    let ctaUrl = `http://www.splitcloud-app.com/follow.html`;
+    if (isAndroidId) {
+      ctaUrl = `http://www.splitcloud-app.com/follow_android_promo.html`;
+    }
+    ctaUrl = `${ctaUrl}?variant=${selectedVariant}&v=2`;
+    const ctaLabel = selectedVariant === 'A' ? ctaLabelA : ctaLabelB;
+    if (ctaHandleEndOfLife(event, context, callback)) return true;
+    if (ctaHandleCountryPromotion(event, context, callback)) return true;
+    console.log(
+      JSON.stringify({ method: 'ctaEndpoint', metric: `variant_${selectedVariant}`, value: 1 })
+    );
+    metrics.setNamespace('ctaEndpoint');
+    metrics.putMetric(`test_variant_${selectedVariant}`, 1);
+    return callback(null, {
+      statusCode: 200,
+      headers: {
+        ...corsHeaders,
+      },
+      body: JSON.stringify({
+        ctaLabel,
+        ctaUrl,
+        ctaButtonColor,
+      }),
+    });
+  })
+);
 const getTrackTags = t => {
   if (!t.tag_list) return [];
   let separator = (t.tag_list.indexOf('"') > -1 && '"') || ' ';
@@ -444,70 +448,73 @@ const sortByDateDay = (ta, tb) => {
 /**
  * [POST] /explore/related
  */
-module.exports.exploreRelated = blockUnsupportedVersions(async (event, context, callback) => {
-  // eslint-disable-next-line prefer-const
-  let allInputTracks = JSON.parse(event.body) || [];
-  console.log(JSON.stringify({ logMetric: 'inputTrackNbr', tracksLength: allInputTracks.length }));
-  helpers.arrayInPlaceShuffle(allInputTracks); // shuffle input tracks
-  let sourceTrackIds = allInputTracks.slice(0, 8); // fetch at most 10 related playlists
-  let clientCountry =
-    helpers.getQueryParam(event, 'region') || event.headers['CloudFront-Viewer-Country'];
+module.exports.exploreRelated = metricScope(metrics =>
+  blockUnsupportedVersions(async (event, context, callback) => {
+    // eslint-disable-next-line prefer-const
+    let allInputTracks = JSON.parse(event.body) || [];
+    metrics.setNamespace('splitcloud-exploreRelated');
+    metrics.putMetric('inputFavTracks', allInputTracks.length);
+    helpers.arrayInPlaceShuffle(allInputTracks); // shuffle input tracks
+    let sourceTrackIds = allInputTracks.slice(0, 8); // fetch at most 10 related playlists
+    let clientCountry =
+      helpers.getQueryParam(event, 'region') || event.headers['CloudFront-Viewer-Country'];
 
-  const hasCountryPlaylist = Object.keys(constants.TOP_COUNTRIES).includes(clientCountry);
-  if (!hasCountryPlaylist) clientCountry = 'GLOBAL';
-  const playlistFilename = `charts/country/weekly_trending_country_${clientCountry}.json`;
-  const playlistPayload = await helpers.readJSONFromS3(playlistFilename);
-  const topTrackIds = playlistPayload.slice(0, 10).map(t => t.id);
-  console.log(`fetching trending chart for country ${clientCountry}`);
-  const fillNbr = 10 - sourceTrackIds.length;
-  console.log(
-    `use ${sourceTrackIds.length} sourceTracks and ${fillNbr} charts track to generate lists`
-  );
-  sourceTrackIds = [...sourceTrackIds, ...topTrackIds.slice(0, fillNbr)];
-  console.log('final source tracks', sourceTrackIds);
-  const allRelatedReq = sourceTrackIds.map(trackId =>
-    chartService.fetchRelatedTracksById(trackId).catch(() => Promise.resolve({ data: [] }))
-  );
-  const responsesArr = await Promise.all(allRelatedReq);
-  let relatedTrackList = responsesArr.reduce((acc, resp) => {
-    const oneTrackRelatedArr = resp.data;
-    acc.push(...oneTrackRelatedArr);
-    return acc;
-  }, []);
+    const hasCountryPlaylist = Object.keys(constants.TOP_COUNTRIES).includes(clientCountry);
+    if (!hasCountryPlaylist) clientCountry = 'GLOBAL';
+    const playlistFilename = `charts/country/weekly_trending_country_${clientCountry}.json`;
+    const playlistPayload = await helpers.readJSONFromS3(playlistFilename);
+    const topTrackIds = playlistPayload.slice(0, 10).map(t => t.id);
+    console.log(`fetching trending chart for country ${clientCountry}`);
+    const fillNbr = 10 - sourceTrackIds.length;
+    console.log(
+      `use ${sourceTrackIds.length} sourceTracks and ${fillNbr} charts track to generate lists`
+    );
+    sourceTrackIds = [...sourceTrackIds, ...topTrackIds.slice(0, fillNbr)];
+    console.log('final source tracks', sourceTrackIds);
+    const allRelatedReq = sourceTrackIds.map(trackId =>
+      chartService.fetchRelatedTracksById(trackId).catch(() => Promise.resolve({ data: [] }))
+    );
+    const responsesArr = await Promise.all(allRelatedReq);
+    let relatedTrackList = responsesArr.reduce((acc, resp) => {
+      const oneTrackRelatedArr = resp.data;
+      acc.push(...oneTrackRelatedArr);
+      return acc;
+    }, []);
 
-  const uniqueSet = new Set();
-  const relatedTagsSet = new Set();
-  relatedTrackList = relatedTrackList
-    .filter(track => {
-      if (uniqueSet.has(track.id)) return false;
-      uniqueSet.add(track.id);
-      getTrackTags(track).forEach(tag => relatedTagsSet.add(tag));
-      return track.duration > MIN_TRACK_DURATION && !allInputTracks.includes(track.id);
-    })
-    .map(track => {
-      // eslint-disable-next-line no-param-reassign
-      track.description = '';
-      return track;
+    const uniqueSet = new Set();
+    const relatedTagsSet = new Set();
+    relatedTrackList = relatedTrackList
+      .filter(track => {
+        if (uniqueSet.has(track.id)) return false;
+        uniqueSet.add(track.id);
+        getTrackTags(track).forEach(tag => relatedTagsSet.add(tag));
+        return track.duration > MIN_TRACK_DURATION && !allInputTracks.includes(track.id);
+      })
+      .map(track => {
+        // eslint-disable-next-line no-param-reassign
+        track.description = '';
+        return track;
+      });
+    const recentSCTracks = await helpers.readJSONFromS3(`charts/soundcloud/weekly_trending.json`);
+    const recentRelated = recentSCTracks.filter(t => {
+      const hasTagMatch = getTrackTags(t).find(scTag => relatedTagsSet.has(scTag));
+      // if tags are matching and track is unique, add it to results
+      if (hasTagMatch && !uniqueSet.has(t.id)) {
+        console.log(`adding track: ${t.title} because matched tag:`, hasTagMatch);
+        return true;
+      }
+      return false;
     });
-  const recentSCTracks = await helpers.readJSONFromS3(`charts/soundcloud/weekly_trending.json`);
-  const recentRelated = recentSCTracks.filter(t => {
-    const hasTagMatch = getTrackTags(t).find(scTag => relatedTagsSet.has(scTag));
-    // if tags are matching and track is unique, add it to results
-    if (hasTagMatch && !uniqueSet.has(t.id)) {
-      console.log(`adding track: ${t.title} because matched tag:`, hasTagMatch);
-      return true;
-    }
-    return false;
-  });
-  relatedTrackList.push(...recentRelated); // add sc recents tracks relevant for feed
-  // order all by recency
-  relatedTrackList.sort(sortByDateDay);
+    relatedTrackList.push(...recentRelated); // add sc recents tracks relevant for feed
+    // order all by recency
+    relatedTrackList.sort(sortByDateDay);
 
-  return callback(null, {
-    statusCode: 200,
-    headers: {
-      ...corsHeaders,
-    },
-    body: JSON.stringify(formatters.formatTrackListPayload(relatedTrackList)),
-  });
-});
+    return callback(null, {
+      statusCode: 200,
+      headers: {
+        ...corsHeaders,
+      },
+      body: JSON.stringify(formatters.formatTrackListPayload(relatedTrackList)),
+    });
+  })
+)

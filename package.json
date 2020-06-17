@@ -24,6 +24,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "aws-embedded-metrics": "^1.1.1",
     "aws-sdk": "2.382.0",
     "axios": "0.18.0",
     "egm0121-rn-common-lib": "git+ssh://git@github.com/egm0121/egm0121-rn-common-lib.git#release/v3.2",

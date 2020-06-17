@@ -70,7 +70,8 @@ function getUsageByToken(data) {
   return validTokensMap;
 }
 
-async function selectActiveStreamToken() {
+async function selectActiveStreamToken(metricsLogger) {
+  metricsLogger.setNamespace('splitcloud-selectActiveToken');
   const reportingClient = await GAReporting.initReportingClient();
   const tokenUsage = await reportingClient.reports.batchGet({
     requestBody: {
@@ -136,11 +137,13 @@ async function selectActiveStreamToken() {
         [newToken] = currTokenInfo;
         // eslint-disable-next-line no-await-in-loop
         await setActiveToken(newToken);
+        metricsLogger.putMetric('tokenSwap', 1);
         break;
       }
     }
     if (!newToken) {
       console.log(JSON.stringify({ logAlarm: 'allTokenExpired', isError: true }));
+      metricsLogger.putMetric('allTokensExpired', 1);
     }
     return newToken;
   }
