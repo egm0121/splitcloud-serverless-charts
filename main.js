@@ -392,8 +392,8 @@ module.exports.ctaEndpoint = metricScope(metrics =>
   blockUnsupportedVersions(async (event, context, callback) => {
     const { deviceId } = event.pathParameters;
     const ctaBgBlue = '#2196F3';
-    const ctaLabelA = "Let's be friends 😀";
-    const ctaLabelB = 'Follow SplitCloud ✨';
+    const ctaLabelA = 'Follow SplitCloud ✨';
+    const ctaLabelB = '⚡️ Follow @SplitCloud';
     const isAndroidId = deviceId.length === 16;
 
     const selectedVariant = helpers.selectVariantFromHash(deviceId) ? 'A' : 'B';
