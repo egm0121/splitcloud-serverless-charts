@@ -402,7 +402,7 @@ module.exports.ctaEndpoint = metricScope(metrics =>
     if (isAndroidId) {
       ctaUrl = `http://www.splitcloud-app.com/follow_android_promo.html`;
     }
-    ctaUrl = `${ctaUrl}?variant=${selectedVariant}&v=3`;
+    ctaUrl = `${ctaUrl}?variant=${selectedVariant}&v=5`;
     const ctaLabel = selectedVariant === 'A' ? ctaLabelA : ctaLabelB;
     if (ctaHandleEndOfLife(event, context, callback)) return true;
     if (ctaHandleCountryPromotion(event, context, callback)) return true;
