@@ -330,15 +330,16 @@ module.exports.appConfigApi = blockUnsupportedVersions(
     } catch (err) {
       console.warn('failed fetching client config');
     }
-    if (appConfig) {
-      return callback(null, {
-        statusCode: 200,
-        headers: {
-          ...corsHeaders,
-        },
-        body: JSON.stringify(appConfig),
-      });
+    if (helpers.isDEV) {
+      appConfig.disable_sc = true;
     }
+    return callback(null, {
+      statusCode: 200,
+      headers: {
+        ...corsHeaders,
+      },
+      body: JSON.stringify(appConfig),
+    });
   },
   { STREAM_CLIENT_ID: 'invalidtokeninvalidtoken00000000' },
   200
