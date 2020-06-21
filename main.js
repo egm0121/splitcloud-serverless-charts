@@ -341,7 +341,7 @@ module.exports.appConfigApi = blockUnsupportedVersions(
       body: JSON.stringify(appConfig),
     });
   },
-  { STREAM_CLIENT_ID: 'invalidtokeninvalidtoken00000000' },
+  { STREAM_CLIENT_ID: 'invalidtokeninvalidtoken00000000', disable_sc: true },
   200
 );
 const ctaHandleEndOfLife = (event, context, callback) => {
