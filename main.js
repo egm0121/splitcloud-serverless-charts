@@ -330,9 +330,6 @@ module.exports.appConfigApi = blockUnsupportedVersions(
     } catch (err) {
       console.warn('failed fetching client config');
     }
-    if (helpers.isDEV) {
-      appConfig.disable_sc = true;
-    }
     return callback(null, {
       statusCode: 200,
       headers: {

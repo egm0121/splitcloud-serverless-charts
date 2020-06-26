@@ -5,13 +5,9 @@
   "main": "index.js",
   "scripts": {
     "start": "node cli.js",
-    "extend-sls-timeout": "export AWS_CLIENT_TIMEOUT=90000",
-    "set-aws-region": "export AWS_REGION=us-east-1",
     "validate-config": "node ./scripts/validate-config-format",
-    "predeploy:dev": "npm run set-aws-region",
-    "predeploy:prod": "npm run set-aws-region",
-    "deploy:dev": "npm run validate-config && serverless deploy -v --stage dev",
-    "deploy:prod": "npm run validate-config && serverless deploy -v --stage prod",
+    "deploy:dev": "source .env && npm run validate-config && serverless deploy -v --stage dev",
+    "deploy:prod": "source .env && npm run validate-config && serverless deploy -v --stage prod",
     "test": "echo \"Error: no test specified\" && exit 1",
     "discovery:dev": "serverless invoke -f discovery -l --stage dev",
     "discovery:prod": "serverless invoke -f discovery -l --stage prod",
@@ -32,8 +28,7 @@
     "googleapis": "36.0.0",
     "moment": "2.23.0",
     "neat-csv": "^5.1.0",
-    "semver-compare": "^1.0.0",
-    "serverless-api-gateway-throttling": "^1.0.1"
+    "semver-compare": "^1.0.0"
   },
   "devDependencies": {
     "eslint": "^5.11.0",
@@ -47,6 +42,7 @@
     "prettier": "^1.15.3",
     "serverless-domain-manager": "^3.3.0",
     "serverless-offline": "^6.1.5",
-    "serverless-prune-plugin": "^1.4.3"
+    "serverless-prune-plugin": "^1.4.3",
+    "serverless-api-gateway-throttling": "^1.0.1"
   }
 }

@@ -9,3 +9,4 @@ discover_*.json
 *.zip
 /screenshots
 test-event.json
+*.env
