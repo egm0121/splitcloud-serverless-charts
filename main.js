@@ -176,6 +176,9 @@ module.exports.chartsEndpoint = blockUnsupportedVersions(async (event, context, 
   const playlistPayload = await helpers.readJSONFromS3(playlistFilename);
   const resp = {
     statusCode: 200,
+    headers: {
+      ...corsHeaders,
+    },
     body: JSON.stringify(formatters.formatTrackListPayload(playlistPayload)),
   };
   callback(null, resp);
