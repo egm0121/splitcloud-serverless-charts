@@ -1,4 +1,5 @@
 import RadioApi from './radioApi';
+import PostGenerator from './igPostGenerator';
 
 const { metricScope } = require('aws-embedded-metrics');
 const semverCompare = require('semver-compare');
@@ -145,6 +146,18 @@ module.exports.updateDiscoveryApi = async () => {
     body: {
       success: true,
       discovery,
+    },
+  };
+};
+
+module.exports.generateTrendingPosts = async () => {
+  const postGenerator = new PostGenerator();
+  const result = await postGenerator.generateTrendingPostsForCountries(constants.IG_POST_COUNTRIES);
+  return {
+    statusCode: 200,
+    body: {
+      success: true,
+      result,
     },
   };
 };

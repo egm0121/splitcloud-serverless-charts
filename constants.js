@@ -11,6 +11,7 @@ module.exports = {
     US: '🇺🇸',
     GB: '🇬🇧',
   },
+  IG_POST_COUNTRIES: ['US', 'IN', 'TH', 'BR', 'MX'],
   DISCOVERY_COUNTRIES: {
     IN: 'India',
     MX: 'Mexico',

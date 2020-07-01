@@ -8,6 +8,21 @@ const getQueryParam = (event, param) => {
   return event.queryStringParameters && event.queryStringParameters[param];
 };
 const sqs = new AWS.SQS({ apiVersion: 'latest' });
+
+async function saveBlobToS3(keyName, buffer, format = 'image/png') {
+  const [path, extension] = keyName.split('.');
+  const finalKeyName = `${path}${isDEV ? '_dev' : ''}.${extension}`;
+  console.log('will write binary to s3 key:', finalKeyName);
+  return s3
+    .putObject({
+      Bucket: process.env.BUCKET,
+      ContentType: format,
+      CacheControl: 'max-age=0,must-revalidate',
+      Key: finalKeyName,
+      Body: buffer,
+    })
+    .promise();
+}
 async function saveFileToS3(keyName, data, stringify = true) {
   const [path, extension] = keyName.split('.');
   const finalKeyName = `${path}${isDEV ? '_dev' : ''}.${extension}`;
@@ -71,6 +86,7 @@ function selectVariantFromHash(str, variants = 2) {
 }
 module.exports = {
   saveFileToS3,
+  saveBlobToS3,
   readFileFromS3,
   readJSONFromS3,
   getQueryParam,
