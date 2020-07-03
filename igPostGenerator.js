@@ -35,7 +35,7 @@ class PostGenerator {
   async generateTrendingPostsForCountries(countryCodeArr) {
     const screenshotsPromises = countryCodeArr.map(countryCode =>
       this.fetchTrendingForCountry(countryCode).then(imageResp => {
-        return this.storeImageToS3(imageResp.data, `posts/trending/coutry_${countryCode}.png`);
+        return this.storeImageToS3(imageResp.data, `posts/trending/country_${countryCode}.png`);
       })
     );
     return Promise.all(screenshotsPromises);

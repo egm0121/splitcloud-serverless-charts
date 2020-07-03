@@ -202,7 +202,18 @@ module.exports.chartsEndpoint = blockUnsupportedVersions(async (event, context, 
 module.exports.topRegions = blockUnsupportedVersions((event, context, callback) => {
   callback(null, {
     statusCode: 200,
+    headers: { ...corsHeaders },
     body: JSON.stringify(constants.TOP_COUNTRIES),
+  });
+});
+/**
+ * /posts/regions
+ */
+module.exports.postsRegions = blockUnsupportedVersions((event, context, callback) => {
+  callback(null, {
+    statusCode: 200,
+    headers: { ...corsHeaders },
+    body: JSON.stringify(constants.IG_POST_COUNTRIES),
   });
 });
 /**

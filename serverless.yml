@@ -152,6 +152,15 @@ functions:
       - http:
           path: regions
           method: get
+  postsRegions:
+    handler: handler.postsRegions
+    environment:
+      BUCKET: ${self:custom.bucket}
+      STAGE: ${self:custom.myStage} 
+    events:
+      - http:
+          path: posts/regions
+          method: get
   log_collector:
     timeout: 30
     handler: handler.logCollector
