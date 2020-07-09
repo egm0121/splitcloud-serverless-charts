@@ -1,7 +1,7 @@
 const axios = require('axios');
-const scKey = require('./key/soundcloud_key.json');
+const scKey = require('../../key/soundcloud_key.json');
 const helpers = require('./helpers');
-const constants = require('./constants');
+const constants = require('../constants/constants');
 
 const SC_API_ENDPOINT = 'http://api.soundcloud.com';
 const SC_GET_DISCOVERY = `http://api-v2.soundcloud.com/mixed-selections?client_id=${

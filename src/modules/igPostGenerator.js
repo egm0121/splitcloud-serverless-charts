@@ -1,5 +1,5 @@
 import axios from 'axios';
-import ScreenshotConfig from './key/getScreenshots.json';
+import ScreenshotConfig from '../../key/getScreenshots.json';
 import helpers from './helpers';
 
 class PostGenerator {

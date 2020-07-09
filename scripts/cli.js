@@ -2,11 +2,10 @@ const { performance } = require('perf_hooks');
 const moment = require('moment');
 const fs = require('fs');
 const axios = require('axios');
-const chartService = require('./chartsService');
-const selectActiveStreamToken = require('./activeStreamToken');
-const discoverApi = require('./discoverApi');
-const reportStats = require('./reportStats');
-const getScreenshots = require('./key/getScreenshots');
+const chartService = require('../src/modules/chartsService');
+const discoverApi = require('../src/modules/discoverApi');
+const reportStats = require('../src/modules/reportStats');
+const getScreenshots = require('../key/getScreenshots');
 
 const logTracks = tracks => {
   console.log(
@@ -41,7 +40,6 @@ const logTracks = tracks => {
   // console.log('POPULAR on ', currDate, ' country ', country);
   await chartService.getTopChart(200, 'United States').then(logTracks);
   console.log('Time taken', performance.now() - timeStart);
-  // await selectActiveStreamToken();
   // const playlists = require('./discover_playlists_payload_dev.json');
   // await discoverApi(playlists);
   // console.log('Average songs playback per day NEW USERS');

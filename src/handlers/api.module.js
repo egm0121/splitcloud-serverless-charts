@@ -1,11 +1,11 @@
-import RadioApi from '../../radioApi';
+import RadioApi from '../modules/radioApi';
 
 const { metricScope } = require('aws-embedded-metrics');
 const semverCompare = require('semver-compare');
-const chartService = require('../../chartsService');
-const helpers = require('../../helpers');
-const constants = require('../../constants');
-const formatters = require('../../formatters');
+const chartService = require('../modules/chartsService');
+const helpers = require('../modules/helpers');
+const constants = require('../constants/constants');
+const formatters = require('../modules/formatters');
 
 const saveToS3 = helpers.saveFileToS3;
 const corsHeaders = {
