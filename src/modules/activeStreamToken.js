@@ -7,7 +7,7 @@ const INITIAL_ACTIVE_TOKEN = availableStreamTokens[1].SC_CLIENT_ID;
 // const ACTIVE_TOKEN_S3_PATH = 'app/app_config.json';
 const ACTIVE_TOKEN_S3_PATH_V2 = 'app/app_config_v2.json';
 const MAX_USAGE_PER_DAY = 13000;
-const TEST_TRACK_URL = 'https://api.soundcloud.com/tracks/397263444/stream';
+const TEST_TRACK_URL = 'https://api.soundcloud.com/tracks/855191668/stream';
 
 async function getActiveToken() {
   let jsonData;
