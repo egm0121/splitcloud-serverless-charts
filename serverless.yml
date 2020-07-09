@@ -72,35 +72,6 @@ provider:
       Resource: ${self:custom.${self:custom.myStage}.country_charts_arn}
 
 functions:
-  country_charts_pub:
-    handler: src/handlers/api.countryChartsPublisher
-    timeout: 60
-    environment:
-      BUCKET: ${self:custom.bucket}
-      COUNTRY_CHARTS_QUEUE: ${self:custom.${self:custom.myStage}.country_charts_queue}
-      STAGE: ${self:custom.myStage} 
-    events:
-      - schedule: ${self:custom.${self:custom.myStage}.schedule_country_charts}
-  country_charts_sub:
-    handler: src/handlers/api.countryChartsSubscribe
-    timeout: 120
-    reservedConcurrency: 2
-    environment:
-      BUCKET: ${self:custom.bucket}
-      COUNTRY_CHARTS_QUEUE: ${self:custom.${self:custom.myStage}.country_charts_queue}
-      STAGE: ${self:custom.myStage}
-    events:
-      - sqs:
-          arn: ${self:custom.${self:custom.myStage}.country_charts_arn}
-          batchSize: 1
-  generateTrendingPost:
-    handler: src/handlers/api.generateTrendingPosts
-    timeout: 120
-    environment:
-      BUCKET: ${self:custom.bucket}
-      STAGE: ${self:custom.myStage}
-    events:
-      - schedule: ${self:custom.${self:custom.myStage}.schedule_trending_post}
   charts_endpoint:
     handler: src/handlers/api.chartsEndpoint
     environment:
@@ -215,7 +186,7 @@ functions:
                 deviceId: true
                 side: true
   token:
-    handler: src/handlers/api.selectActiveToken
+    handler: src/handlers/batch.selectActiveToken
     timeout: 30
     environment:
       BUCKET: ${self:custom.bucket}
@@ -223,7 +194,7 @@ functions:
     events:
       - schedule: ${self:custom.${self:custom.myStage}.schedule_token}
   discovery:
-    handler: src/handlers/api.updateDiscoveryApi
+    handler: src/handlers/batch.updateDiscoveryApi
     timeout: 120
     environment:
       BUCKET: ${self:custom.bucket}
@@ -231,13 +202,42 @@ functions:
     events:
       - schedule: ${self:custom.${self:custom.myStage}.schedule_discovery}
   chartsCache:
-    handler: src/handlers/api.scChartsCache
+    handler: src/handlers/batch.scChartsCache
     timeout: 30
     environment:
       BUCKET: ${self:custom.bucket}
       STAGE: ${self:custom.myStage} 
     events:
       - schedule: ${self:custom.${self:custom.myStage}.sc_charts_cache}
+  country_charts_pub:
+    handler: src/handlers/batch.countryChartsPublisher
+    timeout: 60
+    environment:
+      BUCKET: ${self:custom.bucket}
+      COUNTRY_CHARTS_QUEUE: ${self:custom.${self:custom.myStage}.country_charts_queue}
+      STAGE: ${self:custom.myStage} 
+    events:
+      - schedule: ${self:custom.${self:custom.myStage}.schedule_country_charts}
+  country_charts_sub:
+    handler: src/handlers/batch.countryChartsSubscribe
+    timeout: 120
+    reservedConcurrency: 2
+    environment:
+      BUCKET: ${self:custom.bucket}
+      COUNTRY_CHARTS_QUEUE: ${self:custom.${self:custom.myStage}.country_charts_queue}
+      STAGE: ${self:custom.myStage}
+    events:
+      - sqs:
+          arn: ${self:custom.${self:custom.myStage}.country_charts_arn}
+          batchSize: 1
+  generateTrendingPost:
+    handler: src/handlers/batch.generateTrendingPosts
+    timeout: 120
+    environment:
+      BUCKET: ${self:custom.bucket}
+      STAGE: ${self:custom.myStage}
+    events:
+      - schedule: ${self:custom.${self:custom.myStage}.schedule_trending_post}
 plugins:
   - serverless-domain-manager
   - serverless-offline
