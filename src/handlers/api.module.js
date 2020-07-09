@@ -1,14 +1,14 @@
-import RadioApi from './radioApi';
-import PostGenerator from './igPostGenerator';
+import RadioApi from '../../radioApi';
+import PostGenerator from '../../igPostGenerator';
 
 const { metricScope } = require('aws-embedded-metrics');
 const semverCompare = require('semver-compare');
-const chartService = require('./index');
-const selectActiveStreamToken = require('./activeStreamToken');
-const discoveryApi = require('./discoverApi');
-const helpers = require('./helpers');
-const constants = require('./constants');
-const formatters = require('./formatters');
+const chartService = require('../../chartsService');
+const selectActiveStreamToken = require('../../activeStreamToken');
+const discoveryApi = require('../../discoverApi');
+const helpers = require('../../helpers');
+const constants = require('../../constants');
+const formatters = require('../../formatters');
 
 const saveToS3 = helpers.saveFileToS3;
 const corsHeaders = {

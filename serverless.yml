@@ -70,43 +70,10 @@ provider:
       - sqs:ReceiveMessage
       - sqs:DeleteMessage
       Resource: ${self:custom.${self:custom.myStage}.country_charts_arn}
-# you can overwrite defaults here
-#  stage: dev
-#  region: us-east-1
-
-# you can add statements to the Lambda function's IAM Role here
-#  iamRoleStatements:
-#    - Effect: "Allow"
-#      Action:
-#        - "s3:ListBucket"
-#      Resource: { "Fn::Join" : ["", ["arn:aws:s3:::", { "Ref" : "ServerlessDeploymentBucket" } ] ]  }
-#    - Effect: "Allow"
-#      Action:
-#        - "s3:PutObject"
-#      Resource:
-#        Fn::Join:
-#          - ""
-#          - - "arn:aws:s3:::"
-#            - "Ref" : "ServerlessDeploymentBucket"
-#            - "/*"
-
-# you can define service wide environment variables here
-#  environment:
-#    variable1: value1
-
-# you can add packaging information here
-#package:
-#  include:
-#    - include-me.js
-#    - include-me-dir/**
-#  exclude:
-#    - exclude-me.js
-#    - exclude-me-dir/**
-
 
 functions:
   country_charts_pub:
-    handler: handler.countryChartsPublisher
+    handler: src/handlers/api.countryChartsPublisher
     timeout: 60
     environment:
       BUCKET: ${self:custom.bucket}
@@ -115,7 +82,7 @@ functions:
     events:
       - schedule: ${self:custom.${self:custom.myStage}.schedule_country_charts}
   country_charts_sub:
-    handler: handler.countryChartsSubscribe
+    handler: src/handlers/api.countryChartsSubscribe
     timeout: 120
     reservedConcurrency: 2
     environment:
@@ -127,7 +94,7 @@ functions:
           arn: ${self:custom.${self:custom.myStage}.country_charts_arn}
           batchSize: 1
   generateTrendingPost:
-    handler: handler.generateTrendingPosts
+    handler: src/handlers/api.generateTrendingPosts
     timeout: 120
     environment:
       BUCKET: ${self:custom.bucket}
@@ -135,7 +102,7 @@ functions:
     events:
       - schedule: ${self:custom.${self:custom.myStage}.schedule_trending_post}
   charts_endpoint:
-    handler: handler.chartsEndpoint
+    handler: src/handlers/api.chartsEndpoint
     environment:
       BUCKET: ${self:custom.bucket}
       STAGE: ${self:custom.myStage} 
@@ -144,7 +111,7 @@ functions:
           path: charts
           method: get
   top_regions:
-    handler: handler.topRegions
+    handler: src/handlers/api.topRegions
     environment:
       BUCKET: ${self:custom.bucket}
       STAGE: ${self:custom.myStage} 
@@ -153,7 +120,7 @@ functions:
           path: regions
           method: get
   postsRegions:
-    handler: handler.postsRegions
+    handler: src/handlers/api.postsRegions
     environment:
       BUCKET: ${self:custom.bucket}
       STAGE: ${self:custom.myStage} 
@@ -163,7 +130,7 @@ functions:
           method: get
   log_collector:
     timeout: 30
-    handler: handler.logCollector
+    handler: src/handlers/api.logCollector
     environment:
       BUCKET: ${self:custom.bucket}
       STAGE: ${self:custom.myStage} 
@@ -176,7 +143,7 @@ functions:
               paths:
                 deviceid: true
   exploreRelated:
-    handler: handler.exploreRelated
+    handler: src/handlers/api.exploreRelated
     environment:
       BUCKET: ${self:custom.bucket}
       STAGE: ${self:custom.myStage} 
@@ -185,7 +152,7 @@ functions:
           path: explore/related
           method: POST
   radio_countrycodes:
-    handler: handler.radioCountryCodes
+    handler: src/handlers/api.radioCountryCodes
     environment:
       BUCKET: ${self:custom.bucket}
       STAGE: ${self:custom.myStage} 
@@ -194,7 +161,7 @@ functions:
           path: radio/countrycodes
           method: get
   app_config_api:
-    handler: handler.appConfigApi
+    handler: src/handlers/api.appConfigApi
     environment:
       BUCKET: ${self:custom.bucket}
       STAGE: ${self:custom.myStage} 
@@ -203,7 +170,7 @@ functions:
           path: app/config
           method: get
   radioListByCountrycode:
-    handler: handler.radioListByCountryCode
+    handler: src/handlers/api.radioListByCountryCode
     environment:
       BUCKET: ${self:custom.bucket}
       STAGE: ${self:custom.myStage} 
@@ -216,7 +183,7 @@ functions:
               paths:
                 countrycode: true
   yearWrapped:
-    handler: handler.yearWrappedTopList
+    handler: src/handlers/api.yearWrappedTopList
     timeout: 30
     environment:
       BUCKET: ${self:custom.bucket}
@@ -233,7 +200,7 @@ functions:
                 deviceId: true
                 side: true
   ctaEndpoint:
-    handler: handler.ctaEndpoint
+    handler: src/handlers/api.ctaEndpoint
     environment:
       BUCKET: ${self:custom.bucket}
       STAGE: ${self:custom.myStage} 
@@ -248,7 +215,7 @@ functions:
                 deviceId: true
                 side: true
   token:
-    handler: handler.selectActiveToken
+    handler: src/handlers/api.selectActiveToken
     timeout: 30
     environment:
       BUCKET: ${self:custom.bucket}
@@ -256,7 +223,7 @@ functions:
     events:
       - schedule: ${self:custom.${self:custom.myStage}.schedule_token}
   discovery:
-    handler: handler.updateDiscoveryApi
+    handler: src/handlers/api.updateDiscoveryApi
     timeout: 120
     environment:
       BUCKET: ${self:custom.bucket}
@@ -264,7 +231,7 @@ functions:
     events:
       - schedule: ${self:custom.${self:custom.myStage}.schedule_discovery}
   chartsCache:
-    handler: handler.scChartsCache
+    handler: src/handlers/api.scChartsCache
     timeout: 30
     environment:
       BUCKET: ${self:custom.bucket}
