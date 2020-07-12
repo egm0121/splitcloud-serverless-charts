@@ -1,4 +1,5 @@
 import PostGenerator from '../modules/igPostGenerator';
+import DeviceReports from '../modules/deviceReports';
 
 const { metricScope } = require('aws-embedded-metrics');
 const chartService = require('../modules/chartsService');
@@ -8,6 +9,60 @@ const helpers = require('../modules/helpers');
 const constants = require('../constants/constants');
 
 const saveToS3 = helpers.saveFileToS3;
+
+module.exports.wrappedPlaylistPublisher = async () => {
+  const activeDevices = await DeviceReports.getActiveDevices();
+  console.log('total active devices:', activeDevices.length);
+  const currentYear = new Date().getFullYear().toString();
+  const writeMessages = activeDevices.map(row => {
+    const deviceId = row.dimensions[0];
+    console.log('adding to wrapped queue:', deviceId);
+    return helpers.sqs
+      .sendMessage({
+        DelaySeconds: 5,
+        MessageAttributes: {
+          deviceId: {
+            DataType: 'String',
+            StringValue: deviceId,
+          },
+          currentYear: {
+            DataType: 'String',
+            StringValue: currentYear,
+          },
+        },
+        MessageBody: `Generate wrapped playlist for device: ${deviceId}`,
+        QueueUrl: process.env.WRAPPED_PLAYLIST_QUEUE,
+      })
+      .promise();
+  });
+  const enquedMessages = await Promise.all(writeMessages);
+  return {
+    success: true,
+    totalDevices: activeDevices.length,
+    enquedMessages,
+  };
+};
+module.exports.wrappedPlaylistSubscribe = async event => {
+  const messageAttr = event.Records[0].messageAttributes;
+  const deviceId = messageAttr.deviceId.stringValue;
+  const currentYear = messageAttr.currentYear.stringValue;
+  console.log('Process wrapped playlist message:', { deviceId, currentYear });
+  const playlistsSavedPromise = ['L', 'R'].map(async side => {
+    const playlistFileName = `charts/wrapped/${currentYear}/${deviceId}_${side}.json`;
+    const trackList = await chartService.getPopularTracksByDeviceId(
+      10,
+      `${currentYear}-01-01`,
+      deviceId,
+      side
+    );
+    if (trackList.length) {
+      console.log('found valid tracklist for device: ', deviceId);
+      return saveToS3(playlistFileName, trackList);
+    }
+    return true;
+  });
+  return Promise.all(playlistsSavedPromise);
+};
 
 module.exports.countryChartsPublisher = async () => {
   const topCountryMap = {

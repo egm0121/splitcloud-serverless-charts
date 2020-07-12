@@ -256,6 +256,7 @@ const ctaHandleEndOfLife = (event, context, callback) => {
         ctaLabel: `http://www.splitcloud-app.com/?ref=upgrade&deviceId=${deviceId}`,
         ctaUrl: 'Update SplitCloud Now!',
         ctaButtonColor: '#FF7F50',
+        ctaAction: { type: 'url' },
       }),
     });
     return true;
@@ -279,6 +280,7 @@ const ctaHandleCountryPromotion = (event, context, callback) => {
         ctaLabel: promo.ctaLabel || '✨Remove Ads - 50% OFF ✨',
         ctaUrl: `${promo.ctaUrl}?country=${clientCountry}&deviceId=${deviceId}`,
         ctaButtonColor: promo.ctaButtonColor || '#da3c3c',
+        ctaAction: { type: 'url' },
       }),
     });
     return true;
@@ -317,6 +319,7 @@ module.exports.ctaEndpoint = metricScope(metrics =>
         ctaLabel,
         ctaUrl,
         ctaButtonColor,
+        ctaAction: { type: 'url' },
       }),
     });
   })

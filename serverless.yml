@@ -29,8 +29,11 @@ custom:
     schedule_discovery: rate(1 day)
     schedule_country_charts: cron(0 19 ? * MON *)
     schedule_trending_post: cron(0 20 ? * MON *)
+    schedule_wrapped_yearly: cron(0 20 30 12 *)
     country_charts_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/splitcloud_charts_by_region"
     country_charts_arn: "arn:aws:sqs:us-east-1:348868901434:splitcloud_charts_by_region"
+    wrapped_playlist_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/wrapped_playlist_queue_prod"
+    wrapped_playlist_arn: "arn:aws:sqs:us-east-1:348868901434:wrapped_playlist_queue_prod"
   dev: 
     sc_charts_cache: 
     schedule: 
@@ -38,8 +41,11 @@ custom:
     schedule_discovery:
     schedule_country_charts:
     schedule_trending_post: 
+    schedule_wrapped_yearly:
     country_charts_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/splitcloud_charts_by_region_dev"
     country_charts_arn: "arn:aws:sqs:us-east-1:348868901434:splitcloud_charts_by_region_dev"
+    wrapped_playlist_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/wrapped_playlist_queue_dev"
+    wrapped_playlist_arn: "arn:aws:sqs:us-east-1:348868901434:wrapped_playlist_queue_dev"
   bucket: "www.splitcloud-app.com"
   customDomain:
     domainName: ${self:custom.domains.${self:custom.myStage}}
@@ -70,6 +76,13 @@ provider:
       - sqs:ReceiveMessage
       - sqs:DeleteMessage
       Resource: ${self:custom.${self:custom.myStage}.country_charts_arn}
+    - Effect: "Allow"
+      Action:
+      - sqs:SendMessage
+      - sqs:GetQueueUrl
+      - sqs:ReceiveMessage
+      - sqs:DeleteMessage
+      Resource: ${self:custom.${self:custom.myStage}.wrapped_playlist_arn}
 
 functions:
   charts_endpoint:
@@ -238,6 +251,27 @@ functions:
       STAGE: ${self:custom.myStage}
     events:
       - schedule: ${self:custom.${self:custom.myStage}.schedule_trending_post}
+  wrappedPlaylistPub:
+    handler: src/handlers/batch.wrappedPlaylistPublisher
+    timeout: 120
+    environment:
+      BUCKET: ${self:custom.bucket}
+      STAGE: ${self:custom.myStage}
+      WRAPPED_PLAYLIST_QUEUE: ${self:custom.${self:custom.myStage}.wrapped_playlist_queue}
+    events:
+      - schedule: ${self:custom.${self:custom.myStage}.schedule_wrapped_yearly}
+  wrappedPlaylistSub:
+    handler: src/handlers/batch.wrappedPlaylistSubscribe
+    timeout: 50
+    reservedConcurrency: 4
+    environment:
+      BUCKET: ${self:custom.bucket}
+      STAGE: ${self:custom.myStage}
+      WRAPPED_PLAYLIST_QUEUE: ${self:custom.${self:custom.myStage}.wrapped_playlist_queue}
+    events:
+      - sqs:
+          arn: ${self:custom.${self:custom.myStage}.wrapped_playlist_arn}
+          batchSize: 1
 plugins:
   - serverless-domain-manager
   - serverless-offline
