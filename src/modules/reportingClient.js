@@ -1,5 +1,5 @@
 const { google } = require('googleapis');
-const privatekey = require('./key/splitcloud-lambda-04bda8c26386.json');
+const privatekey = require('../../key/splitcloud-lambda-04bda8c26386.json');
 
 function generateAuthClient() {
   const jwtClient = new google.auth.JWT(privatekey.client_email, null, privatekey.private_key, [

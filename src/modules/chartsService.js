@@ -3,7 +3,7 @@ const axios = require('axios');
 const fs = require('fs');
 const moment = require('moment');
 const cacheDecorator = require('egm0121-rn-common-lib/helpers/cacheDecorator').default;
-const soundcloudkey = require('./key/soundcloud_key.json');
+const soundcloudkey = require('../../key/soundcloud_key.json');
 const GAReporting = require('./reportingClient');
 
 const SC_API_ENDPOINT = 'api.soundcloud.com';

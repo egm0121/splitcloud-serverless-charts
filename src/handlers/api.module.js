@@ -1,14 +1,11 @@
-import RadioApi from './radioApi';
-import PostGenerator from './igPostGenerator';
+import RadioApi from '../modules/radioApi';
 
 const { metricScope } = require('aws-embedded-metrics');
 const semverCompare = require('semver-compare');
-const chartService = require('./index');
-const selectActiveStreamToken = require('./activeStreamToken');
-const discoveryApi = require('./discoverApi');
-const helpers = require('./helpers');
-const constants = require('./constants');
-const formatters = require('./formatters');
+const chartService = require('../modules/chartsService');
+const helpers = require('../modules/helpers');
+const constants = require('../constants/constants');
+const formatters = require('../modules/formatters');
 
 const saveToS3 = helpers.saveFileToS3;
 const corsHeaders = {
@@ -38,128 +35,6 @@ const blockUnsupportedVersions = (
     });
   }
   return handler(event, context, callback);
-};
-module.exports.countryChartsPublisher = async () => {
-  const topCountryMap = {
-    ...constants.TOP_COUNTRIES,
-    GLOBAL: 'GLOBAL',
-  };
-  const countryCodesArr = Object.keys(topCountryMap);
-  const promises = countryCodesArr.map(cCode => {
-    const cName = topCountryMap[cCode];
-    console.log(`send job for country ${cName} queue`, process.env.COUNTRY_CHARTS_QUEUE);
-    return helpers.sqs
-      .sendMessage({
-        DelaySeconds: 5,
-        MessageAttributes: {
-          countryCode: {
-            DataType: 'String',
-            StringValue: cCode,
-          },
-          countryName: {
-            DataType: 'String',
-            StringValue: cName,
-          },
-        },
-        MessageBody: `Compute top and trending charts for country ${cName}`,
-        QueueUrl: process.env.COUNTRY_CHARTS_QUEUE,
-      })
-      .promise();
-  });
-  const results = await Promise.all(promises);
-  return {
-    statusCode: 200,
-    body: results,
-  };
-};
-module.exports.countryChartsSubscribe = async event => {
-  const messageAttr = event.Records[0].messageAttributes;
-  const countryCodeString = messageAttr.countryCode.stringValue;
-  const countryNameString = messageAttr.countryName.stringValue;
-  console.log('Process country chart request:', { countryCodeString, countryNameString });
-
-  const generateChartsForCountry = async (countryCode, countryName) => {
-    try {
-      console.log(`Get top and trending charts for ${countryName}...`);
-      const isGlobal = countryCode === 'GLOBAL';
-      const tracksCount = 100;
-      const maybeCountryName = isGlobal ? undefined : countryName;
-      const topChartData = await chartService.getTopChart(tracksCount, maybeCountryName);
-      const trendingChartData = await chartService.getTrendingChart(
-        tracksCount * 2, // fetch twice the songs since we value very recent tracks with low unique plays
-        maybeCountryName
-      );
-      if (!topChartData.length && !trendingChartData.length) {
-        console.log(`Empty charts, skip country ${countryCode}`);
-        return false;
-      }
-      console.log(`Save to s3 top and trending charts for ${countryName}...`);
-      await saveToS3(`charts/country/weekly_popular_country_${countryCode}.json`, topChartData);
-      await saveToS3(
-        `charts/country/weekly_trending_country_${countryCode}.json`,
-        trendingChartData
-      );
-    } catch (err) {
-      console.log(`error while updating country(${countryCode}) charts:`, err);
-    }
-    return true;
-  };
-
-  const success = await generateChartsForCountry(countryCodeString, countryNameString);
-  if (!success) {
-    return {
-      statusCode: 204,
-      error: {
-        message: `empty charts, will skip country ${countryCodeString}`,
-      },
-    };
-  }
-  return {
-    statusCode: 200,
-    body: {
-      countryCodeString,
-    },
-  };
-};
-
-module.exports.scChartsCache = async () => {
-  const chartData = await chartService.getScTrendingChart();
-  await saveToS3(`charts/soundcloud/weekly_trending.json`, chartData);
-  return true;
-};
-module.exports.selectActiveToken = metricScope(metrics => async () => {
-  const newToken = await selectActiveStreamToken(metrics);
-  return {
-    statusCode: 200,
-    body: {
-      success: true,
-      token: newToken,
-    },
-  };
-});
-
-module.exports.updateDiscoveryApi = async () => {
-  const splitcloudSections = await helpers.readJSONFromS3('app/discover_playlists_payload.json');
-  const discovery = await discoveryApi(splitcloudSections);
-  return {
-    statusCode: 200,
-    body: {
-      success: true,
-      discovery,
-    },
-  };
-};
-
-module.exports.generateTrendingPosts = async () => {
-  const postGenerator = new PostGenerator();
-  const result = await postGenerator.generateTrendingPostsForCountries(constants.IG_POST_COUNTRIES);
-  return {
-    statusCode: 200,
-    body: {
-      success: true,
-      result,
-    },
-  };
 };
 /**
  *
@@ -381,6 +256,7 @@ const ctaHandleEndOfLife = (event, context, callback) => {
         ctaLabel: `http://www.splitcloud-app.com/?ref=upgrade&deviceId=${deviceId}`,
         ctaUrl: 'Update SplitCloud Now!',
         ctaButtonColor: '#FF7F50',
+        ctaAction: { type: 'url' },
       }),
     });
     return true;
@@ -404,6 +280,7 @@ const ctaHandleCountryPromotion = (event, context, callback) => {
         ctaLabel: promo.ctaLabel || '✨Remove Ads - 50% OFF ✨',
         ctaUrl: `${promo.ctaUrl}?country=${clientCountry}&deviceId=${deviceId}`,
         ctaButtonColor: promo.ctaButtonColor || '#da3c3c',
+        ctaAction: { type: 'url' },
       }),
     });
     return true;
@@ -442,6 +319,7 @@ module.exports.ctaEndpoint = metricScope(metrics =>
         ctaLabel,
         ctaUrl,
         ctaButtonColor,
+        ctaAction: { type: 'url' },
       }),
     });
   })

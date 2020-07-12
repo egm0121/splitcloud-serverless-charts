@@ -29,8 +29,11 @@ custom:
     schedule_discovery: rate(1 day)
     schedule_country_charts: cron(0 19 ? * MON *)
     schedule_trending_post: cron(0 20 ? * MON *)
+    schedule_wrapped_yearly: cron(0 20 30 12 *)
     country_charts_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/splitcloud_charts_by_region"
     country_charts_arn: "arn:aws:sqs:us-east-1:348868901434:splitcloud_charts_by_region"
+    wrapped_playlist_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/wrapped_playlist_queue_prod"
+    wrapped_playlist_arn: "arn:aws:sqs:us-east-1:348868901434:wrapped_playlist_queue_prod"
   dev: 
     sc_charts_cache: 
     schedule: 
@@ -38,8 +41,11 @@ custom:
     schedule_discovery:
     schedule_country_charts:
     schedule_trending_post: 
+    schedule_wrapped_yearly:
     country_charts_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/splitcloud_charts_by_region_dev"
     country_charts_arn: "arn:aws:sqs:us-east-1:348868901434:splitcloud_charts_by_region_dev"
+    wrapped_playlist_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/wrapped_playlist_queue_dev"
+    wrapped_playlist_arn: "arn:aws:sqs:us-east-1:348868901434:wrapped_playlist_queue_dev"
   bucket: "www.splitcloud-app.com"
   customDomain:
     domainName: ${self:custom.domains.${self:custom.myStage}}
@@ -70,72 +76,17 @@ provider:
       - sqs:ReceiveMessage
       - sqs:DeleteMessage
       Resource: ${self:custom.${self:custom.myStage}.country_charts_arn}
-# you can overwrite defaults here
-#  stage: dev
-#  region: us-east-1
-
-# you can add statements to the Lambda function's IAM Role here
-#  iamRoleStatements:
-#    - Effect: "Allow"
-#      Action:
-#        - "s3:ListBucket"
-#      Resource: { "Fn::Join" : ["", ["arn:aws:s3:::", { "Ref" : "ServerlessDeploymentBucket" } ] ]  }
-#    - Effect: "Allow"
-#      Action:
-#        - "s3:PutObject"
-#      Resource:
-#        Fn::Join:
-#          - ""
-#          - - "arn:aws:s3:::"
-#            - "Ref" : "ServerlessDeploymentBucket"
-#            - "/*"
-
-# you can define service wide environment variables here
-#  environment:
-#    variable1: value1
-
-# you can add packaging information here
-#package:
-#  include:
-#    - include-me.js
-#    - include-me-dir/**
-#  exclude:
-#    - exclude-me.js
-#    - exclude-me-dir/**
-
+    - Effect: "Allow"
+      Action:
+      - sqs:SendMessage
+      - sqs:GetQueueUrl
+      - sqs:ReceiveMessage
+      - sqs:DeleteMessage
+      Resource: ${self:custom.${self:custom.myStage}.wrapped_playlist_arn}
 
 functions:
-  country_charts_pub:
-    handler: handler.countryChartsPublisher
-    timeout: 60
-    environment:
-      BUCKET: ${self:custom.bucket}
-      COUNTRY_CHARTS_QUEUE: ${self:custom.${self:custom.myStage}.country_charts_queue}
-      STAGE: ${self:custom.myStage} 
-    events:
-      - schedule: ${self:custom.${self:custom.myStage}.schedule_country_charts}
-  country_charts_sub:
-    handler: handler.countryChartsSubscribe
-    timeout: 120
-    reservedConcurrency: 2
-    environment:
-      BUCKET: ${self:custom.bucket}
-      COUNTRY_CHARTS_QUEUE: ${self:custom.${self:custom.myStage}.country_charts_queue}
-      STAGE: ${self:custom.myStage}
-    events:
-      - sqs:
-          arn: ${self:custom.${self:custom.myStage}.country_charts_arn}
-          batchSize: 1
-  generateTrendingPost:
-    handler: handler.generateTrendingPosts
-    timeout: 120
-    environment:
-      BUCKET: ${self:custom.bucket}
-      STAGE: ${self:custom.myStage}
-    events:
-      - schedule: ${self:custom.${self:custom.myStage}.schedule_trending_post}
   charts_endpoint:
-    handler: handler.chartsEndpoint
+    handler: src/handlers/api.chartsEndpoint
     environment:
       BUCKET: ${self:custom.bucket}
       STAGE: ${self:custom.myStage} 
@@ -144,7 +95,7 @@ functions:
           path: charts
           method: get
   top_regions:
-    handler: handler.topRegions
+    handler: src/handlers/api.topRegions
     environment:
       BUCKET: ${self:custom.bucket}
       STAGE: ${self:custom.myStage} 
@@ -153,7 +104,7 @@ functions:
           path: regions
           method: get
   postsRegions:
-    handler: handler.postsRegions
+    handler: src/handlers/api.postsRegions
     environment:
       BUCKET: ${self:custom.bucket}
       STAGE: ${self:custom.myStage} 
@@ -163,7 +114,7 @@ functions:
           method: get
   log_collector:
     timeout: 30
-    handler: handler.logCollector
+    handler: src/handlers/api.logCollector
     environment:
       BUCKET: ${self:custom.bucket}
       STAGE: ${self:custom.myStage} 
@@ -176,7 +127,7 @@ functions:
               paths:
                 deviceid: true
   exploreRelated:
-    handler: handler.exploreRelated
+    handler: src/handlers/api.exploreRelated
     environment:
       BUCKET: ${self:custom.bucket}
       STAGE: ${self:custom.myStage} 
@@ -185,7 +136,7 @@ functions:
           path: explore/related
           method: POST
   radio_countrycodes:
-    handler: handler.radioCountryCodes
+    handler: src/handlers/api.radioCountryCodes
     environment:
       BUCKET: ${self:custom.bucket}
       STAGE: ${self:custom.myStage} 
@@ -194,7 +145,7 @@ functions:
           path: radio/countrycodes
           method: get
   app_config_api:
-    handler: handler.appConfigApi
+    handler: src/handlers/api.appConfigApi
     environment:
       BUCKET: ${self:custom.bucket}
       STAGE: ${self:custom.myStage} 
@@ -203,7 +154,7 @@ functions:
           path: app/config
           method: get
   radioListByCountrycode:
-    handler: handler.radioListByCountryCode
+    handler: src/handlers/api.radioListByCountryCode
     environment:
       BUCKET: ${self:custom.bucket}
       STAGE: ${self:custom.myStage} 
@@ -216,7 +167,7 @@ functions:
               paths:
                 countrycode: true
   yearWrapped:
-    handler: handler.yearWrappedTopList
+    handler: src/handlers/api.yearWrappedTopList
     timeout: 30
     environment:
       BUCKET: ${self:custom.bucket}
@@ -233,7 +184,7 @@ functions:
                 deviceId: true
                 side: true
   ctaEndpoint:
-    handler: handler.ctaEndpoint
+    handler: src/handlers/api.ctaEndpoint
     environment:
       BUCKET: ${self:custom.bucket}
       STAGE: ${self:custom.myStage} 
@@ -248,7 +199,7 @@ functions:
                 deviceId: true
                 side: true
   token:
-    handler: handler.selectActiveToken
+    handler: src/handlers/batch.selectActiveToken
     timeout: 30
     environment:
       BUCKET: ${self:custom.bucket}
@@ -256,7 +207,7 @@ functions:
     events:
       - schedule: ${self:custom.${self:custom.myStage}.schedule_token}
   discovery:
-    handler: handler.updateDiscoveryApi
+    handler: src/handlers/batch.updateDiscoveryApi
     timeout: 120
     environment:
       BUCKET: ${self:custom.bucket}
@@ -264,13 +215,63 @@ functions:
     events:
       - schedule: ${self:custom.${self:custom.myStage}.schedule_discovery}
   chartsCache:
-    handler: handler.scChartsCache
+    handler: src/handlers/batch.scChartsCache
     timeout: 30
     environment:
       BUCKET: ${self:custom.bucket}
       STAGE: ${self:custom.myStage} 
     events:
       - schedule: ${self:custom.${self:custom.myStage}.sc_charts_cache}
+  country_charts_pub:
+    handler: src/handlers/batch.countryChartsPublisher
+    timeout: 60
+    environment:
+      BUCKET: ${self:custom.bucket}
+      COUNTRY_CHARTS_QUEUE: ${self:custom.${self:custom.myStage}.country_charts_queue}
+      STAGE: ${self:custom.myStage} 
+    events:
+      - schedule: ${self:custom.${self:custom.myStage}.schedule_country_charts}
+  country_charts_sub:
+    handler: src/handlers/batch.countryChartsSubscribe
+    timeout: 120
+    reservedConcurrency: 2
+    environment:
+      BUCKET: ${self:custom.bucket}
+      COUNTRY_CHARTS_QUEUE: ${self:custom.${self:custom.myStage}.country_charts_queue}
+      STAGE: ${self:custom.myStage}
+    events:
+      - sqs:
+          arn: ${self:custom.${self:custom.myStage}.country_charts_arn}
+          batchSize: 1
+  generateTrendingPost:
+    handler: src/handlers/batch.generateTrendingPosts
+    timeout: 120
+    environment:
+      BUCKET: ${self:custom.bucket}
+      STAGE: ${self:custom.myStage}
+    events:
+      - schedule: ${self:custom.${self:custom.myStage}.schedule_trending_post}
+  wrappedPlaylistPub:
+    handler: src/handlers/batch.wrappedPlaylistPublisher
+    timeout: 120
+    environment:
+      BUCKET: ${self:custom.bucket}
+      STAGE: ${self:custom.myStage}
+      WRAPPED_PLAYLIST_QUEUE: ${self:custom.${self:custom.myStage}.wrapped_playlist_queue}
+    events:
+      - schedule: ${self:custom.${self:custom.myStage}.schedule_wrapped_yearly}
+  wrappedPlaylistSub:
+    handler: src/handlers/batch.wrappedPlaylistSubscribe
+    timeout: 50
+    reservedConcurrency: 4
+    environment:
+      BUCKET: ${self:custom.bucket}
+      STAGE: ${self:custom.myStage}
+      WRAPPED_PLAYLIST_QUEUE: ${self:custom.${self:custom.myStage}.wrapped_playlist_queue}
+    events:
+      - sqs:
+          arn: ${self:custom.${self:custom.myStage}.wrapped_playlist_arn}
+          batchSize: 1
 plugins:
   - serverless-domain-manager
   - serverless-offline
