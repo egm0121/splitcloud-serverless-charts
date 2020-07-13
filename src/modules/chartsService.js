@@ -97,7 +97,6 @@ async function fetchAnalyticsReport(
     });
   }
   const res = await reportingClient.reports.batchGet(reportRequest);
-  console.log('GA Report Request', JSON.stringify(reportRequest));
   return res;
 }
 async function fetchScTrackById(trackId, scApiToken = soundcloudkey.SC_CLIENT_ID) {
