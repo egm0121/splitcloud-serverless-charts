@@ -264,6 +264,16 @@ const ctaHandleEndOfLife = (event, context, callback) => {
   return false;
 };
 
+const ctaHandleWrappedYearlyPlaylist = (event, context, callback) => {
+  const currMonth = new Date().getUTCMonth();
+  const currentYear = new Date().getUTCFullYear();
+  
+  const dateInRange =
+    constants.WRAPPED_YEAR_MONTH[0] >= currMonth && currMonth <= constants.WRAPPED_YEAR_MONTH[1];
+  if (!dateInRange) return false;
+  const wrappedPlaylist = helpers.readJSONFromS3(`charts/wrapped/${currentYear}/${deviceId}_${side}.json`)
+};
+
 const ctaHandleCountryPromotion = (event, context, callback) => {
   const { deviceId } = event.pathParameters;
   const isAndroidId = deviceId.length === 16;

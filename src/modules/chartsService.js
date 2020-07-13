@@ -51,46 +51,41 @@ async function fetchAnalyticsReport(
       ],
     },
   };
+  reportRequest.requestBody.reportRequests[0].dimensionFilterClauses = [];
   if (eventAction) {
-    reportRequest.requestBody.reportRequests[0].dimensionFilterClauses = [
-      {
-        filters: [
-          {
-            dimensionName: 'ga:eventAction',
-            operator: 'EXACT',
-            expressions: [eventAction],
-          },
-        ],
-      },
-    ];
+    reportRequest.requestBody.reportRequests[0].dimensionFilterClauses.push({
+      filters: [
+        {
+          dimensionName: 'ga:eventAction',
+          operator: 'EXACT',
+          expressions: [eventAction],
+        },
+      ],
+    });
   }
   if (country) {
-    reportRequest.requestBody.reportRequests[0].dimensionFilterClauses = [
-      {
-        filters: [
-          {
-            dimensionName: 'ga:country',
-            operator: 'EXACT',
-            expressions: [country],
-          },
-        ],
-      },
-    ];
+    reportRequest.requestBody.reportRequests[0].dimensionFilterClauses.push({
+      filters: [
+        {
+          dimensionName: 'ga:country',
+          operator: 'EXACT',
+          expressions: [country],
+        },
+      ],
+    });
   }
   if (deviceId) {
-    reportRequest.requestBody.reportRequests[0].dimensionFilterClauses = [
-      {
-        filters: [
-          {
-            dimensionName: 'ga:dimension2',
-            operator: 'EXACT',
-            expressions: [deviceId],
-          },
-        ],
-      },
-    ];
+    reportRequest.requestBody.reportRequests[0].dimensionFilterClauses.push({
+      filters: [
+        {
+          dimensionName: 'ga:dimension2',
+          operator: 'EXACT',
+          expressions: [deviceId],
+        },
+      ],
+    });
   }
-  if (deviceId && category) {
+  if (category) {
     reportRequest.requestBody.reportRequests[0].dimensionFilterClauses.push({
       filters: [
         {
@@ -102,6 +97,7 @@ async function fetchAnalyticsReport(
     });
   }
   const res = await reportingClient.reports.batchGet(reportRequest);
+  console.log('GA Report Request', JSON.stringify(reportRequest));
   return res;
 }
 async function fetchScTrackById(trackId, scApiToken = soundcloudkey.SC_CLIENT_ID) {

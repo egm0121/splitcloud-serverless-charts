@@ -14,7 +14,7 @@
     "lint": "eslint \"{,!(node_modules)/**/}*.js\"",
     "format": "prettier --config ./.prettierrc  --write \"{,!(node_modules)/**/}*.js\"",
     "pre-commit": "npm run format && npm run lint",
-    "cli": "node -r esm cli.js",
+    "cli": "node -r esm ./scripts/cli.js",
     "prefetch": "node -r esm ./scripts/prefetchWrapped.js"
   },
   "author": "",
