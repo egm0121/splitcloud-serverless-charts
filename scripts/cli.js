@@ -35,7 +35,7 @@ const logTracks = tracks => {
   const timeStart = performance.now();
   const currDate = moment().format('L');
   console.log('TRENDING on ', currDate);
-  // await chartService.getTrendingChart().then(logTracks);
+  await chartService.getTrendingChart().then(logTracks);
   // const country = undefined;
   // console.log('POPULAR on ', currDate, ' country ', country);
   // await chartService.getTopChart(200, 'United States').then(logTracks);
@@ -59,10 +59,10 @@ const logTracks = tracks => {
   // console.log(await reportStats.getAvgEventCount('30daysAgo',undefined,'NEW_USERS','AD-STARTED'));
   // console.log('Average SOCIAL-SHARE per day NEW USERS');
   // console.log(await reportStats.getAvgEventCount('30daysAgo',undefined,'NEW_USERS','SHARE-COMPLETED'));
-  const deviceId = 'FB12F7C8-1D13-421C-9027-0F068262D6D9';
+  // const deviceId = 'FB12F7C8-1D13-421C-9027-0F068262D6D9';
   // const deviceId = 'c23ecb15ab837b84';
-  const topTracks = await chartService.getPopularTracksByDeviceId(20, '2020-01-01', deviceId, 'L');
-  logTracks(topTracks);
+  // const topTracks = await chartService.getPopularTracksByDeviceId(20, '2020-01-01', deviceId, 'L');
+  // logTracks(topTracks);
   console.log('Time taken', performance.now() - timeStart);
   //   const grabScreenshot = async (year = '2019', deviceId, side) => {
   //     const targetUrl = `http://www.splitcloud-app.com/wrapped.html?id=${deviceId}&year=${year}&side=${side}&t=3`;
