@@ -42,7 +42,7 @@ module.exports.wrappedPlaylistPublisher = async () => {
     enquedMessages,
   };
 };
-module.exports.wrappedPlaylistSubscribe = async event => {
+module.exports.wrappedPlaylistSubscribe = metricScope(metrics => async event => {
   const messageAttr = event.Records[0].messageAttributes;
   const deviceId = messageAttr.deviceId.stringValue;
   const currentYear = messageAttr.currentYear.stringValue;
@@ -56,13 +56,14 @@ module.exports.wrappedPlaylistSubscribe = async event => {
       side
     );
     if (trackList.length) {
-      console.log('found valid tracklist for device: ', deviceId);
       return saveToS3(playlistFileName, trackList);
     }
+    console.log(`empty tracklist detected: ${deviceId}-${side}`);
+    metrics.putMetric('wrappedPlaylistEmpty', 1);
     return true;
   });
   return Promise.all(playlistsSavedPromise);
-};
+});
 
 module.exports.countryChartsPublisher = async () => {
   const topCountryMap = {

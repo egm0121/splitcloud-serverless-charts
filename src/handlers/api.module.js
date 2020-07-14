@@ -253,8 +253,8 @@ const ctaHandleEndOfLife = (event, context, callback) => {
         ...corsHeaders,
       },
       body: JSON.stringify({
-        ctaLabel: `http://www.splitcloud-app.com/?ref=upgrade&deviceId=${deviceId}`,
-        ctaUrl: 'Update SplitCloud Now!',
+        ctaUrl: `http://www.splitcloud-app.com/?ref=upgrade&deviceId=${deviceId}`,
+        ctaLabel: 'Update SplitCloud Now!',
         ctaButtonColor: '#FF7F50',
         ctaAction: { type: 'url' },
       }),
@@ -264,14 +264,41 @@ const ctaHandleEndOfLife = (event, context, callback) => {
   return false;
 };
 
-const ctaHandleWrappedYearlyPlaylist = (event, context, callback) => {
-  const currMonth = new Date().getUTCMonth();
+const ctaHandleWrappedYearlyPlaylist = async (event, context, callback) => {
+  const currMonth = new Date().getUTCMonth() + 1; // since Date months are 0 indexed
   const currentYear = new Date().getUTCFullYear();
-  
-  const dateInRange =
-    constants.WRAPPED_YEAR_MONTH[0] >= currMonth && currMonth <= constants.WRAPPED_YEAR_MONTH[1];
-  if (!dateInRange) return false;
-  const wrappedPlaylist = helpers.readJSONFromS3(`charts/wrapped/${currentYear}/${deviceId}_${side}.json`)
+  const { deviceId, side } = event.pathParameters;
+  if (!helpers.isDEV) {
+    console.log('disabled wrapped playlist cta in prod');
+    return false;
+  }
+  const dateInRange = constants.WRAPPED_YEAR_MONTH.includes(currMonth);
+  if (!dateInRange) {
+    console.log('disabled wrapped on this date');
+    return false;
+  }
+  const playlistPath = `charts/wrapped/${currentYear}/${deviceId}_${side}.json`;
+  const wrappedPlaylist = await helpers.readJSONFromS3(playlistPath);
+  if (!wrappedPlaylist) {
+    console.log('no wrapped playlist found', playlistPath);
+    return false;
+  }
+  console.log('playlist file', wrappedPlaylist);
+  callback(null, {
+    statusCode: 200,
+    headers: {
+      ...corsHeaders,
+    },
+    body: JSON.stringify({
+      ctaUrl: '',
+      ctaLabel: 'Your 2020 Rewind!',
+      ctaButtonColor: '#FF7F50',
+      ctaAction: {
+        type: 'wrapped_playlist',
+        data: wrappedPlaylist,
+      },
+    }),
+  });
 };
 
 const ctaHandleCountryPromotion = (event, context, callback) => {
@@ -317,6 +344,7 @@ module.exports.ctaEndpoint = metricScope(metrics =>
     ctaUrl = `${ctaUrl}?variant=${selectedVariant}&v=5`;
     const ctaLabel = selectedVariant === 'A' ? ctaLabelA : ctaLabelB;
     if (ctaHandleEndOfLife(event, context, callback)) return true;
+    if (await ctaHandleWrappedYearlyPlaylist(event, context, callback)) return true;
     if (ctaHandleCountryPromotion(event, context, callback)) return true;
     metrics.setNamespace('ctaEndpoint');
     metrics.putMetric(`test_variant_${selectedVariant}`, 1);
