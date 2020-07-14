@@ -269,7 +269,6 @@ const ctaHandleWrappedYearlyPlaylist = async (event, context, callback) => {
   const currentYear = new Date().getUTCFullYear();
   const { deviceId, side } = event.pathParameters;
   if (!helpers.isDEV) {
-    console.log('disabled wrapped playlist cta in prod');
     return false;
   }
   const dateInRange = constants.WRAPPED_YEAR_MONTH.includes(currMonth);
