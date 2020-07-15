@@ -23,7 +23,7 @@ export const formatPlaylistPayload = scPlaylist => ({
   duration: scPlaylist.duration,
   artwork_url: scPlaylist.artwork_url,
   track_count: scPlaylist.track_count,
-  tracks: (scPlaylist || []).map(formatTrackListPayload),
+  tracks: formatTrackListPayload(scPlaylist.tracks || []),
   user: {
     id: scPlaylist.user.id,
     username: scPlaylist.user.username,
@@ -44,3 +44,22 @@ export const formatRadioStationPayload = radioPayload => ({
   votes: radioPayload.votes,
 });
 export const formatRadioStationListPayload = radioArr => radioArr.map(formatRadioStationPayload);
+
+export const createPlaylistFromTrackList = (
+  tracks,
+  title,
+  userData = {
+    permalink_url: 'https://soundcloud.com/splitcloud',
+    permalink: 'splitcloud',
+    username: 'SplitCloud',
+    uri: 'https://api.soundcloud.com/users/596081820',
+    id: 596081820,
+    kind: 'user',
+  }
+) => ({
+  id: null,
+  user: userData,
+  artwork: tracks[0].artwork_url,
+  title,
+  tracks,
+});

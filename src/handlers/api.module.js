@@ -294,7 +294,9 @@ const ctaHandleWrappedYearlyPlaylist = async (event, context, callback) => {
       ctaButtonColor: '#FF7F50',
       ctaAction: {
         type: 'wrapped_playlist',
-        data: wrappedPlaylist,
+        data: formatters.formatPlaylistPayload(
+          formatters.createPlaylistFromTrackList(wrappedPlaylist, 'Your 2020 Rewind')
+        ),
       },
     }),
   });

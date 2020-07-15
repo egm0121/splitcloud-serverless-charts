@@ -105,10 +105,7 @@ async function getPlaylistFromChart(title, chartType, countryCode) {
     },
     artwork: tracks[0].artwork_url,
     title,
-    tracks: tracks.slice(0, 10).map(t => {
-      t.description = '';
-      return t;
-    }),
+    tracks: tracks.slice(0, 10),
   };
 }
 async function generateSectionsForCountries(countriesList) {
