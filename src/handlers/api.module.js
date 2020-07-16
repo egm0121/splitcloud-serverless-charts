@@ -268,12 +268,9 @@ const ctaHandleWrappedYearlyPlaylist = async (event, context, callback) => {
   const currMonth = new Date().getUTCMonth() + 1; // since Date months are 0 indexed
   const currentYear = new Date().getUTCFullYear();
   const { deviceId, side } = event.pathParameters;
-  if (!helpers.isDEV) {
-    return false;
-  }
   const dateInRange = constants.WRAPPED_YEAR_MONTH.includes(currMonth);
-  if (!dateInRange) {
-    console.log('disabled wrapped on this date');
+  if (!dateInRange && !helpers.isDEV) {
+    console.log('disabled wrapped on this date in prod');
     return false;
   }
   const playlistPath = `charts/wrapped/${currentYear}/${deviceId}_${side}.json`;
