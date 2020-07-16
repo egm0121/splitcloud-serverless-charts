@@ -277,8 +277,10 @@ const ctaHandleWrappedYearlyPlaylist = async (event, context, callback) => {
     return false;
   }
   const playlistPath = `charts/wrapped/${currentYear}/${deviceId}_${side}.json`;
-  const wrappedPlaylist = await helpers.readJSONFromS3(playlistPath);
-  if (!wrappedPlaylist) {
+  let wrappedPlaylist;
+  try {
+    wrappedPlaylist = await helpers.readJSONFromS3(playlistPath);
+  } catch (err) {
     console.log('no wrapped playlist found', playlistPath);
     return false;
   }
