@@ -14,6 +14,7 @@ const corsHeaders = {
 };
 const LATEST_VERSION = '5.7';
 const MIN_SUPPORTED_VERSION = '5.6'; // specify M.m without patch to allow matching client versions without patch
+const MIN_PLAYLIST_IN_CTA_VERSION = '6.0'; // first client version that supports embedding playlist in CTA response
 const MIN_TRACK_DURATION = 30 * 1e3;
 
 const isUnsupportedVersion = clientVersion =>
@@ -268,7 +269,9 @@ const ctaHandleWrappedYearlyPlaylist = async (event, context, callback) => {
   const currMonth = new Date().getUTCMonth() + 1; // since Date months are 0 indexed
   const currentYear = new Date().getUTCFullYear();
   const { deviceId, side } = event.pathParameters;
+  const clientVersion = helpers.getQueryParam(event, 'appVersion');
   const dateInRange = constants.WRAPPED_YEAR_MONTH.includes(currMonth);
+  if (semverCompare(clientVersion, MIN_PLAYLIST_IN_CTA_VERSION) === -1) return false;
   if (!dateInRange && !helpers.isDEV) {
     console.log('disabled wrapped on this date in prod');
     return false;
@@ -281,7 +284,6 @@ const ctaHandleWrappedYearlyPlaylist = async (event, context, callback) => {
     console.log('no wrapped playlist found', playlistPath);
     return false;
   }
-  console.log('playlist file', wrappedPlaylist);
   callback(null, {
     statusCode: 200,
     headers: {
