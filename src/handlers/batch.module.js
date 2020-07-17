@@ -1,5 +1,6 @@
-import PostGenerator from '../modules/igPostGenerator';
+import PostGenerator from 'egm0121-rn-common-lib/modules/IGPostGenerator';
 import DeviceReports from '../modules/deviceReports';
+import ScreenshotConfig from '../../key/getScreenshots.json';
 
 const { metricScope } = require('aws-embedded-metrics');
 const chartService = require('../modules/chartsService');
@@ -177,8 +178,20 @@ module.exports.updateDiscoveryApi = async () => {
 };
 
 module.exports.generateTrendingPosts = async () => {
-  const postGenerator = new PostGenerator();
-  const result = await postGenerator.generateTrendingPostsForCountries(constants.IG_POST_COUNTRIES);
+  const postGenerator = new PostGenerator({
+    apiKey: ScreenshotConfig.API_KEY,
+  });
+  const generateImages = await postGenerator.generateTrendingPostsForCountries(
+    constants.IG_POST_COUNTRIES
+  );
+  const storeToS3Promises = generateImages.map(imageData => {
+    return helpers.saveBlobToS3(
+      `posts/trending/country_${imageData.countryCode}.png`,
+      imageData.blob,
+      'image/png'
+    );
+  });
+  const result = await Promise.all(storeToS3Promises);
   return {
     statusCode: 200,
     body: {
