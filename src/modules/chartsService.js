@@ -15,7 +15,8 @@ async function fetchAnalyticsReport(
   startDate = '7daysAgo',
   deviceId = false,
   category,
-  eventAction = 'playback-completed'
+  eventAction = 'playback-completed',
+  endDate = '0daysAgo'
 ) {
   const reportingClient = await GAReporting.initReportingClient();
   const reportRequest = {
@@ -26,7 +27,7 @@ async function fetchAnalyticsReport(
           dateRanges: [
             {
               startDate,
-              endDate: '0daysAgo',
+              endDate,
             },
           ],
           metrics: [
@@ -84,6 +85,10 @@ async function fetchAnalyticsReport(
         },
       ],
     });
+    // if filtering by deviceId we only want to sort by totalEvents - since they all got generated from same client
+    reportRequest.requestBody.reportRequests[0].orderBys = [
+      { fieldName: 'ga:totalEvents', sortOrder: 'DESCENDING' },
+    ];
   }
   if (category) {
     reportRequest.requestBody.reportRequests[0].dimensionFilterClauses.push({

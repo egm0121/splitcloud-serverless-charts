@@ -51,7 +51,7 @@ module.exports.wrappedPlaylistSubscribe = metricScope(metrics => async event => 
   const playlistsSavedPromise = ['L', 'R'].map(async side => {
     const playlistFileName = `charts/wrapped/${currentYear}/${deviceId}_${side}.json`;
     const trackList = await chartService.getPopularTracksByDeviceId(
-      10,
+      25,
       `${currentYear}-01-01`,
       deviceId,
       side
