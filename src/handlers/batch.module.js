@@ -181,12 +181,37 @@ module.exports.generateTrendingPosts = async () => {
   const postGenerator = new PostGenerator({
     apiKey: ScreenshotConfig.API_KEY,
   });
-  const generateImages = await postGenerator.generateTrendingPostsForCountries(
-    constants.IG_POST_COUNTRIES
+  const generateImages = await postGenerator.generateChartPostsForCountries(
+    constants.IG_POST_COUNTRIES,
+    'trending'
   );
   const storeToS3Promises = generateImages.map(imageData => {
     return helpers.saveBlobToS3(
       `posts/trending/country_${imageData.countryCode}.png`,
+      imageData.blob,
+      'image/png'
+    );
+  });
+  const result = await Promise.all(storeToS3Promises);
+  return {
+    statusCode: 200,
+    body: {
+      success: true,
+      result,
+    },
+  };
+};
+module.exports.generatePopularPosts = async () => {
+  const postGenerator = new PostGenerator({
+    apiKey: ScreenshotConfig.API_KEY,
+  });
+  const generateImages = await postGenerator.generateChartPostsForCountries(
+    constants.IG_POST_COUNTRIES,
+    'popular'
+  );
+  const storeToS3Promises = generateImages.map(imageData => {
+    return helpers.saveBlobToS3(
+      `posts/popular/country_${imageData.countryCode}.png`,
       imageData.blob,
       'image/png'
     );

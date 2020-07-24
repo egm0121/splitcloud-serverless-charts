@@ -29,6 +29,7 @@ custom:
     schedule_discovery: rate(1 day)
     schedule_country_charts: cron(0 19 ? * MON *)
     schedule_trending_post: cron(0 20 ? * MON *)
+    schedule_popular_post: cron(2 20 ? * MON *)
     schedule_wrapped_yearly: cron(0 18 30 12 ? *)
     country_charts_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/splitcloud_charts_by_region"
     country_charts_arn: "arn:aws:sqs:us-east-1:348868901434:splitcloud_charts_by_region"
@@ -43,6 +44,7 @@ custom:
     schedule_discovery:
     schedule_country_charts:
     schedule_trending_post: 
+    schedule_popular_post:
     schedule_wrapped_yearly:
     country_charts_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/splitcloud_charts_by_region_dev"
     country_charts_arn: "arn:aws:sqs:us-east-1:348868901434:splitcloud_charts_by_region_dev"
@@ -256,6 +258,14 @@ functions:
       STAGE: ${self:custom.myStage}
     events:
       - schedule: ${self:custom.${self:custom.myStage}.schedule_trending_post}
+  generatePopularPosts:
+    handler: src/handlers/batch.generatePopularPosts
+    timeout: 120
+    environment:
+      BUCKET: ${self:custom.bucket}
+      STAGE: ${self:custom.myStage}
+    events:
+      - schedule: ${self:custom.${self:custom.myStage}.schedule_popular_post}
   wrappedPlaylistPub:
     handler: src/handlers/batch.wrappedPlaylistPublisher
     timeout: 120
