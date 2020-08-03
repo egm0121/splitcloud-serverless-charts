@@ -34,7 +34,7 @@ export const formatPlaylistPayload = scPlaylist => ({
 });
 
 export const formatRadioStationPayload = radioPayload => ({
-  id: radioPayload.id,
+  id: radioPayload.stationuuid,
   name: radioPayload.name,
   url: radioPayload.url,
   country: radioPayload.country,

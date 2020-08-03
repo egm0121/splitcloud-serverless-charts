@@ -259,7 +259,6 @@ module.exports = {
   STATIONS_CUSTOM: {
     FR: [
       {
-        id: 'splitcloud_1',
         changeuuid: 'splitcloud_1',
         stationuuid: 'splitcloud_1',
         name: 'SkyRock',
@@ -288,7 +287,6 @@ module.exports = {
     ],
     IT: [
       {
-        id: 'splitcloud_2',
         changeuuid: 'splitcloud_2',
         stationuuid: 'splitcloud_2',
         name: 'TRX Radio',

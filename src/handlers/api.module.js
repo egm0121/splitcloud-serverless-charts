@@ -123,7 +123,9 @@ module.exports.radioListByCountryCode = async (event, context, callback) => {
     const resp = await radioInstance.getStationsByCountryCode({
       countryCode,
     });
-    const radioList = resp.data.filter(station => !stationsBlacklist[station.id]);
+    // filter out blacklisted stations
+    const radioList = resp.data.filter(station => !stationsBlacklist[station.stationuuid]);
+    // add custom stations for countryCode
     if (constants.STATIONS_CUSTOM[countryCode]) {
       radioList.push(...constants.STATIONS_CUSTOM[countryCode]);
     }
