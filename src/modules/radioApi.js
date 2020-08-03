@@ -3,7 +3,7 @@ import cacheDecorator from 'egm0121-rn-common-lib/helpers/cacheDecorator';
 
 class RadioApi {
   constructor() {
-    this.endpoint = 'http://www.radio-browser.info/webservice/json';
+    this.endpoint = 'https://de1.api.radio-browser.info/json';
     this.timeout = 5 * 1e3;
     this.getStationsByCountryCode = cacheDecorator.withCache(
       this.getStationsByCountryCode.bind(this),
