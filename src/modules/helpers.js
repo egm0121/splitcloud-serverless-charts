@@ -88,6 +88,7 @@ async function readS3Cache(keyName) {
       return null;
     }
     console.warn('readS3Cache: error', err);
+    return null;
   }
   return JSON.parse(resp.Body.toString());
 }
