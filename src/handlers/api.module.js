@@ -117,21 +117,28 @@ module.exports.radioCountryCodes = blockUnsupportedVersions((event, context, cal
 
 module.exports.radioListByCountryCode = async (event, context, callback) => {
   const radioInstance = new RadioApi();
-  const countryCode = event.pathParameters.countrycode;
+  const countryCode = (event.pathParameters.countrycode || '').toUpperCase();
   try {
-    const stationsBlacklist = constants.STATIONS_BLACKLIST;
-    const resp = await radioInstance.getStationsByCountryCode({
-      countryCode,
-    });
-    // filter out blacklisted stations
-    const radioList = resp.data.filter(station => !stationsBlacklist[station.stationuuid]);
-    // add custom stations for countryCode
-    if (constants.STATIONS_CUSTOM[countryCode]) {
-      radioList.push(...constants.STATIONS_CUSTOM[countryCode]);
+    const radioListCacheKey = `radio/list/countrycode/${countryCode}.json`;
+    let formattedRadioList = await helpers.readS3Cache(radioListCacheKey);
+    if (!formattedRadioList) {
+      const stationsBlacklist = constants.STATIONS_BLACKLIST;
+      const resp = await radioInstance.getStationsByCountryCode({
+        countryCode,
+      });
+      // filter out blacklisted stations
+      const radioList = resp.data.filter(station => !stationsBlacklist[station.stationuuid]);
+      // add custom stations for countryCode
+      if (constants.STATIONS_CUSTOM[countryCode]) {
+        radioList.push(...constants.STATIONS_CUSTOM[countryCode]);
+      }
+      formattedRadioList = formatters.formatRadioStationListPayload(radioList);
+      // cache the formatted radiostation list to cache bucket with 7day expiry rule
+      await helpers.writeS3Cache(radioListCacheKey, formattedRadioList, 'ttl7');
     }
     callback(null, {
       statusCode: 200,
-      body: JSON.stringify(formatters.formatRadioStationListPayload(radioList)),
+      body: JSON.stringify(formattedRadioList),
     });
   } catch (err) {
     callback(null, {

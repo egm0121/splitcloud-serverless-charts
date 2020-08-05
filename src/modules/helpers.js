@@ -55,6 +55,42 @@ async function readFileFromS3(keyName) {
   }
   return resp.Body.toString();
 }
+async function writeS3Cache(keyName, value, ttl = 'ttl7', stringify = true) {
+  const [path, extension] = keyName.split('.');
+  const finalKeyName = `${path}${isDEV ? '_dev' : ''}.${extension}`;
+  console.log('will write to s3 cache bucket:', finalKeyName);
+  return s3
+    .putObject({
+      Bucket: process.env.CACHE_BUCKET,
+      ContentType: 'application/json',
+      CacheControl: 'max-age=0,must-revalidate',
+      Key: finalKeyName,
+      Body: stringify ? JSON.stringify(value) : value,
+      Tagging: `${ttl}=1`,
+    })
+    .promise();
+}
+async function readS3Cache(keyName) {
+  const [path, extension] = keyName.split('.');
+  const finalKeyName = `${path}${isDEV ? '_dev' : ''}.${extension}`;
+  console.log('readS3Cache:', finalKeyName);
+  let resp;
+  try {
+    resp = await s3
+      .getObject({
+        Bucket: process.env.CACHE_BUCKET,
+        Key: finalKeyName,
+      })
+      .promise();
+  } catch (err) {
+    if (err.code === 'NoSuchKey') {
+      console.log('readS3Cache: cache miss', finalKeyName);
+      return null;
+    }
+    console.warn('readS3Cache: error', err);
+  }
+  return JSON.parse(resp.Body.toString());
+}
 async function readJSONFromS3(keyName) {
   let contents;
   try {
@@ -89,6 +125,8 @@ module.exports = {
   saveBlobToS3,
   readFileFromS3,
   readJSONFromS3,
+  writeS3Cache,
+  readS3Cache,
   getQueryParam,
   isDEV,
   sqs,
