@@ -166,6 +166,15 @@ module.exports.selectActiveToken = metricScope(metrics => async () => {
 });
 
 module.exports.updateDiscoveryApi = async () => {
+  /** DISCOVER CUSTOM PLAYLIST PAYLOAD
+   * [
+   *  {
+   *   "sectionName" : "SplitCloud Spotlight",
+   *   "sectionDescription": "Exclusive playlists selected by SplitCloud",
+   *   "playlists" : [951719269,810462237,720814749]
+   *  }
+   * ]
+   */
   const splitcloudSections = await helpers.readJSONFromS3('app/discover_playlists_payload.json');
   const discovery = await discoveryApi(splitcloudSections);
   return {
