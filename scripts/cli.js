@@ -5,6 +5,7 @@ const axios = require('axios');
 const chartService = require('../src/modules/chartsService');
 const discoverApi = require('../src/modules/discoverApi');
 const reportStats = require('../src/modules/reportStats');
+const constants  = require('../src/constants/constants');
 const getScreenshots = require('../key/getScreenshots');
 
 const logTracks = tracks => {
@@ -60,10 +61,14 @@ const logTracks = tracks => {
   // console.log(await reportStats.getAvgEventCount('30daysAgo',undefined,'NEW_USERS','AD-STARTED'));
   // console.log('Average SOCIAL-SHARE per day NEW USERS');
   // console.log(await reportStats.getAvgEventCount('30daysAgo',undefined,'NEW_USERS','SHARE-COMPLETED'));
-  const deviceId = 'FB12F7C8-1D13-421C-9027-0F068262D6D9';
+  // const deviceId = 'FB12F7C8-1D13-421C-9027-0F068262D6D9';
   // const deviceId = 'c23ecb15ab837b84';
-  const topTracks = await chartService.getPopularTracksByDeviceId(25, '2020-01-01', deviceId, 'L');
-  logTracks(topTracks);
+  // const topTracks = await chartService.getPopularTracksByDeviceId(25, '2020-01-01', deviceId, 'L');
+  const topRadioStations = await chartService.getTopRadioStationsByCountry(
+    20,
+    constants.TOP_COUNTRIES.IN
+  );
+  logTracks(topRadioStations);
   console.log('Time taken', performance.now() - timeStart);
   //   const grabScreenshot = async (year = '2019', deviceId, side) => {
   //     const targetUrl = `http://www.splitcloud-app.com/wrapped.html?id=${deviceId}&year=${year}&side=${side}&t=3`;

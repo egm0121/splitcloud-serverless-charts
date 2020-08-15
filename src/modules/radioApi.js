@@ -14,7 +14,6 @@ class RadioApi {
 
   request(...args) {
     const requestObj = this.buildRequestObject(...[this.endpoint, ...args]);
-    console.log('RadioBrowser api request object', requestObj);
     return axios(requestObj);
   }
 
@@ -71,6 +70,16 @@ class RadioApi {
       RadioApi.methods.GET,
       cancelToken
     );
+  }
+
+  getStationById(opts) {
+    const [cancelToken, queryOpts] = this.extractCancelToken(opts);
+    return this.request(
+      `stations/byuuid/${opts.id}`,
+      { ...queryOpts },
+      RadioApi.methods.GET,
+      cancelToken
+    ).then(resp => resp.data[0]);
   }
 }
 

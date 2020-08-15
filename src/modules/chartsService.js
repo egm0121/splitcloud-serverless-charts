@@ -5,10 +5,12 @@ const moment = require('moment');
 const cacheDecorator = require('egm0121-rn-common-lib/helpers/cacheDecorator').default;
 const soundcloudkey = require('../../key/soundcloud_key.json');
 const GAReporting = require('./reportingClient');
+const RadioApi = require('../modules/radioApi').default;
 
 const SC_API_ENDPOINT = 'api.soundcloud.com';
 const SC_V2_API_ENDPOINT = 'api-v2.soundcloud.com';
 const MAX_TRACK_DURATION = 25 * 60 * 1000; // 20min
+const radioApiInstance = new RadioApi();
 async function fetchAnalyticsReport(
   limit,
   country,
@@ -119,7 +121,32 @@ async function fetchSoundCloudTrendingChart(scApiToken = soundcloudkey.SC_CLIENT
   const chartData = await axios({ method: 'GET', url: relatedUrl, timeout: 1500 });
   return chartData.data.collection.map(item => item.track);
 }
-
+async function fetchRadioStationById(stationId) {
+  return radioApiInstance.getStationById({ id: stationId });
+}
+async function hydrateRadioStations(stationList) {
+  const finalTracks = {};
+  return stationList
+    .map(track => {
+      const resolveTrack = Object.assign({}, track);
+      resolveTrack.fetch = () =>
+        fetchRadioStationById(track.id).catch(err => {
+          console.warn(`radio track ${track.id} retrival failed`, err.message);
+          return Promise.resolve();
+        });
+      return resolveTrack;
+    })
+    .reduce((prevPromise, nextTrackObj, idx, initList) => {
+      const currTrackObj = initList[idx - 1];
+      return prevPromise.then(stationData => {
+        if (stationData) {
+          finalTracks[currTrackObj.id] = { ...currTrackObj, ...stationData, fetch: undefined };
+        }
+        return nextTrackObj.fetch();
+      });
+    }, Promise.resolve())
+    .then(() => Object.values(finalTracks));
+}
 async function hydrateSoundcloudTracks(trackList, scApiToken) {
   const finalTracks = {};
   return trackList
@@ -236,6 +263,25 @@ class ChartsService {
       .then(chart => chart.slice(0, 50));
   }
 
+  getTopRadioStationsByCountry(limit = 75, country = '') {
+    return fetchAnalyticsReport(
+      limit,
+      country,
+      '30daysAgo',
+      false,
+      false,
+      'radio-playback-completed'
+    )
+      .then(extractResponseRows)
+      .then(list => {
+        return list
+          .map(station => ({ ...station, id: station.id.replace('radiobrowser_', '') }))
+          .filter(station => station.id.indexOf('-') > -1);
+      })
+      .then(hydrateRadioStations)
+      .then(sortByTotalPlays);
+  }
+
   getPopularTracksByDeviceId(limit = 10, startDate, deviceId, side) {
     const category = side ? `side-${side}` : null;
     return fetchAnalyticsReport(limit, null, startDate, deviceId, category)
@@ -248,20 +294,6 @@ class ChartsService {
 
   sortTrendingTracks(tracks) {
     return sortByPopularityWithDecay(tracks);
-  }
-
-  saveChartToFile(jsonFileName = './top_splitcloud_tracks.json') {
-    return this.getTopChart()
-      .then(tracks => {
-        fs.writeFileSync(jsonFileName, JSON.stringify(tracks));
-        return tracks;
-      })
-      .then(tracks => {
-        tracks.map(t =>
-          console.log(t.id, t.title, t.splitcloud_total_plays, t.splitcloud_unique_plays, t.score)
-        );
-        return tracks;
-      });
   }
 
   fetchRelatedTracksById(id) {

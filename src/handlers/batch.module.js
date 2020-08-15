@@ -116,6 +116,10 @@ module.exports.countryChartsSubscribe = async event => {
         tracksCount * 2, // fetch twice the songs since we value very recent tracks with low unique plays
         maybeCountryName
       );
+      const topRadioStationsData = await chartService.getTopRadioStationsByCountry(
+        25,
+        maybeCountryName
+      );
       if (!topChartData.length && !trendingChartData.length) {
         console.log(`Empty charts, skip country ${countryCode}`);
         return false;
@@ -125,6 +129,10 @@ module.exports.countryChartsSubscribe = async event => {
       await saveToS3(
         `charts/country/weekly_trending_country_${countryCode}.json`,
         trendingChartData
+      );
+      await saveToS3(
+        `charts/radios/weekly_popular_county_${countryCode}.json`,
+        topRadioStationsData
       );
     } catch (err) {
       console.log(`error while updating country(${countryCode}) charts:`, err);
