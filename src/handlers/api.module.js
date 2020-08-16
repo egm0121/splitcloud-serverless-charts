@@ -352,20 +352,20 @@ const ctaHandleCountryPromotion = (event, context, callback) => {
   return false;
 };
 
-const ctaHandleFeaturePromotion = (event, context, callback) => {
+
+const ctaHandleGiveaway = (event, context, callback) => {
   const { deviceId } = event.pathParameters;
   const isAndroidId = deviceId.length === 16;
-  const clientVersion = helpers.getQueryParam(event, 'appVersion');
-  const promoExpiry = new Date('2020-08-11T23:59:00.000Z');
-  if (isAndroidId && new Date() < promoExpiry && clientVersion.indexOf('6.1') > -1) {
+  const promoExpiry = new Date('2020-08-31T23:59:00.000Z');
+  if (isAndroidId && new Date() < promoExpiry) {
     callback(null, {
       statusCode: 200,
       headers: {
         ...corsHeaders,
       },
       body: JSON.stringify({
-        ctaLabel: '✨New: Music Folders ✨',
-        ctaUrl: `http://www.splitcloud-app.com/folders_feature.html`,
+        ctaLabel: '📢Giveaway ✨Remove Ads ✨',
+        ctaUrl: `http://www.splitcloud-app.com/giveaway.html`,
         ctaButtonColor: '#da3c3c',
         ctaAction: { type: 'url' },
       }),
@@ -396,7 +396,7 @@ module.exports.ctaEndpoint = metricScope(metrics =>
     if (ctaHandleEndOfLife(event, context, callback)) return true;
     if (await ctaHandleWrappedYearlyPlaylist(event, context, callback)) return true;
     if (ctaHandleCountryPromotion(event, context, callback)) return true;
-    if (ctaHandleFeaturePromotion(event, context, callback)) return true;
+    if (ctaHandleGiveaway(event, context, callback)) return true;
     metrics.setNamespace('ctaEndpoint');
     metrics.putMetric(`test_variant_${selectedVariant}`, 1);
     return callback(null, {
