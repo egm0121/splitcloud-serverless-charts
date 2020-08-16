@@ -115,6 +115,17 @@ module.exports.radioCountryCodes = blockUnsupportedVersions((event, context, cal
  * /radio/list/countrycode/{countrycode}
  */
 
+const getPopularStationsForCountry = cCode => {
+  try {
+    if (cCode in constants.TOP_COUNTRIES) {
+      console.log('get popular stations for country');
+      return helpers.readJSONFromS3(`charts/radios/weekly_popular_country_${cCode}.json`);
+    }
+    return [];
+  } catch (err) {
+    return [];
+  }
+};
 module.exports.radioListByCountryCode = async (event, context, callback) => {
   const radioInstance = new RadioApi();
   const countryCode = (event.pathParameters.countrycode || '').toUpperCase();
@@ -126,8 +137,13 @@ module.exports.radioListByCountryCode = async (event, context, callback) => {
       const resp = await radioInstance.getStationsByCountryCode({
         countryCode,
       });
+      const popularStations = await getPopularStationsForCountry(countryCode);
       // filter out blacklisted stations
       const radioList = resp.data.filter(station => !stationsBlacklist[station.stationuuid]);
+      popularStations.forEach(popularItem => {
+        const radioItem = radioList.find(item => item.stationuuid === popularItem.stationuuid);
+        radioItem.votes += popularItem.splitcloud_unique_plays * 1e3; // make the unique plays on splitcloud count 1k more than a vote
+      });
       // add custom stations for countryCode
       if (constants.STATIONS_CUSTOM[countryCode]) {
         radioList.push(...constants.STATIONS_CUSTOM[countryCode]);

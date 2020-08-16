@@ -131,7 +131,7 @@ module.exports.countryChartsSubscribe = async event => {
         trendingChartData
       );
       await saveToS3(
-        `charts/radios/weekly_popular_county_${countryCode}.json`,
+        `charts/radios/weekly_popular_country_${countryCode}.json`,
         topRadioStationsData
       );
     } catch (err) {
