@@ -364,7 +364,7 @@ const ctaHandleGiveaway = (event, context, callback) => {
         ...corsHeaders,
       },
       body: JSON.stringify({
-        ctaLabel: '📢Giveaway ✨Remove Ads ✨',
+        ctaLabel: '📢 Giveaway ✨Remove Ads ✨',
         ctaUrl: `http://www.splitcloud-app.com/giveaway.html`,
         ctaButtonColor: '#da3c3c',
         ctaAction: { type: 'url' },
