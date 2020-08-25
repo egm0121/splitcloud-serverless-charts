@@ -4,11 +4,20 @@ const AWS = require('aws-sdk');
 AWS.config.update({ region: 'us-east-1' });
 const isDEV = process.env.STAGE === 'dev';
 const s3 = new AWS.S3();
+const SNS = new AWS.SNS();
 const getQueryParam = (event, param) => {
   return event.queryStringParameters && event.queryStringParameters[param];
 };
 const sqs = new AWS.SQS({ apiVersion: 'latest' });
 
+async function pushToTopic(messageObj, topic) {
+  console.log('push message to topic', topic);
+  return SNS.publish({
+    Message: messageObj.MessageBody,
+    MessageAttributes: messageObj.MessageAttributes,
+    TopicArn: topic,
+  }).promise();
+}
 async function saveBlobToS3(keyName, buffer, format = 'image/png') {
   const [path, extension] = keyName.split('.');
   const finalKeyName = `${path}${isDEV ? '_dev' : ''}.${extension}`;
@@ -134,4 +143,5 @@ module.exports = {
   arrayInPlaceShuffle,
   selectVariantFromDeviceId,
   selectVariantFromHash,
+  pushToTopic,
 };

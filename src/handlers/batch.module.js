@@ -134,6 +134,22 @@ module.exports.countryChartsSubscribe = async event => {
         `charts/radios/weekly_popular_country_${countryCode}.json`,
         topRadioStationsData
       );
+      await helpers.pushToTopic(
+        {
+          MessageBody: `country charts created successfully for ${countryName}`,
+          MessageAttributes: {
+            countryCode: {
+              DataType: 'String',
+              StringValue: countryCode,
+            },
+            countryName: {
+              DataType: 'String',
+              StringValue: countryName,
+            },
+          },
+        },
+        process.env.CHART_CREATED_TOPIC
+      );
     } catch (err) {
       console.log(`error while updating country(${countryCode}) charts:`, err);
     }
@@ -194,46 +210,28 @@ module.exports.updateDiscoveryApi = async () => {
   };
 };
 
-module.exports.generateTrendingPosts = async () => {
+module.exports.generateChartPosts = async event => {
+  const messageAttr = event.Records[0].messageAttributes;
+  const countryCodeString = messageAttr.countryCode.stringValue;
   const postGenerator = new PostGenerator({
     apiKey: ScreenshotConfig.API_KEY,
   });
-  const generateImages = await postGenerator.generateChartPostsForCountries(
-    constants.IG_POST_COUNTRIES,
-    'trending'
+  console.log('generatePopular & trending posts for:', countryCodeString);
+  const [[generatePopularImage], [generateTrendingImage]] = await Promise.all([
+    postGenerator.generateChartPostsForCountries([countryCodeString], 'popular'),
+    postGenerator.generateChartPostsForCountries([countryCodeString], 'trending'),
+  ]);
+  const storeToS3Popular = helpers.saveBlobToS3(
+    `posts/popular/country_${generatePopularImage.countryCode}.png`,
+    generatePopularImage.blob,
+    'image/png'
   );
-  const storeToS3Promises = generateImages.map(imageData => {
-    return helpers.saveBlobToS3(
-      `posts/trending/country_${imageData.countryCode}.png`,
-      imageData.blob,
-      'image/png'
-    );
-  });
-  const result = await Promise.all(storeToS3Promises);
-  return {
-    statusCode: 200,
-    body: {
-      success: true,
-      result,
-    },
-  };
-};
-module.exports.generatePopularPosts = async () => {
-  const postGenerator = new PostGenerator({
-    apiKey: ScreenshotConfig.API_KEY,
-  });
-  const generateImages = await postGenerator.generateChartPostsForCountries(
-    constants.IG_POST_COUNTRIES,
-    'popular'
+  const storeToS3Trending = helpers.saveBlobToS3(
+    `posts/trending/country_${generateTrendingImage.countryCode}.png`,
+    generateTrendingImage.blob,
+    'image/png'
   );
-  const storeToS3Promises = generateImages.map(imageData => {
-    return helpers.saveBlobToS3(
-      `posts/popular/country_${imageData.countryCode}.png`,
-      imageData.blob,
-      'image/png'
-    );
-  });
-  const result = await Promise.all(storeToS3Promises);
+  const result = await Promise.all([storeToS3Popular, storeToS3Trending]);
   return {
     statusCode: 200,
     body: {
