@@ -210,7 +210,7 @@ module.exports.updateDiscoveryApi = async () => {
   };
 };
 
-module.exports.generateChartPosts = async event => {
+module.exports.generateChartsPosts = async event => {
   const messageAttr = event.Records[0].messageAttributes;
   const countryCodeString = messageAttr.countryCode.stringValue;
   const postGenerator = new PostGenerator({
