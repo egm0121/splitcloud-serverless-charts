@@ -134,7 +134,6 @@ resources:
               Condition:
                 ArnEquals:
                   "aws:SourceArn": !Ref chartCreatedTopic
-      
     countryChartTopicToPostGenQ:
       Type: 'AWS::SNS::Subscription'
       Properties:
