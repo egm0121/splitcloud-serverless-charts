@@ -305,13 +305,9 @@ class ChartsService {
   }
 
   async fetchAllRelated(sourceTrackIds) {
-    const allRelatedReq = sourceTrackIds.map(trackId => {
-      try {
-        return this.fetchRelatedTracksById(trackId);
-      } catch (err) {
-        return { data: [] };
-      }
-    });
+    const allRelatedReq = sourceTrackIds.map(trackId =>
+      this.fetchRelatedTracksById(trackId).catch(() => ({ data: [] }))
+    );
     const responsesArr = await Promise.all(allRelatedReq);
     // flatten all related tracks in one list
     return responsesArr.reduce((finalList, resp) => {
@@ -322,13 +318,7 @@ class ChartsService {
   }
 
   async fetchScTrackList(trackList) {
-    const trackProms = trackList.map(id => {
-      try {
-        return this.fetchScTrackById(id);
-      } catch (err) {
-        return {};
-      }
-    });
+    const trackProms = trackList.map(id => this.fetchScTrackById(id).catch(() => ({ data: {} })));
     const respArr = await Promise.all(trackProms);
     return respArr.map(resp => resp.data);
   }
