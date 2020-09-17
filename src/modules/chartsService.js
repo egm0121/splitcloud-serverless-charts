@@ -153,7 +153,7 @@ async function hydrateSoundcloudTracks(trackList, scApiToken) {
     .map(track => {
       const resolveTrack = Object.assign({}, track);
       resolveTrack.fetch = () => {
-        return fetchScTrackById(track.id, scApiToken).catch(err => {
+        return (track.id, scApiToken).catch(err => {
           console.warn(`sc track ${track.id} retrival failed`, err.message);
           return Promise.resolve();
         });
@@ -298,6 +298,29 @@ class ChartsService {
 
   fetchRelatedTracksById(id) {
     return fetchRelatedTracksById(id);
+  }
+
+  fetchScTrackById(id) {
+    return fetchScTrackById(id);
+  }
+
+  async fetchAllRelated(sourceTrackIds) {
+    const allRelatedReq = sourceTrackIds.map(trackId =>
+      this.fetchRelatedTracksById(trackId).catch(() => ({ data: [] }))
+    );
+    const responsesArr = await Promise.all(allRelatedReq);
+    // flatten all related tracks in one list
+    return responsesArr.reduce((finalList, resp) => {
+      const subsetRelated = resp.data;
+      finalList.push(...subsetRelated);
+      return finalList;
+    }, []);
+  }
+
+  async fetchScTrackList(trackList) {
+    const trackProms = trackList.map(id => this.fetchScTrackById(id).catch(() => ({ data: {} })));
+    const respArr = await Promise.all(trackProms);
+    return respArr.map(resp => resp.data);
   }
 
   getScTrendingChart() {

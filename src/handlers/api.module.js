@@ -459,16 +459,7 @@ module.exports.exploreRelated = metricScope(metrics =>
     );
     sourceTrackIds = [...sourceTrackIds, ...topTrackIds.slice(0, fillNbr)];
     console.log('final source tracks', sourceTrackIds);
-    const allRelatedReq = sourceTrackIds.map(trackId =>
-      chartService.fetchRelatedTracksById(trackId).catch(() => Promise.resolve({ data: [] }))
-    );
-    const responsesArr = await Promise.all(allRelatedReq);
-    let relatedTrackList = responsesArr.reduce((acc, resp) => {
-      const oneTrackRelatedArr = resp.data;
-      acc.push(...oneTrackRelatedArr);
-      return acc;
-    }, []);
-
+    let relatedTrackList = await chartService.fetchAllRelated(sourceTrackIds);
     const uniqueSet = new Set();
     const relatedTagsSet = new Set();
     relatedTrackList = relatedTrackList
@@ -485,15 +476,30 @@ module.exports.exploreRelated = metricScope(metrics =>
       });
     const recentSCTracks = await helpers.readJSONFromS3(`charts/soundcloud/weekly_trending.json`);
     const recentRelated = recentSCTracks.filter(t => {
+      // exclude duplicate tracks
+      if (uniqueSet.has(t.id)) return false;
       const hasTagMatch = getTrackTags(t).find(scTag => relatedTagsSet.has(scTag));
       // if tags are matching and track is unique, add it to results
-      if (hasTagMatch && !uniqueSet.has(t.id)) {
+      if (hasTagMatch) {
         console.log(`adding track: ${t.title} because matched tag:`, hasTagMatch);
-        return true;
       }
-      return false;
+      return hasTagMatch;
     });
     relatedTrackList.push(...recentRelated); // add sc recents tracks relevant for feed
+    // filter all tracks by input unicode scripts
+    const resolvedInputTracks = await chartService.fetchScTrackList(sourceTrackIds);
+    const sourceTrackTitles = resolvedInputTracks.map(item => item.title).join(' ');
+    console.log('source tracks titles', sourceTrackTitles);
+    const allowedLangScripts = helpers.getStringScripts(sourceTrackTitles);
+    console.log('allowedLangScripts', allowedLangScripts);
+    relatedTrackList = relatedTrackList.filter(track => {
+      if (!allowedLangScripts.length) return true;
+      const currTrackScript = helpers.getStringScripts(track.title);
+      if (currTrackScript.length === 0 && helpers.isStringNumeric(track.title)) return true;
+      const isAllowed = helpers.arrayIntersect(allowedLangScripts, currTrackScript).length > 0;
+      if (!isAllowed) console.log('excluding track for unicode script:', track.title);
+      return isAllowed;
+    });
     // order all by recency
     relatedTrackList.sort(sortByDateDay);
 

@@ -52,6 +52,14 @@ module.exports = {
     EC: 'Ecuador',
     GB: 'United Kingdom',
   },
+  SUPPORTED_UNICODE_SCRIPTS: [
+    { name: 'latin', regexp: /\p{Script=Latin}/u },
+    { name: 'arabic', regexp: /\p{Script=Arabic}/u },
+    { name: 'armenian', regexp: /\p{Script=Armenian}/u },
+    { name: 'cyrillic', regexp: /\p{Script=Cyrillic}/u },
+    { name: 'greek', regexp: /\p{Script=Greek}/u },
+    { name: 'thai', regexp: /\p{Script=Thai}/u },
+  ],
   RADIO_COUNTRY_CODES: [
     { name: 'AD', value: 'AD', stationcount: '5' },
     { name: 'AE', value: 'AE', stationcount: '24' },

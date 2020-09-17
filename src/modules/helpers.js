@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const AWS = require('aws-sdk');
+const constants = require('../constants/constants');
 
 AWS.config.update({ region: 'us-east-1' });
 const isDEV = process.env.STAGE === 'dev';
@@ -130,6 +131,19 @@ function selectVariantFromHash(str, variants = 2) {
     .digest('hex');
   return parseInt(hash.substr(0, 8), 16) % variants;
 }
+function getStringScripts(str) {
+  return constants.SUPPORTED_UNICODE_SCRIPTS.filter(scriptObj => str.match(scriptObj.regexp)).map(
+    scriptObj => scriptObj.name
+  );
+}
+
+function isStringNumeric(str) {
+  return str.match(/\p{Number}/u);
+}
+
+function arrayIntersect(a, b) {
+  return a.filter(item => b.includes(item));
+}
 module.exports = {
   saveFileToS3,
   saveBlobToS3,
@@ -141,7 +155,10 @@ module.exports = {
   isDEV,
   sqs,
   arrayInPlaceShuffle,
+  arrayIntersect,
   selectVariantFromDeviceId,
   selectVariantFromHash,
   pushToTopic,
+  getStringScripts,
+  isStringNumeric,
 };
