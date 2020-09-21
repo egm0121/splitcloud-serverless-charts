@@ -60,7 +60,11 @@ async function readFileFromS3(keyName) {
       })
       .promise();
   } catch (err) {
-    console.error('readFileFromS3 failed with error:', err);
+    if (err.code === 'NoSuchKey') {
+      console.log('readFileFromS3 no such key:', finalKeyName);
+    } else {
+      console.error('readFileFromS3 failed with error:', err.message);
+    }
     throw err;
   }
   return resp.Body.toString();

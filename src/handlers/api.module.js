@@ -500,6 +500,16 @@ module.exports.exploreRelated = metricScope(metrics =>
       if (!isAllowed) console.log('excluding track for unicode script:', track.title);
       return isAllowed;
     });
+    // add in any promoted tracks payload from s3
+    let promotedScTracks;
+    try {
+      promotedScTracks = await helpers.readJSONFromS3(`app/suggested_tracklist.json`);
+    } catch (err) {
+      promotedScTracks = [];
+    }
+    if (Array.isArray(promotedScTracks)) {
+      relatedTrackList.push(...promotedScTracks);
+    }
     // order all by recency
     relatedTrackList.sort(sortByDateDay);
 
