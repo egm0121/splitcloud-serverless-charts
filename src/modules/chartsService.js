@@ -153,7 +153,7 @@ async function hydrateSoundcloudTracks(trackList, scApiToken) {
     .map(track => {
       const resolveTrack = Object.assign({}, track);
       resolveTrack.fetch = () => {
-        return (track.id, scApiToken).catch(err => {
+        return fetchScTrackById(track.id, scApiToken).catch(err => {
           console.warn(`sc track ${track.id} retrival failed`, err.message);
           return Promise.resolve();
         });
