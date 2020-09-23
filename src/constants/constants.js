@@ -3,6 +3,11 @@ module.exports = {
     '2020': true,
     scfirst: true,
     getmoreplays: true,
+    top: true,
+  },
+  EXPLORE_RELATED: {
+    MAX_SOURCE_TRACKS: 10,
+    MAX_USER_SOURCE_TRACKS: 8,
   },
   EMOJI_FLAGS: {
     IN: '🇮🇳',

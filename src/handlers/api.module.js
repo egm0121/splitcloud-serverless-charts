@@ -443,7 +443,11 @@ module.exports.exploreRelated = metricScope(metrics =>
     metrics.setNamespace('splitcloud-exploreRelated');
     metrics.putMetric('inputFavTracks', allInputTracks.length);
     helpers.arrayInPlaceShuffle(allInputTracks); // shuffle input tracks
-    let sourceTrackIds = allInputTracks.slice(0, 8); // fetch at most 10 related playlists
+    const userInputTracks = allInputTracks.slice(
+      0,
+      constants.EXPLORE_RELATED.MAX_USER_SOURCE_TRACKS
+    );
+    let sourceTrackIds = [...userInputTracks];
     let clientCountry =
       helpers.getQueryParam(event, 'region') || event.headers['CloudFront-Viewer-Country'];
 
@@ -451,9 +455,11 @@ module.exports.exploreRelated = metricScope(metrics =>
     if (!hasCountryPlaylist) clientCountry = 'GLOBAL';
     const playlistFilename = `charts/country/weekly_trending_country_${clientCountry}.json`;
     const playlistPayload = await helpers.readJSONFromS3(playlistFilename);
-    const topTrackIds = playlistPayload.slice(0, 10).map(t => t.id);
+    const topTrackIds = playlistPayload
+      .slice(0, constants.EXPLORE_RELATED.MAX_SOURCE_TRACKS)
+      .map(t => t.id);
     console.log(`fetching trending chart for country ${clientCountry}`);
-    const fillNbr = 10 - sourceTrackIds.length;
+    const fillNbr = constants.EXPLORE_RELATED.MAX_SOURCE_TRACKS - sourceTrackIds.length;
     console.log(
       `use ${sourceTrackIds.length} sourceTracks and ${fillNbr} charts track to generate lists`
     );
@@ -487,10 +493,10 @@ module.exports.exploreRelated = metricScope(metrics =>
     });
     relatedTrackList.push(...recentRelated); // add sc recents tracks relevant for feed
     // filter all tracks by input unicode scripts
-    const resolvedInputTracks = await chartService.fetchScTrackList(sourceTrackIds);
-    const sourceTrackTitles = resolvedInputTracks.map(item => item.title).join(' ');
-    console.log('source tracks titles', sourceTrackTitles);
-    const allowedLangScripts = helpers.getStringScripts(sourceTrackTitles);
+    const resolvedInputTracks = await chartService.fetchScTrackList(userInputTracks);
+    const userTrackTitles = resolvedInputTracks.map(item => item.title).join(' ');
+    console.log('source tracks titles', userTrackTitles);
+    const allowedLangScripts = helpers.getStringScripts(userTrackTitles);
     console.log('allowedLangScripts', allowedLangScripts);
     relatedTrackList = relatedTrackList.filter(track => {
       if (!allowedLangScripts.length) return true;
