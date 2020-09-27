@@ -6,8 +6,12 @@ module.exports = {
     top: true,
   },
   EXPLORE_RELATED: {
+    // how many of the most recent user favorites will be used to as user_input_tracks;
+    // this is to avoid getting tracks related to older favorites
+    MAX_RECENT_FAVORITES_TRACKS: 20,
     MAX_SOURCE_TRACKS: 10,
     MAX_USER_SOURCE_TRACKS: 8,
+    MIN_PLAYBACK_COUNT: 1000,
   },
   EMOJI_FLAGS: {
     IN: '🇮🇳',

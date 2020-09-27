@@ -434,6 +434,7 @@ const sortByDateDay = (ta, tb) => {
   return dateB - dateA;
 };
 /**
+ * Home feed of related + recent + system tracks
  * [POST] /explore/related
  */
 module.exports.exploreRelated = metricScope(metrics =>
@@ -442,8 +443,12 @@ module.exports.exploreRelated = metricScope(metrics =>
     let allInputTracks = JSON.parse(event.body) || [];
     metrics.setNamespace('splitcloud-exploreRelated');
     metrics.putMetric('inputFavTracks', allInputTracks.length);
-    helpers.arrayInPlaceShuffle(allInputTracks); // shuffle input tracks
-    const userInputTracks = allInputTracks.slice(
+    const recentInputTracks = allInputTracks.slice(
+      0,
+      constants.EXPLORE_RELATED.MAX_RECENT_FAVORITES_TRACKS
+    );
+    helpers.arrayInPlaceShuffle(recentInputTracks); // shuffle recent input tracks
+    const userInputTracks = recentInputTracks.slice(
       0,
       constants.EXPLORE_RELATED.MAX_USER_SOURCE_TRACKS
     );
@@ -470,6 +475,10 @@ module.exports.exploreRelated = metricScope(metrics =>
     const relatedTagsSet = new Set();
     relatedTrackList = relatedTrackList
       .filter(track => {
+        if (track.playback_count < constants.EXPLORE_RELATED.MIN_PLAYBACK_COUNT) {
+          metrics.putMetric('excludeLowPlaybackCount', 1);
+          return false;
+        }
         if (uniqueSet.has(track.id)) return false;
         uniqueSet.add(track.id);
         getTrackTags(track).forEach(tag => relatedTagsSet.add(tag));

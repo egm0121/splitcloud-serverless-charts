@@ -14,6 +14,7 @@ export const formatTrackPayload = scTrack => ({
   },
   stream_url: scTrack.stream_url,
   score: scTrack.score,
+  playback_count: scTrack.playback_count,
 });
 export const formatTrackListPayload = scTrackArr => scTrackArr.map(formatTrackPayload);
 export const formatPlaylistPayload = scPlaylist => ({
