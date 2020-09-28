@@ -10,7 +10,7 @@ module.exports = {
     // this is to avoid getting tracks related to older favorites
     MAX_RECENT_FAVORITES_TRACKS: 20,
     MAX_SOURCE_TRACKS: 10,
-    MAX_USER_SOURCE_TRACKS: 8,
+    MAX_USER_SOURCE_TRACKS: 10, // do not use the trending tracks at all if user has enough favorites
     MIN_PLAYBACK_COUNT: 1000,
   },
   EMOJI_FLAGS: {

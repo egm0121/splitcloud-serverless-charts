@@ -459,8 +459,8 @@ module.exports.exploreRelated = metricScope(metrics =>
     const hasCountryPlaylist = Object.keys(constants.TOP_COUNTRIES).includes(clientCountry);
     if (!hasCountryPlaylist) clientCountry = 'GLOBAL';
     const playlistFilename = `charts/country/weekly_trending_country_${clientCountry}.json`;
-    const playlistPayload = await helpers.readJSONFromS3(playlistFilename);
-    const topTrackIds = playlistPayload
+    const trendingWeeklyPlaylist = await helpers.readJSONFromS3(playlistFilename);
+    const topTrackIds = trendingWeeklyPlaylist
       .slice(0, constants.EXPLORE_RELATED.MAX_SOURCE_TRACKS)
       .map(t => t.id);
     console.log(`fetching trending chart for country ${clientCountry}`);
@@ -489,6 +489,7 @@ module.exports.exploreRelated = metricScope(metrics =>
         track.description = '';
         return track;
       });
+    // add weekly soundcloud trending tracks that match user favorites tags
     const recentSCTracks = await helpers.readJSONFromS3(`charts/soundcloud/weekly_trending.json`);
     const recentRelated = recentSCTracks.filter(t => {
       // exclude duplicate tracks
