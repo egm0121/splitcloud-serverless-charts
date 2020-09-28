@@ -470,9 +470,15 @@ module.exports.exploreRelated = metricScope(metrics =>
     );
     sourceTrackIds = [...sourceTrackIds, ...topTrackIds.slice(0, fillNbr)];
     console.log('final source tracks', sourceTrackIds);
+    const resolvedInputTracks = await chartService.fetchScTrackList(userInputTracks);
+    // generate input tracks allowed tags
+    const relatedTagsSet = new Set();
+    resolvedInputTracks.forEach(track =>
+      getTrackTags(track).forEach(tag => relatedTagsSet.add(tag))
+    );
+    console.log('allowed tags', [...relatedTagsSet]);
     let relatedTrackList = await chartService.fetchAllRelated(sourceTrackIds);
     const uniqueSet = new Set();
-    const relatedTagsSet = new Set();
     relatedTrackList = relatedTrackList
       .filter(track => {
         if (track.playback_count < constants.EXPLORE_RELATED.MIN_PLAYBACK_COUNT) {
@@ -481,7 +487,6 @@ module.exports.exploreRelated = metricScope(metrics =>
         }
         if (uniqueSet.has(track.id)) return false;
         uniqueSet.add(track.id);
-        getTrackTags(track).forEach(tag => relatedTagsSet.add(tag));
         return track.duration > MIN_TRACK_DURATION && !allInputTracks.includes(track.id);
       })
       .map(track => {
@@ -503,7 +508,6 @@ module.exports.exploreRelated = metricScope(metrics =>
     });
     relatedTrackList.push(...recentRelated); // add sc recents tracks relevant for feed
     // filter all tracks by input unicode scripts
-    const resolvedInputTracks = await chartService.fetchScTrackList(userInputTracks);
     const userTrackTitles = resolvedInputTracks.map(item => item.title).join(' ');
     console.log('source tracks titles', userTrackTitles);
     const allowedLangScripts = helpers.getStringScripts(userTrackTitles);
