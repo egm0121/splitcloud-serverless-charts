@@ -171,6 +171,12 @@ functions:
             parameters:
               paths:
                 deviceid: true
+  appReferrer:
+    handler: src/handlers/api.appReferrer
+    events: 
+      - http:
+          path: app/referrer
+          method: POST
   exploreRelated:
     handler: src/handlers/api.exploreRelated
     events:

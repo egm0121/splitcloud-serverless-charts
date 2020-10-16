@@ -316,12 +316,12 @@ const ctaHandleWrappedYearlyPlaylist = async (event, context, callback) => {
     },
     body: JSON.stringify({
       ctaUrl: '',
-      ctaLabel: 'Your 2020 Rewind!',
+      ctaLabel: `Your ${currentYear} Rewind!`,
       ctaButtonColor: '#FF7F50',
       ctaAction: {
         type: 'wrapped_playlist',
         data: formatters.formatPlaylistPayload(
-          formatters.createPlaylistFromTrackList(wrappedPlaylist, 'Your 2020 Rewind')
+          formatters.createPlaylistFromTrackList(wrappedPlaylist, `Your ${currentYear} Rewind`)
         ),
       },
     }),
@@ -351,7 +351,6 @@ const ctaHandleCountryPromotion = (event, context, callback) => {
   }
   return false;
 };
-
 
 const ctaHandleGiveaway = (event, context, callback) => {
   const { deviceId } = event.pathParameters;
@@ -411,6 +410,48 @@ module.exports.ctaEndpoint = metricScope(metrics =>
         ctaAction: { type: 'url' },
       }),
     });
+  })
+);
+/**
+ * POST
+ * /app/referrer
+ */
+module.exports.appReferrer = metricScope(metrics => 
+  blockUnsupportedVersions(async (event, context, callback) => {
+    const deviceId = helpers.getQueryParam(event, 'deviceId');
+    const bodyPayload = JSON.parse(event.body) || {};
+    const { referrerString } = bodyPayload;
+    const parsedReferrerParams = new URLSearchParams(referrerString);
+    console.log('parsed referrer info', parsedReferrerParams);
+    const referrerId = parsedReferrerParams ? parsedReferrerParams.get('utm_term') : '';
+    let referrerList;
+    if (parsedReferrerParams.get('utm_source') !== 'inapp' || !referrerId) {
+      callback(null, {
+        statusCode: 400,
+        body: JSON.stringify({ success: false, error: 'referrer id not found' }),
+      });
+      return;
+    }
+    metrics.setNamespace('splitcloud-appReferrer');
+    metrics.putMetric('userReferrerInstall', 1);
+    try {
+      referrerList = await helpers.readJSONFromS3(`referrers/device/${referrerId}.json`);
+    } catch (err) {
+      referrerList = [];
+    }
+    if (referrerList.includes(deviceId)) {
+      console.log('referral present, skip');
+      callback(null, { statusCode: 200, body: JSON.stringify({ success: true }) });
+      return;
+    }
+    referrerList.push(deviceId);
+    try {
+      console.log(`updated referrers for ${referrerId}: ${referrerList.join(',')}`);
+      await helpers.saveFileToS3(`referrers/device/${referrerId}.json`, referrerList);
+    } catch (err) {
+      console.warn(`failed updating referral for ${referrerId}`, err);
+    }
+    callback(null, { statusCode: 200, body: JSON.stringify({ success: true }) });
   })
 );
 const getTrackTags = t => {
