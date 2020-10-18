@@ -177,6 +177,12 @@ functions:
       - http:
           path: app/referrer
           method: POST
+  appPromoReferrer:
+    handler: src/handlers/api.appPromocodeRef
+    events: 
+      - http:
+          path: app/promocode/referrer
+          method: POST
   exploreRelated:
     handler: src/handlers/api.exploreRelated
     events:

@@ -373,6 +373,28 @@ const ctaHandleGiveaway = (event, context, callback) => {
   }
   return false;
 };
+
+const ctaHandleReferralFeatureAndroid = (event, context, callback) => {
+  const { deviceId } = event.pathParameters;
+  const isAndroidId = deviceId.length === 16;
+  const promoExpiry = new Date('2020-10-31T23:59:00.000Z');
+  if (isAndroidId && new Date() < promoExpiry) {
+    callback(null, {
+      statusCode: 200,
+      headers: {
+        ...corsHeaders,
+      },
+      body: JSON.stringify({
+        ctaLabel: '👫 Share to remove ADS ✨',
+        ctaUrl: '',
+        ctaButtonColor: '#f47903',
+        ctaAction: { type: 'share_app_screen' },
+      }),
+    });
+    return true;
+  }
+  return false;
+};
 /**
  *  /cta/{deviceId}/{side}
  */
@@ -396,6 +418,7 @@ module.exports.ctaEndpoint = metricScope(metrics =>
     if (await ctaHandleWrappedYearlyPlaylist(event, context, callback)) return true;
     if (ctaHandleCountryPromotion(event, context, callback)) return true;
     if (ctaHandleGiveaway(event, context, callback)) return true;
+    if (ctaHandleReferralFeatureAndroid(event, context, callback)) return true;
     metrics.setNamespace('ctaEndpoint');
     metrics.putMetric(`test_variant_${selectedVariant}`, 1);
     return callback(null, {
@@ -416,7 +439,7 @@ module.exports.ctaEndpoint = metricScope(metrics =>
  * POST
  * /app/referrer
  */
-module.exports.appReferrer = metricScope(metrics => 
+module.exports.appReferrer = metricScope(metrics =>
   blockUnsupportedVersions(async (event, context, callback) => {
     const deviceId = helpers.getQueryParam(event, 'deviceId');
     const bodyPayload = JSON.parse(event.body) || {};
@@ -452,6 +475,32 @@ module.exports.appReferrer = metricScope(metrics =>
       console.warn(`failed updating referral for ${referrerId}`, err);
     }
     callback(null, { statusCode: 200, body: JSON.stringify({ success: true }) });
+  })
+);
+/**
+ * POST
+ * /app/promocode/referrer
+ *
+ */
+module.exports.appPromocodeRef = metricScope(metrics =>
+  blockUnsupportedVersions(async (event, context, callback) => {
+    const deviceId = helpers.getQueryParam(event, 'deviceId');
+
+    let rewardedReferralMap = {};
+    try {
+      rewardedReferralMap = await helpers.readJSONFromS3(`referrers/rewarded/devicemap.json`);
+    } catch (err) {
+      rewardedReferralMap = [];
+    }
+    if (rewardedReferralMap[deviceId]) {
+      const promocode = rewardedReferralMap[deviceId];
+      metrics.setNamespace('splitcloud-appPromocodeRef');
+      metrics.putMetric('deviceRewardedPromocode', 1);
+      console.log('referral promocode found for', deviceId);
+      callback(null, { statusCode: 200, body: JSON.stringify({ success: true, code: promocode }) });
+      return;
+    }
+    callback(null, { statusCode: 200, body: JSON.stringify({ success: false }) });
   })
 );
 const getTrackTags = t => {

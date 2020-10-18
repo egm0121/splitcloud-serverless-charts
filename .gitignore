@@ -7,6 +7,7 @@ app_config*.json
 discover_*.json
 *.csv
 *.zip
+devicemap*.json
 /screenshots
 test-event.json
 *.env
