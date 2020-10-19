@@ -15,6 +15,7 @@ const corsHeaders = {
 const LATEST_VERSION = '5.7';
 const MIN_SUPPORTED_VERSION = '5.6'; // specify M.m without patch to allow matching client versions without patch
 const MIN_PLAYLIST_IN_CTA_VERSION = '6.0'; // first client version that supports embedding playlist in CTA response
+const MIN_SHARE_SCREEN_IN_CTA_VERSION = '6.3'; // first client version that supports opening the share_app_screen
 const MIN_TRACK_DURATION = 30 * 1e3;
 
 const isUnsupportedVersion = clientVersion =>
@@ -377,7 +378,9 @@ const ctaHandleGiveaway = (event, context, callback) => {
 const ctaHandleReferralFeatureAndroid = (event, context, callback) => {
   const { deviceId } = event.pathParameters;
   const isAndroidId = deviceId.length === 16;
+  const clientVersion = helpers.getQueryParam(event, 'appVersion');
   const promoExpiry = new Date('2020-10-31T23:59:00.000Z');
+  if (semverCompare(clientVersion, MIN_SHARE_SCREEN_IN_CTA_VERSION) === -1) return false;
   if (isAndroidId && new Date() < promoExpiry) {
     callback(null, {
       statusCode: 200,
