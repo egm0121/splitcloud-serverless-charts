@@ -388,9 +388,9 @@ const ctaHandleReferralFeatureAndroid = (event, context, callback) => {
         ...corsHeaders,
       },
       body: JSON.stringify({
-        ctaLabel: '👫 Share to remove ADS ✨',
+        ctaLabel: '👫 Share App & Remove Ads! ✨',
         ctaUrl: '',
-        ctaButtonColor: '#f47903',
+        ctaButtonColor: '#2196F3',
         ctaAction: { type: 'share_app_screen' },
       }),
     });
@@ -521,6 +521,7 @@ const roundToWeek = d => {
   d.setDate(d.getDate() - (d.getDay() - 1));
   return d;
 };
+// sorts by week, rounds dates to closest preceeding monday
 const sortByDateDay = (ta, tb) => {
   const dateB = roundToWeek(new Date(tb.created_at));
   const dateA = roundToWeek(new Date(ta.created_at));
