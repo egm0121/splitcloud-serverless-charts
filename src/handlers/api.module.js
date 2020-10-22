@@ -388,9 +388,9 @@ const ctaHandleReferralFeatureAndroid = (event, context, callback) => {
         ...corsHeaders,
       },
       body: JSON.stringify({
-        ctaLabel: '👫 Share App & Remove Ads! ✨',
+        ctaLabel: '👫 Share & Remove ADS FREE!',
         ctaUrl: '',
-        ctaButtonColor: '#2196F3',
+        ctaButtonColor: '#9f0202',
         ctaAction: { type: 'share_app_screen' },
       }),
     });
