@@ -622,7 +622,16 @@ module.exports.exploreRelated = metricScope(metrics =>
       promotedScTracks = [];
     }
     if (Array.isArray(promotedScTracks)) {
-      relatedTrackList.push(...promotedScTracks);
+      promotedScTracks.forEach(promoTrack => {
+        if (
+          relatedTagsSet.size === 0 ||
+          getTrackTags(promoTrack).find(promoTag => relatedTagsSet.has(promoTag))
+        ) {
+          metrics.putMetric('includePromotedTrack', 1);
+          metrics.putMetric(`track-${promoTrack.id}-promo-impression`, 1);
+          relatedTrackList.push(promoTrack);
+        }
+      });
     }
     // order all by recency
     relatedTrackList.sort(sortByDateDay);
