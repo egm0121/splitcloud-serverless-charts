@@ -379,7 +379,7 @@ const ctaHandleReferralFeatureAndroid = (event, context, callback) => {
   const { deviceId } = event.pathParameters;
   const isAndroidId = deviceId.length === 16;
   const clientVersion = helpers.getQueryParam(event, 'appVersion');
-  const promoExpiry = new Date('2020-10-31T23:59:00.000Z');
+  const promoExpiry = new Date('2020-11-15T23:59:00.000Z');
   if (semverCompare(clientVersion, MIN_SHARE_SCREEN_IN_CTA_VERSION) === -1) return false;
   if (isAndroidId && new Date() < promoExpiry) {
     callback(null, {
@@ -388,7 +388,7 @@ const ctaHandleReferralFeatureAndroid = (event, context, callback) => {
         ...corsHeaders,
       },
       body: JSON.stringify({
-        ctaLabel: '👫 Share & Remove ADS FREE!',
+        ctaLabel: '👫 Share App & Remove ADS 🎁',
         ctaUrl: '',
         ctaButtonColor: '#9f0202',
         ctaAction: { type: 'share_app_screen' },
