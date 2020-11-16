@@ -27,7 +27,7 @@ const logTracks = tracks => {
         genre: t.genre,
         username: t.username,
         duration: moment(t.duration).format('mm:ss'),
-        total_play:t.splitcloud_total_plays
+        total_play: t.splitcloud_total_plays
       })
     )
   );

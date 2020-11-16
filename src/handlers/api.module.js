@@ -17,6 +17,7 @@ const MIN_SUPPORTED_VERSION = '5.6'; // specify M.m without patch to allow match
 const MIN_PLAYLIST_IN_CTA_VERSION = '6.0'; // first client version that supports embedding playlist in CTA response
 const MIN_SHARE_SCREEN_IN_CTA_VERSION = '6.3'; // first client version that supports opening the share_app_screen
 const MIN_TRACK_DURATION = 30 * 1e3;
+const MIN_REFERRER_REWARD = 3;
 
 const isUnsupportedVersion = clientVersion =>
   !clientVersion || semverCompare(clientVersion, MIN_SUPPORTED_VERSION) === -1;
@@ -476,6 +477,22 @@ module.exports.appReferrer = metricScope(metrics =>
       await helpers.saveFileToS3(`referrers/device/${referrerId}.json`, referrerList);
     } catch (err) {
       console.warn(`failed updating referral for ${referrerId}`, err);
+    }
+    if (referrerList.length >= MIN_REFERRER_REWARD) {
+      console.log('will rewared referrer, send message to sqs REFERRER_PROMO_QUEUE');
+      helpers.sqs
+        .sendMessage({
+          DelaySeconds: 5,
+          MessageAttributes: {
+            referrerId: {
+              DataType: 'String',
+              StringValue: referrerId,
+            },
+          },
+          MessageBody: `assign promocode to referrer id: ${referrerId}`,
+          QueueUrl: process.env.REFERRER_PROMO_QUEUE,
+        })
+        .promise();
     }
     callback(null, { statusCode: 200, body: JSON.stringify({ success: true }) });
   })

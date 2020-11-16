@@ -37,6 +37,9 @@ custom:
     wrapped_queue_enabled: true
     post_generator_arn: "arn:aws:sqs:us-east-1:348868901434:post_generator_queue"
     post_generator_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/post_generator_queue"
+    referrer_promocode_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/referrer_promocode_queue_prod"
+    referrer_queue_arn: "arn:aws:sqs:us-east-1:348868901434:referrer_promocode_queue_prod"
+    referrer_queue_enabled: true
   dev: 
     sc_charts_cache: 
     schedule: 
@@ -52,8 +55,12 @@ custom:
     wrapped_queue_enabled: false
     post_generator_arn: "arn:aws:sqs:us-east-1:348868901434:post_generator_queue_dev"
     post_generator_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/post_generator_queue_dev"
+    referrer_promocode_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/referrer_promocode_queue_dev"
+    referrer_queue_arn: "arn:aws:sqs:us-east-1:348868901434:referrer_promocode_queue_dev"
+    referrer_queue_enabled: true
   bucket: "www.splitcloud-app.com"
   cache_bucket: "com.splitcloud-app.cache"
+  app_bucket: "com.splitcloud-app.app-sls"
   customDomain:
     domainName: ${self:custom.domains.${self:custom.myStage}}
     basePath: ''
@@ -80,6 +87,10 @@ provider:
       Action:
         - s3:*
       Resource: "arn:aws:s3:::${self:custom.cache_bucket}/*"
+    - Effect: Allow
+      Action:
+        - s3:*
+      Resource: "arn:aws:s3:::${self:custom.app_bucket}/*"
     - Effect: "Allow"
       Action:
       - sqs:SendMessage
@@ -103,21 +114,35 @@ provider:
       Resource: ${self:custom.${self:custom.myStage}.post_generator_arn}
     - Effect: "Allow"
       Action:
+      - sqs:SendMessage
+      - sqs:GetQueueUrl
+      - sqs:ReceiveMessage
+      - sqs:DeleteMessage
+      Resource: ${self:custom.${self:custom.myStage}.referrer_queue_arn}
+    - Effect: "Allow"
+      Action:
       - SNS:Publish
       Resource: !Ref chartCreatedTopic
   environment:
       BUCKET: ${self:custom.bucket}
       STAGE: ${self:custom.myStage}
       CACHE_BUCKET: ${self:custom.cache_bucket}
+      APP_BUCKET: ${self:custom.app_bucket}
       COUNTRY_CHARTS_QUEUE: ${self:custom.${self:custom.myStage}.country_charts_queue}
       WRAPPED_PLAYLIST_QUEUE: ${self:custom.${self:custom.myStage}.wrapped_playlist_queue}
+      REFERRER_PROMO_QUEUE: ${self:custom.${self:custom.myStage}.referrer_promocode_queue}
       CHART_CREATED_TOPIC: !Ref chartCreatedTopic
+
 resources:
   Resources:
     chartCreatedTopic:
       Type: AWS::SNS::Topic
       Properties:
         TopicName: ${self:service}-${self:custom.myStage}-country-chart-created
+    referrerPromocodeQueue:
+      Type: "AWS::SQS::Queue"
+      Properties:
+        QueueName: referrer_promocode_queue_${self:custom.myStage}
     snsToPostGeneratorSqsPolicy:
       Type: AWS::SQS::QueuePolicy
       Properties:
@@ -288,6 +313,15 @@ functions:
           arn: ${self:custom.${self:custom.myStage}.wrapped_playlist_arn}
           batchSize: 1
           enabled: ${self:custom.${self:custom.myStage}.wrapped_queue_enabled}
+  referrerPromoSub:
+    handler: src/handlers/batch.referrerPromoSub
+    timeout: 30
+    reservedConcurrency: 1
+    events:
+        - sqs:
+            arn: ${self:custom.${self:custom.myStage}.referrer_queue_arn}
+            batchSize: 1
+            enabled: ${self:custom.${self:custom.myStage}.referrer_queue_enabled}
 plugins:
   - serverless-domain-manager
   - serverless-offline

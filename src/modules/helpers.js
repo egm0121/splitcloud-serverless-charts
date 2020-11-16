@@ -33,13 +33,20 @@ async function saveBlobToS3(keyName, buffer, format = 'image/png') {
     })
     .promise();
 }
-async function saveFileToS3(keyName, data, stringify = true) {
+async function saveFileToS3(keyOrObj, data, stringify = true) {
+  let keyName = keyOrObj;
+  let bucketName = process.env.BUCKET;
+  if (typeof keyOrObj === 'object') {
+    // eslint-disable-next-line prefer-destructuring
+    keyName = keyOrObj.keyName;
+    bucketName = keyOrObj.bucket;
+  }
   const [path, extension] = keyName.split('.');
   const finalKeyName = `${path}${isDEV ? '_dev' : ''}.${extension}`;
   console.log('will write to s3 key:', finalKeyName);
   return s3
     .putObject({
-      Bucket: process.env.BUCKET,
+      Bucket: bucketName,
       ContentType: 'application/json',
       CacheControl: 'max-age=0,must-revalidate',
       Key: finalKeyName,
@@ -47,7 +54,14 @@ async function saveFileToS3(keyName, data, stringify = true) {
     })
     .promise();
 }
-async function readFileFromS3(keyName) {
+async function readFileFromS3(keyOrObj) {
+  let keyName = keyOrObj;
+  let bucketName = process.env.BUCKET;
+  if (typeof keyOrObj === 'object') {
+    // eslint-disable-next-line prefer-destructuring
+    keyName = keyOrObj.keyName;
+    bucketName = keyOrObj.bucket;
+  }
   const [path, extension] = keyName.split('.');
   const finalKeyName = `${path}${isDEV ? '_dev' : ''}.${extension}`;
   console.log('readFileFromS3:', finalKeyName);
@@ -55,7 +69,7 @@ async function readFileFromS3(keyName) {
   try {
     resp = await s3
       .getObject({
-        Bucket: process.env.BUCKET,
+        Bucket: bucketName,
         Key: finalKeyName,
       })
       .promise();

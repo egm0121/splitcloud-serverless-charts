@@ -240,3 +240,50 @@ module.exports.generateChartsPosts = async event => {
     },
   };
 };
+
+module.exports.referrerPromoSub = async event => {
+  const messageAttr = event.Records[0].messageAttributes;
+  const referrerId = messageAttr.referrerId.stringValue;
+  const { APP_BUCKET } = process.env;
+  let promoCodesList = [];
+  try {
+    promoCodesList = await helpers.readJSONFromS3({
+      bucket: APP_BUCKET,
+      keyName: 'promocodes/list.json',
+    });
+  } catch (err) {
+    console.error('no promocodes list available!');
+  }
+  if (!promoCodesList.length) {
+    console.error(`No more promocode to assign to ${referrerId}`);
+    return { statusCode: 500, body: { success: false } };
+  }
+  const selectedCode = promoCodesList.pop();
+  console.log(`got promocode ${selectedCode}, will assign to ${referrerId}`);
+  await helpers.saveFileToS3(
+    {
+      bucket: APP_BUCKET,
+      keyName: `promocodes/list.json`,
+    },
+    promoCodesList
+  );
+  let rewardedReferralMap = {};
+  try {
+    rewardedReferralMap = await helpers.readJSONFromS3(`referrers/rewarded/devicemap.json`);
+  } catch (err) {
+    console.error(`No devicemap found`);
+  }
+  rewardedReferralMap[referrerId] = selectedCode;
+  const result = await helpers.saveFileToS3(
+    `referrers/rewarded/devicemap.json`,
+    rewardedReferralMap
+  );
+  console.log('saved updated referral promocodes map');
+  return {
+    statusCode: 200,
+    body: {
+      success: true,
+      result,
+    },
+  };
+};
