@@ -570,7 +570,12 @@ module.exports.exploreRelated = metricScope(metrics =>
     const hasCountryPlaylist = Object.keys(constants.TOP_COUNTRIES).includes(clientCountry);
     if (!hasCountryPlaylist) clientCountry = 'GLOBAL';
     const playlistFilename = `charts/country/weekly_trending_country_${clientCountry}.json`;
-    const trendingWeeklyPlaylist = await helpers.readJSONFromS3(playlistFilename);
+    let trendingWeeklyPlaylist = [];
+    try {
+      trendingWeeklyPlaylist = await helpers.readJSONFromS3(playlistFilename);
+    } catch (err) {
+      console.error('weekly trending for country not avaiable', clientCountry);
+    }
     const topTrackIds = trendingWeeklyPlaylist
       .slice(0, constants.EXPLORE_RELATED.MAX_SOURCE_TRACKS)
       .map(t => t.id);
@@ -606,7 +611,12 @@ module.exports.exploreRelated = metricScope(metrics =>
         return track;
       });
     // add weekly soundcloud trending tracks that match user favorites tags
-    const recentSCTracks = await helpers.readJSONFromS3(`charts/soundcloud/weekly_trending.json`);
+    let recentSCTracks = [];
+    try {
+      recentSCTracks = await helpers.readJSONFromS3(`charts/soundcloud/weekly_trending.json`);
+    } catch (err) {
+      console.error(err, 'issue getting soundcloud weekly trending list');
+    }
     const recentRelated = recentSCTracks.filter(t => {
       // exclude duplicate tracks
       if (uniqueSet.has(t.id)) return false;

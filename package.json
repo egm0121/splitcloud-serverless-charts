@@ -11,6 +11,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "discovery:dev": "serverless invoke -f discovery -l --stage dev",
     "discovery:prod": "serverless invoke -f discovery -l --stage prod",
+    "country-charts:prod": "sls invoke -f country_charts_pub --stage=prod -l",
+    "country-charts:dev": "sls invoke -f country_charts_pub --stage=dev -l",
     "lint": "eslint \"{,!(node_modules)/**/}*.js\"",
     "format": "prettier --config ./.prettierrc  --write \"{,!(node_modules)/**/}*.js\"",
     "pre-commit": "npm run format && npm run lint",
