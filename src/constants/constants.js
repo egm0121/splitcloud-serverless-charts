@@ -27,11 +27,14 @@ module.exports = {
     MIN_PLAYBACK_COUNT: 1000,
   },
   EMOJI_FLAGS: {
+    US: '🇺🇸',
     IN: '🇮🇳',
+    TH: '🇹🇭',
+    PK: '🇵🇰',
     MX: '🇲🇽',
     DE: '🇩🇪',
-    US: '🇺🇸',
-    GB: '🇬🇧',
+    EG: '🇪🇬',
+    PE: '🇵🇪',
   },
   IG_POST_COUNTRIES: ['US', 'IN', 'TH', 'PK', 'MX'],
   DISCOVERY_COUNTRIES: {
