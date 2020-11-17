@@ -57,7 +57,7 @@ custom:
     post_generator_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/post_generator_queue_dev"
     referrer_promocode_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/referrer_promocode_queue_dev"
     referrer_queue_arn: "arn:aws:sqs:us-east-1:348868901434:referrer_promocode_queue_dev"
-    referrer_queue_enabled: true
+    referrer_queue_enabled: false
   bucket: "www.splitcloud-app.com"
   cache_bucket: "com.splitcloud-app.cache"
   app_bucket: "com.splitcloud-app.app-sls"

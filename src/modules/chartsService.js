@@ -6,6 +6,7 @@ const cacheDecorator = require('egm0121-rn-common-lib/helpers/cacheDecorator').d
 const soundcloudkey = require('../../key/soundcloud_key.json');
 const GAReporting = require('./reportingClient');
 const RadioApi = require('../modules/radioApi').default;
+const constants = require('../constants/constants');
 
 const SC_API_ENDPOINT = 'api.soundcloud.com';
 const SC_V2_API_ENDPOINT = 'api-v2.soundcloud.com';
@@ -228,6 +229,9 @@ function sortByPopularityWithDecay(rows) {
 function filterMaxDuration(max) {
   return t => t.duration <= max;
 }
+function filterGenre(genreBlacklist) {
+  return t => !(t.genre in genreBlacklist);
+}
 class ChartsService {
   constructor() {
     this.getTopChart = cacheDecorator.withCache(
@@ -244,6 +248,7 @@ class ChartsService {
       .then(t => t.filter(filterBySCValidId))
       .then(hydrateSoundcloudTracks)
       .then(t => t.filter(filterMaxDuration(MAX_TRACK_DURATION)))
+      .then(t => t.filter(filterGenre(constants.GENRE_CHARTS_BLACKLIST)))
       .then(sortByPopularity);
   }
 
@@ -253,6 +258,7 @@ class ChartsService {
       .then(t => t.filter(filterBySCValidId))
       .then(hydrateSoundcloudTracks)
       .then(t => t.filter(filterMaxDuration(MAX_TRACK_DURATION)))
+      .then(t => t.filter(filterGenre(constants.GENRE_CHARTS_BLACKLIST)))
       .then(sortByPopularity)
       .then(chart => chart.slice(0, 50));
   }

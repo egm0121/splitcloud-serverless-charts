@@ -5,6 +5,19 @@ module.exports = {
     getmoreplays: true,
     top: true,
   },
+  GENRE_CHARTS_BLACKLIST: {
+    'Religion & Spirituality': true,
+    Audiobooks: true,
+    Business: true,
+    Comedy: true,
+    Entertainment: true,
+    Learning: true,
+    'News & Politics': true,
+    Science: true,
+    Sports: true,
+    Storytelling: true,
+    Technology: true,
+  },
   EXPLORE_RELATED: {
     // how many of the most recent user favorites will be used to as user_input_tracks;
     // this is to avoid getting tracks related to older favorites
@@ -20,13 +33,16 @@ module.exports = {
     US: '🇺🇸',
     GB: '🇬🇧',
   },
-  IG_POST_COUNTRIES: ['US', 'IN', 'TH', 'BR', 'MX'],
+  IG_POST_COUNTRIES: ['US', 'IN', 'TH', 'PK', 'MX'],
   DISCOVERY_COUNTRIES: {
     IN: 'India',
+    PK: 'Pakistan',
+    EG: 'Egypt',
     MX: 'Mexico',
+    PE: 'Peru',
+    TH: 'Thailand',
     DE: 'Germany',
     US: 'United States',
-    GB: 'United Kingdom',
   },
   WRAPPED_YEAR_MONTH: [1],
   COUNTRY_PROMOTION: {
@@ -44,6 +60,7 @@ module.exports = {
     DZ: 'Algeria',
     US: 'United States',
     EG: 'Egypt',
+    TH: 'Thailand',
     IT: 'Italy',
     BR: 'Brazil',
     AR: 'Argentina',

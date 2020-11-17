@@ -27,7 +27,7 @@ const logTracks = tracks => {
         genre: t.genre,
         username: t.username,
         duration: moment(t.duration).format('mm:ss'),
-        total_play: t.splitcloud_total_plays
+        unique_play: t.splitcloud_unique_plays,
       })
     )
   );
@@ -38,9 +38,10 @@ const logTracks = tracks => {
   const currDate = moment().format('L');
   console.log('TRENDING on ', currDate);
   // await chartService.getTrendingChart().then(logTracks);
-  // const country = undefined;
-  // console.log('POPULAR on ', currDate, ' country ', country);
-  // await chartService.getTopChart(200, 'United States').then(logTracks);
+  const country = 'United States';
+  console.log('POPULAR on ', currDate, ' country ', country);
+  // await chartService.getTrendingChart(50, country).then(logTracks);
+   await chartService.getTopChart(50, country).then(logTracks);
   // const playlists = require('./discover_playlists_payload_dev.json');
   // await discoverApi(playlists);
   // console.log('Average songs playback per day NEW USERS');
@@ -64,11 +65,11 @@ const logTracks = tracks => {
   // const deviceId = 'FB12F7C8-1D13-421C-9027-0F068262D6D9';
   // const deviceId = 'c23ecb15ab837b84';
   // const topTracks = await chartService.getPopularTracksByDeviceId(25, '2020-01-01', deviceId, 'L');
-  const topRadioStations = await chartService.getTopRadioStationsByCountry(
-    20,
-    constants.TOP_COUNTRIES.IN
-  );
-  logTracks(topRadioStations);
+  // const topRadioStations = await chartService.getTopRadioStationsByCountry(
+  //   20,
+  //   constants.TOP_COUNTRIES.IN
+  // );
+  // logTracks(topRadioStations);
   console.log('Time taken', performance.now() - timeStart);
   //   const grabScreenshot = async (year = '2019', deviceId, side) => {
   //     const targetUrl = `http://www.splitcloud-app.com/wrapped.html?id=${deviceId}&year=${year}&side=${side}&t=3`;
