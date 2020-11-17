@@ -241,7 +241,7 @@ module.exports.generateChartsPosts = async event => {
   };
 };
 
-module.exports.referrerPromoSub = async event => {
+module.exports.referrerPromoSub = metricScope(metrics => async event => {
   const messageAttr = event.Records[0].messageAttributes;
   const referrerId = messageAttr.referrerId.stringValue;
   const { APP_BUCKET } = process.env;
@@ -260,6 +260,7 @@ module.exports.referrerPromoSub = async event => {
   }
   const selectedCode = promoCodesList.pop();
   console.log(`got promocode ${selectedCode}, will assign to ${referrerId}`);
+  metrics.putMetric('promocodeListLenght', promoCodesList.length);
   await helpers.saveFileToS3(
     {
       bucket: APP_BUCKET,
@@ -286,4 +287,4 @@ module.exports.referrerPromoSub = async event => {
       result,
     },
   };
-};
+});
