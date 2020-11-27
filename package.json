@@ -13,6 +13,8 @@
     "discovery:prod": "serverless invoke -f discovery -l --stage prod",
     "country-charts:prod": "sls invoke -f country_charts_pub --stage=prod -l",
     "country-charts:dev": "sls invoke -f country_charts_pub --stage=dev -l",
+    "check-token:prod": "sls invoke -f token  --staged=prod -l",
+    "check-token:dev": "sls invoke -f token  --stage=dev -l",
     "lint": "eslint \"{,!(node_modules)/**/}*.js\"",
     "format": "prettier --config ./.prettierrc  --write \"{,!(node_modules)/**/}*.js\"",
     "pre-commit": "npm run format && npm run lint",

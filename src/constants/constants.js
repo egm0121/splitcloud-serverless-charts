@@ -80,6 +80,7 @@ module.exports = {
     BD: 'Bangladesh',
     EC: 'Ecuador',
     GB: 'United Kingdom',
+    RU: 'Russia',
   },
   SUPPORTED_UNICODE_SCRIPTS: [
     { name: 'latin', regexp: /\p{Script=Latin}/u },

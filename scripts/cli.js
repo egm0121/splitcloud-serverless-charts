@@ -36,12 +36,12 @@ const logTracks = tracks => {
 (async () => {
   const timeStart = performance.now();
   const currDate = moment().format('L');
-  console.log('TRENDING on ', currDate);
   // await chartService.getTrendingChart().then(logTracks);
-  const country = 'United States';
+  console.log('TRENDING on ', currDate);
+  const country = 'Russia';
   console.log('POPULAR on ', currDate, ' country ', country);
-  // await chartService.getTrendingChart(50, country).then(logTracks);
-   await chartService.getTopChart(50, country).then(logTracks);
+  await chartService.getTrendingChart(50, country).then(logTracks);
+  // await chartService.getTopChart(50, country).then(logTracks);
   // const playlists = require('./discover_playlists_payload_dev.json');
   // await discoverApi(playlists);
   // console.log('Average songs playback per day NEW USERS');
