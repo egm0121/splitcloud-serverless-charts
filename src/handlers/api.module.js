@@ -660,6 +660,17 @@ module.exports.exploreRelated = metricScope(metrics =>
         }
       });
     }
+    let nonPlayableTracksPerFeed = 0;
+    // filter out all non third-party streamable tracks
+    relatedTrackList = relatedTrackList.filter(track => {
+      if (track.streamable) {
+        return true;
+      }
+      // eslint-disable-next-line no-plusplus
+      nonPlayableTracksPerFeed++;
+      return false;
+    });
+    metrics.putMetric('nonStreambleTracksFilter', nonPlayableTracksPerFeed);
     // order all by recency
     relatedTrackList.sort(sortByDateDay);
 
