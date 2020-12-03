@@ -32,7 +32,7 @@ module.exports.wrappedPlaylistPublisher = async () => {
           },
         },
         MessageBody: `Generate wrapped playlist for device: ${deviceId}`,
-        QueueUrl: process.env.WRAPPED_PLAYLIST_QUEUE,
+        QueueUrl: process.env.WRAPPED_BUFFER_QUEUE,
       })
       .promise();
   });
@@ -42,6 +42,55 @@ module.exports.wrappedPlaylistPublisher = async () => {
     totalDevices: activeDevices.length,
     enquedMessages,
   };
+};
+module.exports.wrappedChunkPublisher = async () => {
+  console.log('wrapperPublisher started');
+  const MAX_MESSAGES_CHUNK = 1000;
+  const maxMessageIterator = new Array(MAX_MESSAGES_CHUNK).fill(1).map((v, k) => k);
+  // eslint-disable-next-line no-restricted-syntax
+  for (let i of maxMessageIterator) {
+    // eslint-disable-next-line no-await-in-loop
+    const response = await helpers.sqs
+      .receiveMessage({
+        QueueUrl: process.env.WRAPPED_BUFFER_QUEUE,
+        MaxNumberOfMessages: 1,
+        MessageAttributeNames: ['.*'],
+      })
+      .promise();
+    if (!response.Messages) {
+      console.log('empty receive', i);
+    } else {
+      const messageAttr = response.Messages[0].MessageAttributes;
+      const receiptForDelete = response.Messages[0].ReceiptHandle;
+      const deviceId = messageAttr.deviceId.StringValue;
+      const currentYear = messageAttr.currentYear.StringValue;
+      // eslint-disable-next-line no-await-in-loop
+      await helpers.sqs
+        .sendMessage({
+          MessageAttributes: {
+            deviceId: {
+              DataType: 'String',
+              StringValue: deviceId,
+            },
+            currentYear: {
+              DataType: 'String',
+              StringValue: currentYear,
+            },
+          },
+          MessageBody: `enqueue wrapped for device: ${deviceId} - currYear ${currentYear} - msg ${i} of ${MAX_MESSAGES_CHUNK}`,
+          QueueUrl: process.env.WRAPPED_PLAYLIST_QUEUE,
+        })
+        .promise();
+      console.log('pushed message from WRAPPED_BUFFER_QUEUE:', i, ' for device:', deviceId);
+      // eslint-disable-next-line no-await-in-loop
+      await helpers.sqs
+        .deleteMessage({
+          QueueUrl: process.env.WRAPPED_BUFFER_QUEUE,
+          ReceiptHandle: receiptForDelete,
+        })
+        .promise();
+    }
+  }
 };
 module.exports.wrappedPlaylistSubscribe = metricScope(metrics => async event => {
   const messageAttr = event.Records[0].messageAttributes;
