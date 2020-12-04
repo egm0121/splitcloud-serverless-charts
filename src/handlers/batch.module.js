@@ -12,7 +12,8 @@ const constants = require('../constants/constants');
 const saveToS3 = helpers.saveFileToS3;
 
 module.exports.wrappedPlaylistPublisher = async () => {
-  const activeDevices = await DeviceReports.getActiveDevices();
+  // count as active any device with at least 15 tracks across playback sides in the last 3months
+  const activeDevices = await DeviceReports.getActiveDevices(15, undefined, '90daysAgo');
   console.log('total active devices:', activeDevices.length);
   const currentYear = new Date().getFullYear().toString();
   const writeMessages = activeDevices.map(row => {

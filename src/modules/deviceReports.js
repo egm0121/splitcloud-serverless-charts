@@ -106,7 +106,7 @@ function extractResponseRows(response) {
 
 module.exports = {
   async getActiveDevices(
-    minPlaybackCompleted = 25, // count as active devices only the ones that played 25+ tracks
+    minPlaybackCompleted = 25, // count as active devices only the ones that played 25+ tracks in last 2 months
     segment = segmentsMap.RETURN_USERS,
     since = '60daysAgo'
   ) {

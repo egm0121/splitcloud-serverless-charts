@@ -27,9 +27,9 @@ custom:
     sc_charts_cache: rate(1 day)
     schedule_token: rate(5 minutes)
     schedule_discovery: rate(1 day)
-    schedule_country_charts: cron(0 19 ? * MON *)
-    schedule_wrapped_yearly: cron(0 18 1 12 ? *)
-    schedule_wrapped_chunk_pub: cron(0 19 1-10 12 ? *)
+    schedule_country_charts: cron(0 8 ? * MON *)
+    schedule_wrapped_yearly: cron(0 13 1 12 ? *)
+    schedule_wrapped_chunk_pub: cron(0 13 1-30 12 ? *)
     country_charts_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/splitcloud_charts_by_region"
     country_charts_arn: "arn:aws:sqs:us-east-1:348868901434:splitcloud_charts_by_region"
     charts_queue_enabled: true
