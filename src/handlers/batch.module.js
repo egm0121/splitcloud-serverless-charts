@@ -46,7 +46,7 @@ module.exports.wrappedPlaylistPublisher = async () => {
 };
 module.exports.wrappedChunkPublisher = async () => {
   console.log('wrapperPublisher started');
-  const MAX_MESSAGES_CHUNK = 1000;
+  const MAX_MESSAGES_CHUNK = 1500;
   const maxMessageIterator = new Array(MAX_MESSAGES_CHUNK).fill(1).map((v, k) => k);
   // eslint-disable-next-line no-restricted-syntax
   for (let i of maxMessageIterator) {
