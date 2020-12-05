@@ -7,6 +7,7 @@ const discoverApi = require('../src/modules/discoverApi');
 const reportStats = require('../src/modules/reportStats');
 const constants  = require('../src/constants/constants');
 const getScreenshots = require('../key/getScreenshots');
+const DeviceReports = require('../src/modules/deviceReports');
 
 const logTracks = tracks => {
   console.log(
@@ -37,10 +38,10 @@ const logTracks = tracks => {
   const timeStart = performance.now();
   const currDate = moment().format('L');
   // await chartService.getTrendingChart().then(logTracks);
-  console.log('TRENDING on ', currDate);
+  // console.log('TRENDING on ', currDate);
   const country = 'Russia';
-  console.log('POPULAR on ', currDate, ' country ', country);
-  await chartService.getTrendingChart(50, country).then(logTracks);
+  // console.log('POPULAR on ', currDate, ' country ', country);
+  // await chartService.getTrendingChart(50, country).then(logTracks);
   // await chartService.getTopChart(50, country).then(logTracks);
   // const playlists = require('./discover_playlists_payload_dev.json');
   // await discoverApi(playlists);
@@ -70,6 +71,9 @@ const logTracks = tracks => {
   //   constants.TOP_COUNTRIES.IN
   // );
   // logTracks(topRadioStations);
+  const activeDevices = await DeviceReports.getActiveDevices(15, undefined, '90daysAgo');
+  // console.log(activeDevices.map(e => e.dimensions[0]).join(';'))
+  console.log('active devices:', activeDevices.length);
   console.log('Time taken', performance.now() - timeStart);
   //   const grabScreenshot = async (year = '2019', deviceId, side) => {
   //     const targetUrl = `http://www.splitcloud-app.com/wrapped.html?id=${deviceId}&year=${year}&side=${side}&t=3`;

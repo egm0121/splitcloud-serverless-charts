@@ -77,7 +77,7 @@ async function readFileFromS3(keyOrObj) {
     if (err.code === 'NoSuchKey') {
       console.log('readFileFromS3 no such key:', finalKeyName);
     } else {
-      console.error('readFileFromS3 failed with error:', err.message);
+      console.error('readFileFromS3 failed with error:', finalKeyName, err.message);
     }
     throw err;
   }

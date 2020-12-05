@@ -27,8 +27,9 @@ custom:
     sc_charts_cache: rate(1 day)
     schedule_token: rate(5 minutes)
     schedule_discovery: rate(1 day)
-    schedule_country_charts: cron(0 19 ? * MON *)
-    schedule_wrapped_yearly: cron(0 18 30 12 ? *)
+    schedule_country_charts: cron(0 8 ? * MON *)
+    schedule_wrapped_yearly: cron(0 13 1 12 ? *)
+    schedule_wrapped_chunk_pub: cron(0 13 1-30 12 ? *)
     country_charts_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/splitcloud_charts_by_region"
     country_charts_arn: "arn:aws:sqs:us-east-1:348868901434:splitcloud_charts_by_region"
     charts_queue_enabled: true
@@ -40,6 +41,8 @@ custom:
     referrer_promocode_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/referrer_promocode_queue_prod"
     referrer_queue_arn: "arn:aws:sqs:us-east-1:348868901434:referrer_promocode_queue_prod"
     referrer_queue_enabled: true
+    wrapped_buffer_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/wrapped_buffer_queue_prod"
+    wrapped_buffer_arn: "arn:aws:sqs:us-east-1:348868901434:wrapped_buffer_queue_prod"
   dev: 
     sc_charts_cache: 
     schedule: 
@@ -47,6 +50,7 @@ custom:
     schedule_discovery:
     schedule_country_charts:
     schedule_wrapped_yearly:
+    schedule_wrapped_chunk_pub:
     country_charts_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/splitcloud_charts_by_region_dev"
     country_charts_arn: "arn:aws:sqs:us-east-1:348868901434:splitcloud_charts_by_region_dev"
     charts_queue_enabled: true
@@ -58,6 +62,8 @@ custom:
     referrer_promocode_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/referrer_promocode_queue_dev"
     referrer_queue_arn: "arn:aws:sqs:us-east-1:348868901434:referrer_promocode_queue_dev"
     referrer_queue_enabled: false
+    wrapped_buffer_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/wrapped_buffer_queue_dev"
+    wrapped_buffer_arn: "arn:aws:sqs:us-east-1:348868901434:wrapped_buffer_queue_dev"
   bucket: "www.splitcloud-app.com"
   cache_bucket: "com.splitcloud-app.cache"
   app_bucket: "com.splitcloud-app.app-sls"
@@ -121,6 +127,13 @@ provider:
       Resource: ${self:custom.${self:custom.myStage}.referrer_queue_arn}
     - Effect: "Allow"
       Action:
+      - sqs:SendMessage
+      - sqs:GetQueueUrl
+      - sqs:ReceiveMessage
+      - sqs:DeleteMessage
+      Resource: ${self:custom.${self:custom.myStage}.wrapped_buffer_arn}
+    - Effect: "Allow"
+      Action:
       - SNS:Publish
       Resource: !Ref chartCreatedTopic
   environment:
@@ -132,6 +145,7 @@ provider:
       WRAPPED_PLAYLIST_QUEUE: ${self:custom.${self:custom.myStage}.wrapped_playlist_queue}
       REFERRER_PROMO_QUEUE: ${self:custom.${self:custom.myStage}.referrer_promocode_queue}
       CHART_CREATED_TOPIC: !Ref chartCreatedTopic
+      WRAPPED_BUFFER_QUEUE: ${self:custom.${self:custom.myStage}.wrapped_buffer_queue}
 
 resources:
   Resources:
@@ -143,6 +157,10 @@ resources:
       Type: "AWS::SQS::Queue"
       Properties:
         QueueName: referrer_promocode_queue_${self:custom.myStage}
+    wrappedBufferQueue:
+      Type: "AWS::SQS::Queue"
+      Properties:
+        QueueName: wrapped_buffer_queue_${self:custom.myStage}
     snsToPostGeneratorSqsPolicy:
       Type: AWS::SQS::QueuePolicy
       Properties:
@@ -304,6 +322,11 @@ functions:
     timeout: 120
     events:
       - schedule: ${self:custom.${self:custom.myStage}.schedule_wrapped_yearly}
+  wrappedChunkPublisher:
+    handler: src/handlers/batch.wrappedChunkPublisher
+    timeout: 120
+    events:
+      - schedule: ${self:custom.${self:custom.myStage}.schedule_wrapped_chunk_pub}
   wrappedPlaylistSub:
     handler: src/handlers/batch.wrappedPlaylistSubscribe
     timeout: 50
