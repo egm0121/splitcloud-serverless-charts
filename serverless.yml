@@ -329,7 +329,7 @@ functions:
       - schedule: ${self:custom.${self:custom.myStage}.schedule_wrapped_chunk_pub}
   wrappedPlaylistSub:
     handler: src/handlers/batch.wrappedPlaylistSubscribe
-    timeout: 50
+    timeout: 110
     reservedConcurrency: 4
     events:
       - sqs:

@@ -46,7 +46,7 @@ module.exports.wrappedPlaylistPublisher = async () => {
 };
 module.exports.wrappedChunkPublisher = async () => {
   console.log('wrapperPublisher started');
-  const MAX_MESSAGES_CHUNK = 1500;
+  const MAX_MESSAGES_CHUNK = 1000;
   const maxMessageIterator = new Array(MAX_MESSAGES_CHUNK).fill(1).map((v, k) => k);
   // eslint-disable-next-line no-restricted-syntax
   for (let i of maxMessageIterator) {
@@ -101,7 +101,7 @@ module.exports.wrappedPlaylistSubscribe = metricScope(metrics => async event => 
   const playlistsSavedPromise = ['L', 'R'].map(async side => {
     const playlistFileName = `charts/wrapped/${currentYear}/${deviceId}_${side}.json`;
     const trackList = await chartService.getPopularTracksByDeviceId(
-      25,
+      15,
       `${currentYear}-01-01`,
       deviceId,
       side
