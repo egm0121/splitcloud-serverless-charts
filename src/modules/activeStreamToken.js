@@ -102,6 +102,13 @@ async function selectActiveStreamToken(metricsLogger) {
     },
   });
   const tokensUsageObj = getUsageByToken(tokenUsage.data);
+  if (
+    !Array.isArray(tokenUsage.data.reports[0].data.rows) ||
+    !tokenUsage.data.reports[0].data.rows.length
+  ) {
+    metricsLogger.putMetric('failedTokenReportReq', 1);
+    console.warn('invalid GA report for token usage', tokensUsageObj);
+  }
   const activeToken = await getActiveToken();
   console.log('current Stream Token in usage', activeToken);
   if (!activeToken) {
