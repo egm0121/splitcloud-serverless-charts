@@ -311,6 +311,7 @@ const ctaHandleWrappedYearlyPlaylist = async (event, context, callback) => {
     console.log('no wrapped playlist found', playlistPath);
     return false;
   }
+  context.metrics.putMetric('ctaWrappedPlaylist', 1);
   callback(null, {
     statusCode: 200,
     headers: {
@@ -410,6 +411,8 @@ module.exports.ctaEndpoint = metricScope(metrics =>
     const ctaLabelB = '⚡️ Follow @SplitCloud';
     const isAndroidId = deviceId.length === 16;
     metrics.setNamespace('ctaEndpoint');
+    // eslint-disable-next-line no-param-reassign
+    context.metrics = metrics;
     const selectedVariant = helpers.selectVariantFromHash(deviceId) ? 'A' : 'B';
     const ctaButtonColor = ctaBgBlue;
     let ctaUrl = `http://www.splitcloud-app.com/follow.html`;
@@ -419,10 +422,7 @@ module.exports.ctaEndpoint = metricScope(metrics =>
     ctaUrl = `${ctaUrl}?variant=${selectedVariant}&v=5`;
     const ctaLabel = selectedVariant === 'A' ? ctaLabelA : ctaLabelB;
     if (ctaHandleEndOfLife(event, context, callback)) return true;
-    if (await ctaHandleWrappedYearlyPlaylist(event, context, callback)) {
-      metrics.putMetric('ctaWrappedYearlyPlaylist', 1);
-      return true;
-    }
+    if (await ctaHandleWrappedYearlyPlaylist(event, context, callback)) return true;
     if (ctaHandleCountryPromotion(event, context, callback)) return true;
     if (ctaHandleGiveaway(event, context, callback)) return true;
     if (ctaHandleReferralFeatureAndroid(event, context, callback)) return true;
