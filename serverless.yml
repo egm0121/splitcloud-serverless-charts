@@ -36,6 +36,8 @@ custom:
     wrapped_playlist_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/wrapped_playlist_queue_prod"
     wrapped_playlist_arn: "arn:aws:sqs:us-east-1:348868901434:wrapped_playlist_queue_prod"
     wrapped_queue_enabled: true
+    wrapped_playlist_deadqueue: "https://sqs.us-east-1.amazonaws.com/348868901434/wrapped_playlist_deadletter_prod"
+    wrapped_playlist_deadqueue_arn: "arn:aws:sqs:us-east-1:348868901434:wrapped_playlist_deadletter_prod"
     post_generator_arn: "arn:aws:sqs:us-east-1:348868901434:post_generator_queue"
     post_generator_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/post_generator_queue"
     referrer_promocode_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/referrer_promocode_queue_prod"
@@ -57,6 +59,8 @@ custom:
     wrapped_playlist_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/wrapped_playlist_queue_dev"
     wrapped_playlist_arn: "arn:aws:sqs:us-east-1:348868901434:wrapped_playlist_queue_dev"
     wrapped_queue_enabled: false
+    wrapped_playlist_deadqueue: "https://sqs.us-east-1.amazonaws.com/348868901434/wrapped_playlist_deadletter_dev"
+    wrapped_playlist_deadqueue_arn: "arn:aws:sqs:us-east-1:348868901434:wrapped_playlist_deadletter_dev"
     post_generator_arn: "arn:aws:sqs:us-east-1:348868901434:post_generator_queue_dev"
     post_generator_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/post_generator_queue_dev"
     referrer_promocode_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/referrer_promocode_queue_dev"
@@ -134,6 +138,13 @@ provider:
       Resource: ${self:custom.${self:custom.myStage}.wrapped_buffer_arn}
     - Effect: "Allow"
       Action:
+      - sqs:SendMessage
+      - sqs:GetQueueUrl
+      - sqs:ReceiveMessage
+      - sqs:DeleteMessage
+      Resource: ${self:custom.${self:custom.myStage}.wrapped_playlist_deadqueue_arn}
+    - Effect: "Allow"
+      Action:
       - SNS:Publish
       Resource: !Ref chartCreatedTopic
   environment:
@@ -146,6 +157,7 @@ provider:
       REFERRER_PROMO_QUEUE: ${self:custom.${self:custom.myStage}.referrer_promocode_queue}
       CHART_CREATED_TOPIC: !Ref chartCreatedTopic
       WRAPPED_BUFFER_QUEUE: ${self:custom.${self:custom.myStage}.wrapped_buffer_queue}
+      WRAPPED_PLAYLIST_DEAD_QUEUE: ${self:custom.${self:custom.myStage}.wrapped_playlist_deadqueue}
 
 resources:
   Resources:
@@ -161,6 +173,10 @@ resources:
       Type: "AWS::SQS::Queue"
       Properties:
         QueueName: wrapped_buffer_queue_${self:custom.myStage}
+    # wrappedDeadletterQueue:
+    #   Type: "AWS::SQS::Queue"
+    #   Properties:
+    #     QueueName: wrapped_playlist_deadletter_${self:custom.myStage}
     snsToPostGeneratorSqsPolicy:
       Type: AWS::SQS::QueuePolicy
       Properties:
@@ -327,10 +343,15 @@ functions:
     timeout: 120
     events:
       - schedule: ${self:custom.${self:custom.myStage}.schedule_wrapped_chunk_pub}
+  wrappedDeadQueuePub:
+    handler: src/handlers/batch.wrappedDeadQueuePublisher
+    timeout: 120
+    events:
+      - schedule: ${self:custom.${self:custom.myStage}.schedule_wrapped_chunk_pub}
   wrappedPlaylistSub:
     handler: src/handlers/batch.wrappedPlaylistSubscribe
     timeout: 110
-    reservedConcurrency: 4
+    reservedConcurrency: 5
     events:
       - sqs:
           arn: ${self:custom.${self:custom.myStage}.wrapped_playlist_arn}

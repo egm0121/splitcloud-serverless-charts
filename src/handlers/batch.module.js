@@ -44,16 +44,22 @@ module.exports.wrappedPlaylistPublisher = async () => {
     enquedMessages,
   };
 };
-module.exports.wrappedChunkPublisher = async () => {
-  console.log('wrapperPublisher started');
-  const MAX_MESSAGES_CHUNK = 1000;
+const chunkMessageMover = async (sourceQueue, destQueue, MAX_MESSAGES_CHUNK = 1000) => {
+  console.log(
+    'chunkMessageMover started from queue',
+    sourceQueue,
+    'to queue',
+    destQueue,
+    'max messages',
+    MAX_MESSAGES_CHUNK
+  );
   const maxMessageIterator = new Array(MAX_MESSAGES_CHUNK).fill(1).map((v, k) => k);
   // eslint-disable-next-line no-restricted-syntax
   for (let i of maxMessageIterator) {
     // eslint-disable-next-line no-await-in-loop
     const response = await helpers.sqs
       .receiveMessage({
-        QueueUrl: process.env.WRAPPED_BUFFER_QUEUE,
+        QueueUrl: sourceQueue,
         MaxNumberOfMessages: 1,
         MessageAttributeNames: ['.*'],
       })
@@ -62,6 +68,7 @@ module.exports.wrappedChunkPublisher = async () => {
       console.log('empty receive', i);
     } else {
       const messageAttr = response.Messages[0].MessageAttributes;
+      const messageBody = response.Messages[0].Body;
       const receiptForDelete = response.Messages[0].ReceiptHandle;
       const deviceId = messageAttr.deviceId.StringValue;
       const currentYear = messageAttr.currentYear.StringValue;
@@ -78,20 +85,29 @@ module.exports.wrappedChunkPublisher = async () => {
               StringValue: currentYear,
             },
           },
-          MessageBody: `enqueue wrapped for device: ${deviceId} - currYear ${currentYear} - msg ${i} of ${MAX_MESSAGES_CHUNK}`,
-          QueueUrl: process.env.WRAPPED_PLAYLIST_QUEUE,
+          MessageBody: messageBody,
+          QueueUrl: destQueue,
         })
         .promise();
-      console.log('pushed message from WRAPPED_BUFFER_QUEUE:', i, ' for device:', deviceId);
+      console.log('pushed message from ', sourceQueue, ':', i, ' for device:', deviceId);
       // eslint-disable-next-line no-await-in-loop
       await helpers.sqs
         .deleteMessage({
-          QueueUrl: process.env.WRAPPED_BUFFER_QUEUE,
+          QueueUrl: sourceQueue,
           ReceiptHandle: receiptForDelete,
         })
         .promise();
     }
   }
+};
+module.exports.wrappedChunkPublisher = async () => {
+  return chunkMessageMover(process.env.WRAPPED_BUFFER_QUEUE, process.env.WRAPPED_PLAYLIST_QUEUE);
+};
+module.exports.wrappedDeadQueuePublisher = async () => {
+  return chunkMessageMover(
+    process.env.WRAPPED_PLAYLIST_DEAD_QUEUE,
+    process.env.WRAPPED_PLAYLIST_QUEUE
+  );
 };
 module.exports.wrappedPlaylistSubscribe = metricScope(metrics => async event => {
   const messageAttr = event.Records[0].messageAttributes;
