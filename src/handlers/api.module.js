@@ -409,7 +409,7 @@ module.exports.ctaEndpoint = metricScope(metrics =>
     const ctaLabelA = 'Follow SplitCloud ✨';
     const ctaLabelB = '⚡️ Follow @SplitCloud';
     const isAndroidId = deviceId.length === 16;
-
+    metrics.setNamespace('ctaEndpoint');
     const selectedVariant = helpers.selectVariantFromHash(deviceId) ? 'A' : 'B';
     const ctaButtonColor = ctaBgBlue;
     let ctaUrl = `http://www.splitcloud-app.com/follow.html`;
@@ -419,11 +419,13 @@ module.exports.ctaEndpoint = metricScope(metrics =>
     ctaUrl = `${ctaUrl}?variant=${selectedVariant}&v=5`;
     const ctaLabel = selectedVariant === 'A' ? ctaLabelA : ctaLabelB;
     if (ctaHandleEndOfLife(event, context, callback)) return true;
-    if (await ctaHandleWrappedYearlyPlaylist(event, context, callback)) return true;
+    if (await ctaHandleWrappedYearlyPlaylist(event, context, callback)) {
+      metrics.putMetric('ctaWrappedYearlyPlaylist', 1);
+      return true;
+    }
     if (ctaHandleCountryPromotion(event, context, callback)) return true;
     if (ctaHandleGiveaway(event, context, callback)) return true;
     if (ctaHandleReferralFeatureAndroid(event, context, callback)) return true;
-    metrics.setNamespace('ctaEndpoint');
     metrics.putMetric(`test_variant_${selectedVariant}`, 1);
     return callback(null, {
       statusCode: 200,
