@@ -116,12 +116,7 @@ module.exports.wrappedPlaylistSubscribe = metricScope(metrics => async event => 
   console.log('Process wrapped playlist message:', { deviceId, currentYear });
   const playlistsSavedPromise = ['L', 'R'].map(async side => {
     const playlistFileName = `charts/wrapped/${currentYear}/${deviceId}_${side}.json`;
-    const trackList = await chartService.getPopularTracksByDeviceId(
-      15,
-      `${currentYear}-01-01`,
-      deviceId,
-      side
-    );
+    const trackList = await chartService.getYearlyPopularTrackByDeviceId(10, deviceId, side);
     if (trackList.length) {
       return saveToS3(playlistFileName, trackList);
     }

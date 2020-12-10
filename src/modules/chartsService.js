@@ -92,6 +92,10 @@ async function fetchAnalyticsReport(
     reportRequest.requestBody.reportRequests[0].orderBys = [
       { fieldName: 'ga:totalEvents', sortOrder: 'DESCENDING' },
     ];
+    // if filtering by deviceId we only need totalEvents dimension
+    reportRequest.requestBody.reportRequests[0].orderBys = [
+      { fieldName: 'ga:totalEvents', sortOrder: 'DESCENDING' },
+    ]
   }
   if (category) {
     reportRequest.requestBody.reportRequests[0].dimensionFilterClauses.push({
@@ -153,12 +157,11 @@ async function hydrateSoundcloudTracks(trackList, scApiToken) {
   return trackList
     .map(track => {
       const resolveTrack = Object.assign({}, track);
-      resolveTrack.fetch = () => {
-        return fetchScTrackById(track.id, scApiToken).catch(err => {
+      resolveTrack.fetch = () =>
+        fetchScTrackById(track.id, scApiToken).catch(err => {
           console.warn(`sc track ${track.id} retrival failed`, err.message);
           return Promise.resolve();
         });
-      };
       return resolveTrack;
     })
     .reduce((prevPromise, nextTrackObj, idx, initList) => {
@@ -279,11 +282,11 @@ class ChartsService {
       'radio-playback-completed'
     )
       .then(extractResponseRows)
-      .then(list => {
-        return list
+      .then(list =>
+        list
           .map(station => ({ ...station, id: station.id.replace('radiobrowser_', '') }))
-          .filter(station => station.id.indexOf('-') > -1);
-      })
+          .filter(station => station.id.indexOf('-') > -1)
+      )
       .then(hydrateRadioStations)
       .then(sortByTotalPlays);
   }
@@ -293,6 +296,57 @@ class ChartsService {
     return fetchAnalyticsReport(limit, null, startDate, deviceId, category)
       .then(extractResponseRows)
       .then(t => t.filter(filterBySCValidId))
+      .then(t => hydrateSoundcloudTracks(t, soundcloudkey.BATCH_FETCHING_KEY))
+      .then(t => t.filter(filterMaxDuration(MAX_TRACK_DURATION)))
+      .then(sortByTotalPlays);
+  }
+
+  getYearlyPopularTrackByDeviceId(limit = 10, deviceId, side) {
+    const currYear = new Date().getFullYear();
+    const coupleOfMonths = [
+      { start: `${currYear}-01-01`, end: `${currYear}-02-28` },
+      { start: `${currYear}-03-01`, end: `${currYear}-04-30` },
+      { start: `${currYear}-05-01`, end: `${currYear}-06-30` },
+      { start: `${currYear}-07-01`, end: `${currYear}-08-31` },
+      { start: `${currYear}-09-01`, end: `${currYear}-10-31` },
+      { start: `${currYear}-11-01`, end: `${currYear}-12-31` },
+    ];
+    const category = side ? `side-${side}` : null;
+
+    const allMonthsTop = Promise.all(
+      coupleOfMonths.map(period =>
+        fetchAnalyticsReport(
+          limit,
+          null,
+          period.start,
+          deviceId,
+          category,
+          'playback-completed',
+          period.end
+        )
+          .then(extractResponseRows)
+          .then(t => t.filter(filterBySCValidId))
+          .catch(err => {
+            console.error('getYearlyPopularTrack GA report failed for device: ', deviceId);
+            console.error('GA error:', err.message);
+            return [];
+          })
+      )
+    );
+    return allMonthsTop
+      .then((...allData) => {
+        const allTracks = allData[0].reduce((acc, currPeriod) => acc.concat(currPeriod), []);
+        const uniqueTracksMap = allTracks.reduce((map, currTrack) => {
+          if (currTrack.id in map) {
+            map[currTrack.id].splitcloud_total_plays += currTrack.splitcloud_total_plays;
+          } else {
+            map[currTrack.id] = currTrack;
+          }
+          return map;
+        }, {});
+        return Object.keys(uniqueTracksMap).map(trackId => uniqueTracksMap[trackId]);
+      })
+      .then(unsortedList => sortByTotalPlays([...unsortedList]).slice(0, limit))
       .then(t => hydrateSoundcloudTracks(t, soundcloudkey.BATCH_FETCHING_KEY))
       .then(t => t.filter(filterMaxDuration(MAX_TRACK_DURATION)))
       .then(sortByTotalPlays);
