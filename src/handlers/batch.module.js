@@ -44,7 +44,7 @@ module.exports.wrappedPlaylistPublisher = async () => {
     enquedMessages,
   };
 };
-const chunkMessageMover = async (sourceQueue, destQueue, MAX_MESSAGES_CHUNK = 500) => {
+const chunkMessageMover = async (sourceQueue, destQueue, MAX_MESSAGES_CHUNK = 600) => {
   console.log(
     'chunkMessageMover started from queue',
     sourceQueue,
@@ -113,8 +113,10 @@ module.exports.wrappedPlaylistSubscribe = metricScope(metrics => async event => 
   const messageAttr = event.Records[0].messageAttributes;
   const deviceId = messageAttr.deviceId.stringValue;
   const currentYear = messageAttr.currentYear.stringValue;
+
   console.log('Process wrapped playlist message:', { deviceId, currentYear });
-  const playlistsSavedPromise = ['L', 'R'].map(async side => {
+
+  const computeAndStoreSidePlaylist = async side => {
     const playlistFileName = `charts/wrapped/${currentYear}/${deviceId}_${side}.json`;
     const trackList = await chartService.getYearlyPopularTrackByDeviceId(10, deviceId, side);
     if (trackList.length) {
@@ -123,8 +125,11 @@ module.exports.wrappedPlaylistSubscribe = metricScope(metrics => async event => 
     console.log(`empty tracklist detected: ${deviceId}-${side}`);
     metrics.putMetric('wrappedPlaylistEmpty', 1);
     return true;
-  });
-  return Promise.all(playlistsSavedPromise);
+  };
+
+  await computeAndStoreSidePlaylist('L');
+  await computeAndStoreSidePlaylist('R');
+  return true;
 });
 
 module.exports.countryChartsPublisher = async () => {
