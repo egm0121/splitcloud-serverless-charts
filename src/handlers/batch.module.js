@@ -44,7 +44,7 @@ module.exports.wrappedPlaylistPublisher = async () => {
     enquedMessages,
   };
 };
-const chunkMessageMover = async (sourceQueue, destQueue, MAX_MESSAGES_CHUNK = 1000) => {
+const chunkMessageMover = async (sourceQueue, destQueue, MAX_MESSAGES_CHUNK = 500) => {
   console.log(
     'chunkMessageMover started from queue',
     sourceQueue,
