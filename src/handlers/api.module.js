@@ -526,15 +526,17 @@ module.exports.appPromocodeRef = metricScope(metrics =>
   })
 );
 const getTrackTags = t => {
-  if (!t.tag_list) return [];
-  let separator = (t.tag_list.indexOf('"') > -1 && '"') || ' ';
-  separator = (t.tag_list.indexOf(',') > -1 && ',') || separator;
-  const rawTags = t.tag_list.split(separator).filter(tag => tag.length);
+  const tagListText = t.tag_list || '';
+  let separator = (tagListText.indexOf('"') > -1 && '"') || ' ';
+  separator = (tagListText.indexOf(',') > -1 && ',') || separator;
+  const rawTags = tagListText.split(separator).filter(tag => tag.length);
   rawTags.push(t.genre);
+  rawTags.push(t.first_name, t.full_name, t.username);
   return rawTags
     .map(tag => tag && tag.trim().toLowerCase())
     .filter(tag => tag && tag.length > 1 && !(tag in constants.TAGS_BLACKLIST));
 };
+
 const roundToWeek = d => {
   d.setHours(0, 0, 0);
   d.setDate(d.getDate() - (d.getDay() - 1));
@@ -546,8 +548,18 @@ const sortByDateDay = (ta, tb) => {
   const dateA = roundToWeek(new Date(ta.created_at));
   return dateB - dateA;
 };
+// extracts title only from the song, to de-duplicate diff version of same track
+const extractSongNameFromTitle = track => {
+  const allTitle = track.title.toLowerCase() || '';
+  let trackName = allTitle;
+  trackName = constants.SONG_NAME_DELIMITERS.reduce((currTrackName, delimiter) => {
+    if (currTrackName.indexOf(delimiter)) return currTrackName.split(delimiter)[0];
+    return currTrackName;
+  }, trackName);
+  return trackName.trim();
+};
 /**
- * Home feed of related + recent + system tracks
+ * Home feed of related + sc recent + system tracks
  * [POST] /explore/related
  */
 module.exports.exploreRelated = metricScope(metrics =>
@@ -560,7 +572,6 @@ module.exports.exploreRelated = metricScope(metrics =>
       0,
       constants.EXPLORE_RELATED.MAX_RECENT_FAVORITES_TRACKS
     );
-    helpers.arrayInPlaceShuffle(recentInputTracks); // shuffle recent input tracks
     const userInputTracks = recentInputTracks.slice(
       0,
       constants.EXPLORE_RELATED.MAX_USER_SOURCE_TRACKS
@@ -594,13 +605,11 @@ module.exports.exploreRelated = metricScope(metrics =>
     resolvedInputTracks.forEach(track =>
       getTrackTags(track).forEach(tag => relatedTagsSet.add(tag))
     );
-    console.log('allowed tags', [...relatedTagsSet]);
     let relatedTrackList = await chartService.fetchAllRelated(sourceTrackIds);
     const uniqueSet = new Set();
     relatedTrackList = relatedTrackList
       .filter(track => {
         if (track.playback_count < constants.EXPLORE_RELATED.MIN_PLAYBACK_COUNT) {
-          metrics.putMetric('excludeLowPlaybackCount', 1);
           return false;
         }
         if (uniqueSet.has(track.id)) return false;
@@ -625,7 +634,7 @@ module.exports.exploreRelated = metricScope(metrics =>
       const hasTagMatch = getTrackTags(t).find(scTag => relatedTagsSet.has(scTag));
       // if tags are matching and track is unique, add it to results
       if (hasTagMatch) {
-        console.log(`adding track: ${t.title} because matched tag:`, hasTagMatch);
+        console.log(`adding SC track: ${t.title} because matched tag:`, hasTagMatch);
       }
       return hasTagMatch;
     });
@@ -673,6 +682,19 @@ module.exports.exploreRelated = metricScope(metrics =>
       return false;
     });
     metrics.putMetric('nonStreambleTracksFilter', nonPlayableTracksPerFeed);
+    const uniqSongTitle = new Set();
+    // filter out repeated song names
+    relatedTrackList = relatedTrackList.filter(t => {
+      const songTitle = extractSongNameFromTitle(t);
+      // exclude duplicate tracks
+      if (uniqSongTitle.has(songTitle)) {
+        metrics.putMetric('excludeDuplicateTrack', 1);
+        console.log('exclude track: ', t.title, 'a song', songTitle, 'already exists');
+        return false;
+      }
+      uniqSongTitle.add(songTitle);
+      return true;
+    });
     // order all by recency
     relatedTrackList.sort(sortByDateDay);
 

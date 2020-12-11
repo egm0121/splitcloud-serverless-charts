@@ -5,6 +5,18 @@ module.exports = {
     getmoreplays: true,
     top: true,
   },
+  SONG_NAME_DELIMITERS: [
+    '(',
+    'prod ',
+    'feat ',
+    'feat.',
+    'ft ',
+    'ft.',
+    'prod by',
+    'prod by.',
+    'x',
+    '[',
+  ],
   GENRE_CHARTS_BLACKLIST: {
     'Religion & Spirituality': true,
     Audiobooks: true,
@@ -89,6 +101,7 @@ module.exports = {
     { name: 'cyrillic', regexp: /\p{Script=Cyrillic}/u },
     { name: 'greek', regexp: /\p{Script=Greek}/u },
     { name: 'thai', regexp: /\p{Script=Thai}/u },
+    { name: 'han', regexp: /\p{Script=Han}/u },
   ],
   RADIO_COUNTRY_CODES: [
     { name: 'AD', value: 'AD', stationcount: '5' },
