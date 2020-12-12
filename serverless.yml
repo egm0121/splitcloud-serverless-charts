@@ -30,12 +30,14 @@ custom:
     schedule_country_charts: cron(0 8 ? * MON *)
     schedule_wrapped_yearly: cron(0 13 1 12 ? *)
     schedule_wrapped_chunk_pub: cron(0 13 1-30 12 ? *)
+    schedule_wrapped_serial: rate(15 minutes)
+    timeout_wrapped_serial: 900
     country_charts_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/splitcloud_charts_by_region"
     country_charts_arn: "arn:aws:sqs:us-east-1:348868901434:splitcloud_charts_by_region"
     charts_queue_enabled: true
     wrapped_playlist_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/wrapped_playlist_queue_prod"
     wrapped_playlist_arn: "arn:aws:sqs:us-east-1:348868901434:wrapped_playlist_queue_prod"
-    wrapped_queue_enabled: true
+    wrapped_queue_enabled: false
     wrapped_playlist_deadqueue: "https://sqs.us-east-1.amazonaws.com/348868901434/wrapped_playlist_deadletter_prod"
     wrapped_playlist_deadqueue_arn: "arn:aws:sqs:us-east-1:348868901434:wrapped_playlist_deadletter_prod"
     post_generator_arn: "arn:aws:sqs:us-east-1:348868901434:post_generator_queue"
@@ -53,6 +55,8 @@ custom:
     schedule_country_charts:
     schedule_wrapped_yearly:
     schedule_wrapped_chunk_pub:
+    schedule_wrapped_serial:
+    timeout_wrapped_serial: 180
     country_charts_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/splitcloud_charts_by_region_dev"
     country_charts_arn: "arn:aws:sqs:us-east-1:348868901434:splitcloud_charts_by_region_dev"
     charts_queue_enabled: true
@@ -343,6 +347,11 @@ functions:
     timeout: 120
     events:
       - schedule: ${self:custom.${self:custom.myStage}.schedule_wrapped_chunk_pub}
+  serialWrappedProcessor:
+    handler: src/handlers/batch.serialWrappedProcessor
+    timeout: ${self:custom.${self:custom.myStage}.timeout_wrapped_serial}
+    events:
+      - schedule: ${self:custom.${self:custom.myStage}.schedule_wrapped_serial}
   wrappedDeadQueuePub:
     handler: src/handlers/batch.wrappedDeadQueuePublisher
     timeout: 120
@@ -351,7 +360,7 @@ functions:
   wrappedPlaylistSub:
     handler: src/handlers/batch.wrappedPlaylistSubscribe
     timeout: 120
-    reservedConcurrency: 1
+    reservedConcurrency: 4
     events:
       - sqs:
           arn: ${self:custom.${self:custom.myStage}.wrapped_playlist_arn}

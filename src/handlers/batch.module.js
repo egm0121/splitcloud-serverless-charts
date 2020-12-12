@@ -1,3 +1,4 @@
+/* eslint-disable no-await-in-loop */
 import PostGenerator from 'egm0121-rn-common-lib/modules/IGPostGenerator';
 import DeviceReports from '../modules/deviceReports';
 import ScreenshotConfig from '../../key/getScreenshots.json';
@@ -109,28 +110,66 @@ module.exports.wrappedDeadQueuePublisher = async () => {
     process.env.WRAPPED_PLAYLIST_QUEUE
   );
 };
-module.exports.wrappedPlaylistSubscribe = metricScope(metrics => async event => {
-  const messageAttr = event.Records[0].messageAttributes;
-  const deviceId = messageAttr.deviceId.stringValue;
-  const currentYear = messageAttr.currentYear.stringValue;
-
+const computeAndStoreWrappedSidePlaylist = async (side, deviceId, currentYear) => {
   console.log('Process wrapped playlist message:', { deviceId, currentYear });
-
-  const computeAndStoreSidePlaylist = async side => {
-    const playlistFileName = `charts/wrapped/${currentYear}/${deviceId}_${side}.json`;
-    const trackList = await chartService.getYearlyPopularTrackByDeviceId(10, deviceId, side);
-    if (trackList.length) {
-      return saveToS3(playlistFileName, trackList);
-    }
-    console.log(`empty tracklist detected: ${deviceId}-${side}`);
-    metrics.putMetric('wrappedPlaylistEmpty', 1);
+  const playlistFileName = `charts/wrapped/${currentYear}/${deviceId}_${side}.json`;
+  const trackList = await chartService.getYearlyPopularTrackByDeviceId(10, deviceId, side);
+  if (trackList.length) {
+    await saveToS3(playlistFileName, trackList);
     return true;
-  };
-
-  await computeAndStoreSidePlaylist('L');
-  await computeAndStoreSidePlaylist('R');
+  }
+  console.log(`empty tracklist detected: ${deviceId}-${side}`);
+  return false;
+};
+const wrappedPlaylistSubscribe = metricScope(metrics => async event => {
+  const messageAttr = event.Records[0].messageAttributes;
+  const deviceId = messageAttr.deviceId.StringValue || messageAttr.deviceId.stringValue;
+  const currYear = messageAttr.currentYear.StringValue || messageAttr.currentYear.stringValue;
+  const sideL = await computeAndStoreWrappedSidePlaylist('L', deviceId, currYear);
+  const sideR = await computeAndStoreWrappedSidePlaylist('R', deviceId, currYear);
+  [sideL, sideR].filter(e => !e).forEach(() => metrics.putMetric('wrappedPlaylistEmpty', 1));
   return true;
 });
+module.exports.wrappedPlaylistSubscribe = wrappedPlaylistSubscribe;
+const waitFor = secs => new Promise(res => setTimeout(res, secs * 1e3));
+
+module.exports.serialWrappedProcessor = async (event, context) => {
+  const sourceQueue = process.env.WRAPPED_PLAYLIST_QUEUE;
+  let execTimeLeft = Math.round(context.getRemainingTimeInMillis() / 1000);
+  let emptyReceive = 0;
+  while (execTimeLeft > 120 && emptyReceive < 3) {
+    const messageResponse = await helpers.sqs
+      .receiveMessage({
+        QueueUrl: sourceQueue,
+        MaxNumberOfMessages: 1,
+        MessageAttributeNames: ['.*'],
+      })
+      .promise();
+    if (!messageResponse.Messages) {
+      console.log('empty receive wait 10 seconds');
+      await waitFor(10);
+      emptyReceive += 1;
+    } else {
+      const messageAttributes = messageResponse.Messages[0].MessageAttributes;
+      const receiptForDelete = messageResponse.Messages[0].ReceiptHandle;
+      console.log('processing message', messageAttributes);
+      try {
+        await wrappedPlaylistSubscribe({ Records: [{ messageAttributes }] });
+      } catch (err) {
+        console.log('processing of message failed:', err);
+      }
+      // eslint-disable-next-line no-await-in-loop
+      await helpers.sqs
+        .deleteMessage({
+          QueueUrl: sourceQueue,
+          ReceiptHandle: receiptForDelete,
+        })
+        .promise();
+    }
+    execTimeLeft = Math.round(context.getRemainingTimeInMillis() / 1000);
+  }
+  console.log('exiting work loop, only', execTimeLeft, 'secs left, emptyreceives', emptyReceive);
+};
 
 module.exports.countryChartsPublisher = async () => {
   const topCountryMap = {
