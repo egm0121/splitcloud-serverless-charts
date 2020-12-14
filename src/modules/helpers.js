@@ -166,7 +166,7 @@ function arrayIntersect(a, b) {
 
 function timeoutAfter(promise, timeout) {
   return new Promise((res, rej) => {
-    const timerRef = setTimeout(rej, timeout);
+    const timerRef = setTimeout(() => rej(new Error('Timed out')), timeout);
     promise
       .then(value => {
         clearTimeout(timerRef);
