@@ -5,7 +5,6 @@ const semverCompare = require('semver-compare');
 const chartService = require('../modules/chartsService');
 const helpers = require('../modules/helpers');
 const constants = require('../constants/constants');
-const wrappedDeviceList = require('../constants/wrappedDeviceList');
 const formatters = require('../modules/formatters');
 
 const saveToS3 = helpers.saveFileToS3;
@@ -22,6 +21,8 @@ const MIN_REFERRER_REWARD = 3;
 
 const isUnsupportedVersion = clientVersion =>
   !clientVersion || semverCompare(clientVersion, MIN_SUPPORTED_VERSION) === -1;
+
+let wrappedDeviceList;
 
 const blockUnsupportedVersions = (
   handler,
@@ -275,6 +276,17 @@ const ctaHandleWrappedYearlyPlaylist = async (event, context, callback) => {
   if (!dateInRange && !helpers.isDEV) {
     console.log('disabled wrapped on this date in prod');
     return false;
+  }
+  if (!wrappedDeviceList) {
+    console.log('read wrapped device list from storage');
+    try {
+      wrappedDeviceList = await helpers.readJSONFromS3(
+        `charts/wrapped/${currentYear}/wrappedDeviceList.json`
+      );
+    } catch (err) {
+      wrappedDeviceList = [];
+      console.log('no wrapped device list found');
+    }
   }
   if (wrappedDeviceList.indexOf(deviceId) === -1) {
     console.log('deviceId not found');

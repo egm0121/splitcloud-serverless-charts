@@ -16,7 +16,15 @@ module.exports.wrappedPlaylistPublisher = async () => {
   // count as active any device with at least 15 tracks across playback sides in the last 3months
   const activeDevices = await DeviceReports.getActiveDevices(15, undefined, '90daysAgo');
   console.log('total active devices:', activeDevices.length);
-  const currentYear = new Date().getFullYear().toString();
+  const currentYear = new Date().getUTCFullYear().toString();
+  try {
+    await saveToS3(
+      `charts/wrapped/${currentYear}/wrappedDeviceList.json`,
+      activeDevices.map(row => row.dimensions[0])
+    );
+  } catch (err) {
+    console.error('wrapped playlist device list write failure:', err.message);
+  }
   const writeMessages = activeDevices.map(row => {
     const deviceId = row.dimensions[0];
     console.log('adding to wrapped queue:', deviceId);
