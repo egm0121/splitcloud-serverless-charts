@@ -64,20 +64,21 @@ const logTracks = tracks => {
   // console.log(await reportStats.getAvgEventCount('30daysAgo',undefined,'NEW_USERS','AD-STARTED'));
   // console.log('Average SOCIAL-SHARE per day NEW USERS');
   // console.log(await reportStats.getAvgEventCount('30daysAgo',undefined,'NEW_USERS','SHARE-COMPLETED'));
-  // const deviceId = 'FB12F7C8-1D13-421C-9027-0F068262D6D9'; // giphone
+  const deviceId = 'FB12F7C8-1D13-421C-9027-0F068262D6D9'; // giphone
   // const deviceId = 'c23ecb15ab837b84'; // gandroid
-  const deviceId = 'F80A9F98-07F7-45EC-9C5B-C4F9BAA19FEF'; // piphone
+  // const deviceId = 'F80A9F98-07F7-45EC-9C5B-C4F9BAA19FEF'; // piphone
+  // const deviceId = '1e3e5ed0634a86c3';
   // const topTracks = await chartService.getPopularTracksByDeviceId(25, '2020-01-01', deviceId, 'L');
   // const topRadioStations = await chartService.getTopRadioStationsByCountry(
   //   20,
   //   constants.TOP_COUNTRIES.IN
   // );
   // logTracks(topRadioStations);
-  // const activeDevices = await DeviceReports.getActiveDevices(15, undefined, '90daysAgo');
-  // console.log(activeDevices.map(e => e.dimensions[0]).join(';'))
+  const activeDevices = await DeviceReports.getActiveDevices(15, undefined, '90daysAgo');
+  console.log(JSON.stringify(activeDevices.map(e => e.dimensions[0])));
   // console.log('active devices:', activeDevices.length);
-  logTracks(await chartService.getYearlyPopularTrackByDeviceId(10, deviceId, 'L'));
-  console.log('Time taken', (performance.now() - timeStart) / 1000);
+  // logTracks(await chartService.getYearlyPopularTrackByDeviceId(10, deviceId, 'L'));
+  // console.log('Time taken', (performance.now() - timeStart) / 1000);
   //   const grabScreenshot = async (year = '2019', deviceId, side) => {
   //     const targetUrl = `http://www.splitcloud-app.com/wrapped.html?id=${deviceId}&year=${year}&side=${side}&t=3`;
   //     let apiCall = 'https://api.rasterwise.com/v1/get-screenshot';

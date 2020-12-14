@@ -5,6 +5,7 @@ const semverCompare = require('semver-compare');
 const chartService = require('../modules/chartsService');
 const helpers = require('../modules/helpers');
 const constants = require('../constants/constants');
+const wrappedDeviceList = require('../constants/wrappedDeviceList');
 const formatters = require('../modules/formatters');
 
 const saveToS3 = helpers.saveFileToS3;
@@ -189,11 +190,11 @@ module.exports.logCollector = async (event, context, callback) => {
   });
 };
 /**
- * /wrapped/{year}/{deviceId}/{side}?cache_only=1
+ * Returns wrapped playlist for year -deviceId- side only if generated
+ * /wrapped/{year}/{deviceId}/{side}
  */
 module.exports.yearWrappedTopList = async (event, context, callback) => {
   const { year, deviceId, side } = event.pathParameters;
-  const fromCacheOnly = helpers.getQueryParam(event, 'cache_only');
   const sideUpper = (side || '').toUpperCase();
 
   const jsonCacheFileName = `charts/wrapped/${year}/${deviceId}_${sideUpper}.json`;
@@ -212,41 +213,13 @@ module.exports.yearWrappedTopList = async (event, context, callback) => {
       body: JSON.stringify(trackList),
     });
   }
-  if (fromCacheOnly) {
-    return callback(null, {
-      statusCode: 204,
-      headers: {
-        ...corsHeaders,
-      },
-      body: JSON.stringify([]),
-    });
-  }
-  try {
-    trackList = await chartService.getPopularTracksByDeviceId(
-      10,
-      `${year}-01-01`,
-      deviceId,
-      sideUpper
-    );
-    if (trackList.length) {
-      await saveToS3(jsonCacheFileName, trackList);
-    }
-    callback(null, {
-      statusCode: 200,
-      headers: {
-        ...corsHeaders,
-      },
-      body: JSON.stringify(formatters.formatTrackListPayload(trackList)),
-    });
-  } catch (error) {
-    callback(null, {
-      statusCode: 500,
-      headers: {
-        ...corsHeaders,
-      },
-      body: JSON.stringify({ error: error.toString(), trace: error.stack }),
-    });
-  }
+  return callback(null, {
+    statusCode: 204,
+    headers: {
+      ...corsHeaders,
+    },
+    body: JSON.stringify([]),
+  });
 };
 /**
  *  /app/config
@@ -303,12 +276,31 @@ const ctaHandleWrappedYearlyPlaylist = async (event, context, callback) => {
     console.log('disabled wrapped on this date in prod');
     return false;
   }
+  if (wrappedDeviceList.indexOf(deviceId) === -1) {
+    console.log('deviceId not found');
+    return false;
+  }
   const playlistPath = `charts/wrapped/${currentYear}/${deviceId}_${side}.json`;
   let wrappedPlaylist;
   try {
     wrappedPlaylist = await helpers.readJSONFromS3(playlistPath);
   } catch (err) {
     console.log('no wrapped playlist found', playlistPath);
+  }
+  if (!wrappedPlaylist) {
+    try {
+      wrappedPlaylist = await helpers.timeoutAfter(
+        chartService.getYearlyPopularTrackByDeviceId(10, deviceId, side),
+        8 * 1e3 // 8 sec of time to generate
+      );
+      await saveToS3(playlistPath, wrappedPlaylist);
+      context.metrics.putMetric('ctaWrappedGenerated', 1);
+    } catch (err) {
+      console.error('wrapped playlist failed:', err.message);
+      return false;
+    }
+  }
+  if (!wrappedPlaylist.length) {
     return false;
   }
   context.metrics.putMetric('ctaWrappedPlaylist', 1);

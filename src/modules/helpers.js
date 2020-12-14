@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const AWS = require('aws-sdk');
 const constants = require('../constants/constants');
+const { clear } = require('console');
 
 AWS.config.update({ region: 'us-east-1' });
 const isDEV = process.env.STAGE === 'dev';
@@ -162,6 +163,21 @@ function isStringNumeric(str) {
 function arrayIntersect(a, b) {
   return a.filter(item => b.includes(item));
 }
+
+function timeoutAfter(promise, timeout) {
+  return new Promise((res, rej) => {
+    const timerRef = setTimeout(rej, timeout);
+    promise
+      .then(value => {
+        clearTimeout(timerRef);
+        res(value);
+      })
+      .catch(err => {
+        clearTimeout(timerRef);
+        rej(err);
+      });
+  });
+}
 module.exports = {
   saveFileToS3,
   saveBlobToS3,
@@ -179,4 +195,5 @@ module.exports = {
   pushToTopic,
   getStringScripts,
   isStringNumeric,
+  timeoutAfter,
 };

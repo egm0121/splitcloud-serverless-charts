@@ -11,3 +11,4 @@ devicemap*.json
 /screenshots
 test-event.json
 *.env
+src/constants/wrappedDeviceList.js

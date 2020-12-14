@@ -301,7 +301,26 @@ class ChartsService {
       .then(sortByTotalPlays);
   }
 
-  getYearlyPopularTrackByDeviceId(limit = 10, deviceId, side) {
+  async getTopTrackForPeriod(limit, period, deviceId, category) {
+    return fetchAnalyticsReport(
+      limit,
+      null,
+      period.start,
+      deviceId,
+      category,
+      'playback-completed',
+      period.end
+    )
+      .then(extractResponseRows)
+      .then(t => t.filter(filterBySCValidId))
+      .catch(err => {
+        console.error('getYearlyPopularTrack GA report failed for device: ', deviceId);
+        console.error('GA error:', err.message);
+        return [];
+      });
+  }
+
+  async getYearlyPopularTrackByDeviceId(limit = 10, deviceId, side) {
     const currYear = new Date().getFullYear();
     const coupleOfMonths = [
       { start: `${currYear}-01-01`, end: `${currYear}-02-28` },
@@ -309,47 +328,32 @@ class ChartsService {
       { start: `${currYear}-05-01`, end: `${currYear}-06-30` },
       { start: `${currYear}-07-01`, end: `${currYear}-08-31` },
       { start: `${currYear}-09-01`, end: `${currYear}-10-31` },
-      { start: `${currYear}-11-01`, end: `${currYear}-12-31` },
+//    { start: `${currYear}-11-01`, end: `${currYear}-11-30` },
     ];
     const category = side ? `side-${side}` : null;
-
-    const allMonthsTop = Promise.all(
-      coupleOfMonths.map(period =>
-        fetchAnalyticsReport(
-          limit,
-          null,
-          period.start,
-          deviceId,
-          category,
-          'playback-completed',
-          period.end
-        )
-          .then(extractResponseRows)
-          .then(t => t.filter(filterBySCValidId))
-          .catch(err => {
-            console.error('getYearlyPopularTrack GA report failed for device: ', deviceId);
-            console.error('GA error:', err.message);
-            return [];
-          })
-      )
+    const allTracks = [];
+    // eslint-disable-next-line no-restricted-syntax
+    for (let period of coupleOfMonths) {
+      // eslint-disable-next-line no-await-in-loop
+      const tracks = await this.getTopTrackForPeriod(limit, period, deviceId, category);
+      allTracks.push(...tracks);
+      console.log('got report', period);
+    }
+    const uniqueTracksMap = allTracks.reduce((map, currTrack) => {
+      if (currTrack.id in map) {
+        map[currTrack.id].splitcloud_total_plays += currTrack.splitcloud_total_plays;
+      } else {
+        map[currTrack.id] = currTrack;
+      }
+      return map;
+    }, {});
+    const unsortedList = Object.keys(uniqueTracksMap).map(trackId => uniqueTracksMap[trackId]);
+    const sortedList = sortByTotalPlays([...unsortedList]).slice(0, limit);
+    const hydratedList = await hydrateSoundcloudTracks(
+      sortedList,
+      soundcloudkey.BATCH_FETCHING_KEY
     );
-    return allMonthsTop
-      .then((...allData) => {
-        const allTracks = allData[0].reduce((acc, currPeriod) => acc.concat(currPeriod), []);
-        const uniqueTracksMap = allTracks.reduce((map, currTrack) => {
-          if (currTrack.id in map) {
-            map[currTrack.id].splitcloud_total_plays += currTrack.splitcloud_total_plays;
-          } else {
-            map[currTrack.id] = currTrack;
-          }
-          return map;
-        }, {});
-        return Object.keys(uniqueTracksMap).map(trackId => uniqueTracksMap[trackId]);
-      })
-      .then(unsortedList => sortByTotalPlays([...unsortedList]).slice(0, limit))
-      .then(t => hydrateSoundcloudTracks(t, soundcloudkey.BATCH_FETCHING_KEY))
-      .then(t => t.filter(filterMaxDuration(MAX_TRACK_DURATION)))
-      .then(sortByTotalPlays);
+    return sortByTotalPlays(hydratedList.filter(filterMaxDuration(MAX_TRACK_DURATION)));
   }
 
   sortTrendingTracks(tracks) {
