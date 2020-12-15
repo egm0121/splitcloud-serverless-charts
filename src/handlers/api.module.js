@@ -323,12 +323,12 @@ const ctaHandleWrappedYearlyPlaylist = async (event, context, callback) => {
     },
     body: JSON.stringify({
       ctaUrl: '',
-      ctaLabel: `Your ${currentYear} Rewind!`,
+      ctaLabel: `Your ${currentYear} Top Songs!`,
       ctaButtonColor: '#FF7F50',
       ctaAction: {
         type: 'wrapped_playlist',
         data: formatters.formatPlaylistPayload(
-          formatters.createPlaylistFromTrackList(wrappedPlaylist, `Your ${currentYear} Rewind`)
+          formatters.createPlaylistFromTrackList(wrappedPlaylist, `Your ${currentYear} Top 10`)
         ),
       },
     }),
@@ -385,7 +385,7 @@ const ctaHandleReferralFeatureAndroid = (event, context, callback) => {
   const { deviceId } = event.pathParameters;
   const isAndroidId = deviceId.length === 16;
   const clientVersion = helpers.getQueryParam(event, 'appVersion');
-  const promoExpiry = new Date('2020-12-30T23:59:00.000Z');
+  const promoExpiry = new Date('2021-01-30T23:59:00.000Z');
   if (semverCompare(clientVersion, MIN_SHARE_SCREEN_IN_CTA_VERSION) === -1) return false;
   if (isAndroidId && new Date() < promoExpiry) {
     callback(null, {
@@ -394,9 +394,9 @@ const ctaHandleReferralFeatureAndroid = (event, context, callback) => {
         ...corsHeaders,
       },
       body: JSON.stringify({
-        ctaLabel: '👫 Share & Remove ADS 🎁',
+        ctaLabel: '👫 FREE Remove ADS 🎁',
         ctaUrl: '',
-        ctaButtonColor: '#9f0202',
+        ctaButtonColor: '#FF7F50',
         ctaAction: { type: 'share_app_screen' },
       }),
     });
