@@ -409,6 +409,8 @@ const ctaHandleReferralFeatureAndroid = (event, context, callback) => {
  */
 module.exports.ctaEndpoint = metricScope(metrics =>
   blockUnsupportedVersions(async (event, context, callback) => {
+    // eslint-disable-next-line no-param-reassign
+    context.callbackWaitsForEmptyEventLoop = false;
     const { deviceId } = event.pathParameters;
     const ctaBgBlue = '#2196F3';
     const ctaLabelA = 'Follow SplitCloud ✨';
