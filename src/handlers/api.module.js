@@ -567,12 +567,6 @@ const extractSongNameFromTitle = track => {
   return trackName.trim();
 };
 
-const isTrackOfAlbum = track =>
-  track &&
-  track.publisher_metadata &&
-  track.publisher_metadata.album_title &&
-  track.publisher_metadata.album_title.length > 0;
-
 const getAlbumNameForTrack = track => {
   const meta = track.publisher_metadata;
   return `${meta.album_title.toLowerCase().trim()}-${meta.artist.toLowerCase().trim()}`
@@ -714,20 +708,19 @@ module.exports.exploreRelated = metricScope(metrics =>
       uniqSongTitle.add(songTitle);
       return true;
     });
-    const trackPerAlbum = {};
+    const trackPerUploader = {};
     // filter max suggested tracks x same album-artist key
     relatedTrackList = relatedTrackList.filter(t => {
-      if (!isTrackOfAlbum(t)) return true;
-      const trackAlbumName = getAlbumNameForTrack(t);
-      if (!(trackAlbumName in trackPerAlbum)) trackPerAlbum[trackAlbumName] = 1;
-      if (trackPerAlbum[trackAlbumName] > constants.EXPLORE_RELATED.MAX_TRACKS_PER_ALBUM) {
-        console.log('exclude from album', t.title);
+      const trackUploader = t.user.username;
+      if (!(trackUploader in trackPerUploader)) trackPerUploader[trackUploader] = 1;
+      if (trackPerUploader[trackUploader] > constants.EXPLORE_RELATED.MAX_TRACKS_PER_ALBUM) {
         return false;
       }
-      trackPerAlbum[trackAlbumName] += 1;
+      metrics.putMetric('excludeFromSameUser', 1);
+      // eslint-disable-next-line no-plusplus
+      trackPerUploader[trackUploader]++;
       return true;
     });
-
     // order all by recency
     relatedTrackList.sort(sortByDateDay);
 
