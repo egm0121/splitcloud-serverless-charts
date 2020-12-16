@@ -409,6 +409,8 @@ const ctaHandleReferralFeatureAndroid = (event, context, callback) => {
  */
 module.exports.ctaEndpoint = metricScope(metrics =>
   blockUnsupportedVersions(async (event, context, callback) => {
+    // this is needed to make sure that we return to the client as soon as callback is invoked,
+    // event if some promise is still pending after a timeout
     // eslint-disable-next-line no-param-reassign
     context.callbackWaitsForEmptyEventLoop = false;
     const { deviceId } = event.pathParameters;
@@ -564,6 +566,17 @@ const extractSongNameFromTitle = track => {
   }, trackName);
   return trackName.trim();
 };
+
+const isTrackOfAlbum = track =>
+  track &&
+  track.publisher_metadata &&
+  track.publisher_metadata.album_title &&
+  track.publisher_metadata.album_title.length > 0;
+
+const getAlbumNameForTrack = track => {
+  const meta = track.publisher_metadata;
+  return `${meta.album_title.toLowerCase().trim()}-${meta.artist.toLowerCase().trim()}`
+};
 /**
  * Home feed of related + sc recent + system tracks
  * [POST] /explore/related
@@ -701,6 +714,20 @@ module.exports.exploreRelated = metricScope(metrics =>
       uniqSongTitle.add(songTitle);
       return true;
     });
+    const trackPerAlbum = {};
+    // filter max suggested tracks x same album-artist key
+    relatedTrackList = relatedTrackList.filter(t => {
+      if (!isTrackOfAlbum(t)) return true;
+      const trackAlbumName = getAlbumNameForTrack(t);
+      if (!(trackAlbumName in trackPerAlbum)) trackPerAlbum[trackAlbumName] = 1;
+      if (trackPerAlbum[trackAlbumName] > constants.EXPLORE_RELATED.MAX_TRACKS_PER_ALBUM) {
+        console.log('exclude from album', t.title);
+        return false;
+      }
+      trackPerAlbum[trackAlbumName] += 1;
+      return true;
+    });
+
     // order all by recency
     relatedTrackList.sort(sortByDateDay);
 

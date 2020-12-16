@@ -37,6 +37,7 @@ module.exports = {
     MAX_SOURCE_TRACKS: 10,
     MAX_USER_SOURCE_TRACKS: 10, // do not use the trending tracks at all if user has enough favorites
     MIN_PLAYBACK_COUNT: 1000,
+    MAX_TRACKS_PER_ALBUM: 2,
   },
   EMOJI_FLAGS: {
     US: '🇺🇸',
