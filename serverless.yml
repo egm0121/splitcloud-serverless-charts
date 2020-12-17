@@ -274,6 +274,13 @@ functions:
             parameters:
               paths:
                 countrycode: true
+  globalYearWrapped:
+    handler: src/handlers/api.globalYearWrapped
+    timeout: 30
+    events:
+      - http:
+          path: wrapped/global/{kind}
+          method: get
   yearWrapped:
     handler: src/handlers/api.yearWrappedTopList
     timeout: 30
@@ -288,6 +295,7 @@ functions:
                 year: true
                 deviceId: true
                 side: true
+  
   ctaEndpoint:
     handler: src/handlers/api.ctaEndpoint
     events:

@@ -3,6 +3,7 @@ import PostGenerator from 'egm0121-rn-common-lib/modules/IGPostGenerator';
 import DeviceReports from '../modules/deviceReports';
 import ScreenshotConfig from '../../key/getScreenshots.json';
 
+const moment = require('moment');
 const { metricScope } = require('aws-embedded-metrics');
 const chartService = require('../modules/chartsService');
 const selectActiveStreamToken = require('../modules/activeStreamToken');
@@ -10,6 +11,7 @@ const discoveryApi = require('../modules/discoverApi');
 const helpers = require('../modules/helpers');
 const constants = require('../constants/constants');
 
+const weekOfYear = moment().isoWeek();
 const saveToS3 = helpers.saveFileToS3;
 
 module.exports.wrappedPlaylistPublisher = async () => {
@@ -242,6 +244,10 @@ module.exports.countryChartsSubscribe = async event => {
       await saveToS3(
         `charts/country/weekly_trending_country_${countryCode}.json`,
         trendingChartData
+      );
+      await saveToS3(
+        `charts/country/history/popular_country_${countryCode}_${weekOfYear}.json`,
+        topChartData
       );
       await saveToS3(
         `charts/radios/weekly_popular_country_${countryCode}.json`,

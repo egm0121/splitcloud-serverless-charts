@@ -223,6 +223,43 @@ module.exports.yearWrappedTopList = async (event, context, callback) => {
   });
 };
 /**
+ * Returns top of the current year playlist
+ * /wrapped/gloabl/:kind
+ */
+module.exports.globalYearWrapped = async (event, context, callback) => {
+  const { kind = 'popular' } = event.pathParameters;
+  const allWeeksProms = Array(52)
+    .fill(1)
+    .map((v, k) => k + 1)
+    .map(weekNo => helpers.readJSONFromS3(`charts/weekly_${kind}_${weekNo}.json`).catch(() => []));
+  let allWeeksCharts;
+  try {
+    allWeeksCharts = await Promise.all(allWeeksProms);
+  } catch (err) {
+    console.log('error fetching weekly charts');
+  }
+  const trackMap = allWeeksCharts.reduce((acc, currWeek) => {
+    currWeek.forEach(track => {
+      if (track.id in acc) {
+        acc[track.id].splitcloud_total_plays += track.splitcloud_total_plays;
+      } else {
+        acc[track.id] = track;
+      }
+    });
+    return acc;
+  }, {});
+  const trackList = Object.values(trackMap)
+    .sort((a, b) => b.splitcloud_total_plays - a.splitcloud_total_plays)
+    .slice(0, 15);
+  return callback(null, {
+    statusCode: 200,
+    headers: {
+      ...corsHeaders,
+    },
+    body: JSON.stringify(trackList),
+  });
+};
+/**
  *  /app/config
  */
 module.exports.appConfigApi = blockUnsupportedVersions(
@@ -565,11 +602,6 @@ const extractSongNameFromTitle = track => {
     return currTrackName;
   }, trackName);
   return trackName.trim();
-};
-
-const getAlbumNameForTrack = track => {
-  const meta = track.publisher_metadata;
-  return `${meta.album_title.toLowerCase().trim()}-${meta.artist.toLowerCase().trim()}`
 };
 /**
  * Home feed of related + sc recent + system tracks

@@ -36,6 +36,7 @@ const logTracks = tracks => {
   return tracks;
 };
 (async () => {
+  console.log('this week nbr is', moment().isoWeek());
   const timeStart = performance.now();
   const currDate = moment().format('L');
   // await chartService.getTrendingChart().then(logTracks);
