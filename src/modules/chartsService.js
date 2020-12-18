@@ -255,8 +255,8 @@ class ChartsService {
       .then(sortByPopularity);
   }
 
-  getTopChart(limit = 75, country = '') {
-    return fetchAnalyticsReport(limit, country)
+  getTopChart(limit = 75, country = '', daysAgo) {
+    return fetchAnalyticsReport(limit, country, daysAgo)
       .then(extractResponseRows)
       .then(t => t.filter(filterBySCValidId))
       .then(hydrateSoundcloudTracks)
