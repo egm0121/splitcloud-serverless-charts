@@ -301,10 +301,10 @@ class ChartsService {
       .then(sortByTotalPlays);
   }
 
-  async getTopTrackForPeriod(limit, period, deviceId, category) {
+  async getTopTrackForPeriod(limit, period, country, deviceId, category) {
     return fetchAnalyticsReport(
       limit,
-      null,
+      country,
       period.start,
       deviceId,
       category,
@@ -320,7 +320,13 @@ class ChartsService {
       });
   }
 
-  async getYearlyPopularTrackByDeviceId(limit = 10, deviceId, side) {
+  async getYearlyPopularTrackByDimension(
+    limit = 10,
+    filterName,
+    filterValue,
+    side,
+    includeLastPeriod = false
+  ) {
     const currYear = new Date().getFullYear();
     const coupleOfMonths = [
       { start: `${currYear}-01-01`, end: `${currYear}-02-28` },
@@ -328,14 +334,23 @@ class ChartsService {
       { start: `${currYear}-05-01`, end: `${currYear}-06-30` },
       { start: `${currYear}-07-01`, end: `${currYear}-08-31` },
       { start: `${currYear}-09-01`, end: `${currYear}-10-31` },
-//    { start: `${currYear}-11-01`, end: `${currYear}-11-30` },
     ];
+    if (includeLastPeriod) {
+      coupleOfMonths.push({ start: `${currYear}-11-01`, end: `${currYear}-12-15` });
+    }
     const category = side ? `side-${side}` : null;
     const allTracks = [];
     // eslint-disable-next-line no-restricted-syntax
     for (let period of coupleOfMonths) {
-      // eslint-disable-next-line no-await-in-loop
-      const tracks = await this.getTopTrackForPeriod(limit, period, deviceId, category);
+      let tracks = [];
+      if (filterName === 'deviceId') {
+        // eslint-disable-next-line no-await-in-loop
+        tracks = await this.getTopTrackForPeriod(limit, period, undefined, filterValue, category);
+      }
+      if (filterName === 'country') {
+        // eslint-disable-next-line no-await-in-loop
+        tracks = await this.getTopTrackForPeriod(limit, period, filterValue);
+      }
       allTracks.push(...tracks);
       console.log('got report', period);
     }
@@ -354,6 +369,14 @@ class ChartsService {
       soundcloudkey.BATCH_FETCHING_KEY
     );
     return sortByTotalPlays(hydratedList.filter(filterMaxDuration(MAX_TRACK_DURATION)));
+  }
+
+  async getYearlyPopularTrackByDeviceId(limit = 10, deviceId, side) {
+    return this.getYearlyPopularTrackByDimension(limit, 'deviceId', deviceId, side);
+  }
+
+  async getYearlyPopularTrackByCountry(limit = 10, countryName) {
+    return this.getYearlyPopularTrackByDimension(limit, 'country', countryName, undefined, true);
   }
 
   sortTrendingTracks(tracks) {

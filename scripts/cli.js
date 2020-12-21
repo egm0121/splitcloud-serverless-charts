@@ -5,7 +5,7 @@ const moment = require('moment');
 const chartService = require('../src/modules/chartsService');
 const discoverApi = require('../src/modules/discoverApi');
 const reportStats = require('../src/modules/reportStats');
-const constants  = require('../src/constants/constants');
+const constants = require('../src/constants/constants');
 const getScreenshots = require('../key/getScreenshots');
 const DeviceReports = require('../src/modules/deviceReports');
 
@@ -74,11 +74,12 @@ const logTracks = tracks => {
   //   constants.TOP_COUNTRIES.IN
   // );
   // logTracks(topRadioStations);
-  const activeDevices = await DeviceReports.getActiveDevices(5, undefined, '60daysAgo');
+  // const activeDevices = await DeviceReports.getActiveDevices(15, undefined, '60daysAgo');
   // console.log(JSON.stringify(activeDevices.map(e => e.dimensions[0])));
-  console.log('active devices:', activeDevices.length);
+  // console.log('active devices:', activeDevices.length);
   // logTracks(await chartService.getYearlyPopularTrackByDeviceId(10, deviceId, 'L'));
-  // console.log('Time taken', (performance.now() - timeStart) / 1000);
+  logTracks(await chartService.getYearlyPopularTrackByCountry(10, 'India'));
+  console.log('Time taken', (performance.now() - timeStart) / 1000);
   //   const grabScreenshot = async (year = '2019', deviceId, side) => {
   //     const targetUrl = `http://www.splitcloud-app.com/wrapped.html?id=${deviceId}&year=${year}&side=${side}&t=3`;
   //     let apiCall = 'https://api.rasterwise.com/v1/get-screenshot';

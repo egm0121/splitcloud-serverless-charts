@@ -30,6 +30,7 @@ custom:
     schedule_country_charts: cron(0 8 ? * MON *)
     schedule_wrapped_yearly: cron(0 13 1 12 ? *)
     schedule_wrapped_chunk_pub: cron(0 13 1-30 12 ? *)
+    schedule_country_wrapped: cron(0 13 15 12 ? *)
     schedule_wrapped_serial:
     timeout_wrapped_serial: 900
     country_charts_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/splitcloud_charts_by_region"
@@ -55,6 +56,7 @@ custom:
     schedule_country_charts:
     schedule_wrapped_yearly:
     schedule_wrapped_chunk_pub:
+      schedule_country_wrapped:
     schedule_wrapped_serial:
     timeout_wrapped_serial: 180
     country_charts_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/splitcloud_charts_by_region_dev"
@@ -328,6 +330,11 @@ functions:
     timeout: 60
     events:
       - schedule: ${self:custom.${self:custom.myStage}.schedule_country_charts}
+  wrappedCountriesCharts:
+    handler: src/handlers/batch.wrappedCountriesCharts
+    timeout: 600
+    events:
+      - schedule: ${self:custom.${self:custom.myStage}.schedule_country_wrapped}
   country_charts_sub:
     handler: src/handlers/batch.countryChartsSubscribe
     timeout: 120

@@ -89,20 +89,25 @@ function normalizeScPlaylists(item) {
   delete normalized.items;
   return normalized;
 }
+async function getWrappedPlaylistFromChart(title, countryCode, year) {
+  const tracks = await helpers.readJSONFromS3(
+    `charts/wrapped_country/${year}/wrapped_${countryCode}.json`
+  );
+  return {
+    id: null,
+    user: constants.SC_SYSTEM_PLAYLIST_USER,
+    artwork: tracks[0].artwork_url,
+    title,
+    tracks: tracks.slice(0, 10),
+  };
+}
 async function getPlaylistFromChart(title, chartType, countryCode) {
   const tracks = await helpers.readJSONFromS3(
     `charts/country/weekly_${chartType.toLowerCase()}_country_${countryCode}.json`
   );
   return {
     id: null,
-    user: {
-      permalink_url: 'https://soundcloud.com/splitcloud',
-      permalink: 'splitcloud',
-      username: 'SplitCloud',
-      uri: 'https://api.soundcloud.com/users/596081820',
-      id: 596081820,
-      kind: 'user',
-    },
+    user: constants.SC_SYSTEM_PLAYLIST_USER,
     artwork: tracks[0].artwork_url,
     title,
     tracks: tracks.slice(0, 10),
@@ -112,19 +117,52 @@ async function generateSectionsForCountries(countriesList) {
   const returnArr = [];
   // eslint-disable-next-line no-restricted-syntax
   for (const countryCode of Object.keys(countriesList)) {
+    try {
+      const countryName = countriesList[countryCode];
+      console.log('generate section for ', countryCode, '-', countryName);
+      const topPlaylist = await getPlaylistFromChart(`Top 10`, 'POPULAR', countryCode);
+      const trendingPlaylist = await getPlaylistFromChart(`Trending`, 'TRENDING', countryCode);
+      const countryFlag = constants.EMOJI_FLAGS[countryCode];
+      returnArr.push({
+        urn: `splitcloud:selections:countrychart:${countryCode}`,
+        id: `splitcloud:selections:countrychart:${countryCode}`,
+        title: `${countryFlag} ${countryName} Charts`,
+        description: `The most listened in ${countryName}`,
+        playlists: [topPlaylist, trendingPlaylist],
+      });
+    } catch (err) {
+      console.error(`faile reading wrapped playlist for ${countryCode}`);
+    }
+  }
+  return returnArr;
+}
+async function generateWrappedCountriesSection(countriesList) {
+  const currYear = new Date().getFullYear();
+  const returnArr = [
+    {
+      urn: `splitcloud:selections:wrappedcountrychart`,
+      id: `splitcloud:selections:wrappedcountrychart`,
+      title: `${currYear} Charts`,
+      description: `The most listened tracks in ${currYear}`,
+      playlists: [],
+    },
+  ];
+  // eslint-disable-next-line no-restricted-syntax
+  for (const countryCode of Object.keys(countriesList)) {
     const countryName = countriesList[countryCode];
-    console.log('generate section for ', countryCode, '-', countryName);
-    const topPlaylist = await getPlaylistFromChart(`Top 10`, 'POPULAR', countryCode);
-    const trendingPlaylist = await getPlaylistFromChart(`Trending`, 'TRENDING', countryCode);
     const countryFlag = constants.EMOJI_FLAGS[countryCode];
-    console.log('got topPlaylist', topPlaylist);
-    returnArr.push({
-      urn: `splitcloud:selections:countrychart:${countryCode}`,
-      id: `splitcloud:selections:countrychart:${countryCode}`,
-      title: `${countryFlag} ${countryName} Charts`,
-      description: `The most listened in ${countryName}`,
-      playlists: [topPlaylist, trendingPlaylist],
-    });
+    try {
+      // eslint-disable-next-line no-await-in-loop
+      const topPlaylist = await getWrappedPlaylistFromChart(
+        `${countryFlag} ${countryName}`,
+        countryCode,
+        currYear
+      );
+      console.log('push wrapped for ', countryName);
+      returnArr[0].playlists.push(topPlaylist);
+    } catch (err) {
+      console.error(`failed reading wrapped playlist for ${countryName}`, err.message);
+    }
   }
   return returnArr;
 }
@@ -145,7 +183,14 @@ module.exports = async function discoverApi(eventData) {
     : [];
   const discoveryCountries = constants.DISCOVERY_COUNTRIES;
   const regionalTopSections = await generateSectionsForCountries(discoveryCountries);
-  apiResponse.collection = [...allSectionsResolved, ...regionalTopSections];
+  const regionalWrappedSection = await generateWrappedCountriesSection(
+    constants.YEAR_WRAPPED_COUNTRIES
+  );
+  apiResponse.collection = [
+    ...regionalWrappedSection,
+    ...allSectionsResolved,
+    ...regionalTopSections,
+  ];
   console.log('allSectionsResolved', allSectionsResolved);
   if (process.env.BUCKET) {
     const s3Path = 'app/api/discovery.json';

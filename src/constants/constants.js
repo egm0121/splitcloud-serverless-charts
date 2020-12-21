@@ -50,6 +50,21 @@ module.exports = {
     PE: '🇵🇪',
   },
   IG_POST_COUNTRIES: ['US', 'IN', 'TH', 'PK', 'MX'],
+  SC_SYSTEM_PLAYLIST_USER: {
+    permalink_url: 'https://soundcloud.com/splitcloud',
+    permalink: 'splitcloud',
+    username: 'SplitCloud',
+    uri: 'https://api.soundcloud.com/users/596081820',
+    id: 596081820,
+    kind: 'user',
+  },
+  YEAR_WRAPPED_COUNTRIES: {
+    IN: 'India',
+    US: 'United States',
+    PK: 'Pakistan',
+    EG: 'Egypt',
+    MX: 'Mexico',
+  },
   DISCOVERY_COUNTRIES: {
     IN: 'India',
     PK: 'Pakistan',

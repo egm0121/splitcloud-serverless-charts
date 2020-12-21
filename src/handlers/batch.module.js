@@ -297,6 +297,25 @@ module.exports.scChartsCache = async () => {
   await saveToS3(`charts/soundcloud/weekly_trending.json`, chartData);
   return true;
 };
+module.exports.wrappedCountriesCharts = async () => {
+  const topCountryMap = Object.keys(constants.YEAR_WRAPPED_COUNTRIES);
+  const currYear = new Date().getFullYear();
+  // eslint-disable-next-line no-restricted-syntax
+  for (let countryCode of topCountryMap) {
+    try {
+      const countryName = constants.YEAR_WRAPPED_COUNTRIES[countryCode];
+      console.log(`calculate top of year ${currYear} for country ${countryName}`);
+      const topTracks = await chartService.getYearlyPopularTrackByCountry(10, countryName);
+      await saveToS3(`charts/wrapped_country/${currYear}/wrapped_${countryCode}.json`, topTracks);
+    } catch (err) {
+      console.error(`Failed generation country: ${countryCode}, err: ${err.message}`);
+    }
+  }
+
+  return {
+    statusCode: 200,
+  };
+};
 module.exports.selectActiveToken = metricScope(metrics => async () => {
   const newToken = await selectActiveStreamToken(metrics);
   return {
