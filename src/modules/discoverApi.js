@@ -137,7 +137,10 @@ async function generateSectionsForCountries(countriesList) {
   return returnArr;
 }
 async function generateWrappedCountriesSection(countriesList) {
-  const currYear = new Date().getFullYear();
+  const currMonth = new Date().getUTCMonth() + 1;
+  let currYear = new Date().getUTCFullYear();
+  if (![1, 12].includes(currMonth)) return [];
+  if (currMonth === 1) currYear -= 1;
   const returnArr = [
     {
       urn: `splitcloud:selections:wrappedcountrychart`,
