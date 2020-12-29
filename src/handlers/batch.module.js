@@ -271,6 +271,10 @@ module.exports.countryChartsSubscribe = async event => {
       );
     } catch (err) {
       console.log(`error while updating country(${countryCode}) charts:`, err);
+      if (err.message.indexOf('service is currently unavailable') > -1) {
+        console.log('GA report failed, mark message as failed');
+        throw err;
+      }
     }
     return true;
   };
