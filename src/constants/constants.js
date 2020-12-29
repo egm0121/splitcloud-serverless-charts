@@ -29,7 +29,10 @@ module.exports = {
     Sports: true,
     Storytelling: true,
     Technology: true,
+    thunder: true,
+    Ambient: true,
   },
+  TITLE_CHARTS_BLACKLIST: ['asmr', 'relaxing', 'ambient', 'ambiance', 'type beat', 'instrumental'],
   EXPLORE_RELATED: {
     // how many of the most recent user favorites will be used to as user_input_tracks;
     // this is to avoid getting tracks related to older favorites

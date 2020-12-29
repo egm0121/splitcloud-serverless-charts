@@ -235,6 +235,9 @@ function filterMaxDuration(max) {
 function filterGenre(genreBlacklist) {
   return t => !(t.genre in genreBlacklist);
 }
+function filterTrackNameExclude(titleBlacklist) {
+  return t => !titleBlacklist.filter(word => t.title.toLowerCase().indexOf(word) > -1).length;
+}
 class ChartsService {
   constructor() {
     this.getTopChart = cacheDecorator.withCache(
@@ -252,6 +255,7 @@ class ChartsService {
       .then(hydrateSoundcloudTracks)
       .then(t => t.filter(filterMaxDuration(MAX_TRACK_DURATION)))
       .then(t => t.filter(filterGenre(constants.GENRE_CHARTS_BLACKLIST)))
+      .then(t => t.filter(filterTrackNameExclude(constants.TITLE_CHARTS_BLACKLIST)))
       .then(sortByPopularity);
   }
 
@@ -262,6 +266,7 @@ class ChartsService {
       .then(hydrateSoundcloudTracks)
       .then(t => t.filter(filterMaxDuration(MAX_TRACK_DURATION)))
       .then(t => t.filter(filterGenre(constants.GENRE_CHARTS_BLACKLIST)))
+      .then(t => t.filter(filterTrackNameExclude(constants.TITLE_CHARTS_BLACKLIST)))
       .then(sortByPopularity)
       .then(chart => chart.slice(0, 50));
   }

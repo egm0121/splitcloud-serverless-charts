@@ -40,10 +40,10 @@ const logTracks = tracks => {
   const currDate = moment().format('L');
   // await chartService.getTrendingChart().then(logTracks);
   // console.log('TRENDING on ', currDate);
-  const country = '';
+  const country = 'United States';
   console.log('POPULAR on ', currDate, ' country ', country);
   // await chartService.getTrendingChart(50, country).then(logTracks);
-  // await chartService.getTopChart(50, country, '60daysAgo').then(logTracks);
+  await chartService.getTopChart(50, country, '7daysAgo').then(logTracks);
   // const playlists = require('./discover_playlists_payload_dev.json');
   // await discoverApi(playlists);
   // console.log('Average songs playback per day NEW USERS');
@@ -78,7 +78,7 @@ const logTracks = tracks => {
   // console.log(JSON.stringify(activeDevices.map(e => e.dimensions[0])));
   // console.log('active devices:', activeDevices.length);
   // logTracks(await chartService.getYearlyPopularTrackByDeviceId(10, deviceId, 'L'));
-  logTracks(await chartService.getYearlyPopularTrackByCountry(10, 'India'));
+  // logTracks(await chartService.getYearlyPopularTrackByCountry(10, 'India'));
   console.log('Time taken', (performance.now() - timeStart) / 1000);
   //   const grabScreenshot = async (year = '2019', deviceId, side) => {
   //     const targetUrl = `http://www.splitcloud-app.com/wrapped.html?id=${deviceId}&year=${year}&side=${side}&t=3`;
