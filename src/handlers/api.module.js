@@ -407,7 +407,7 @@ const ctaHandleCountryWrappedPlaylist = async (event, context, callback) => {
       ctaLabel: `Top ${currentYear} ${clientCountry} Songs!`,
       ctaButtonColor: '#FF7F50',
       ctaAction: {
-        type: 'wrapped_playlist',
+        type: 'playlist',
         data: formatters.formatPlaylistPayload(
           formatters.createPlaylistFromTrackList(
             wrappedPlaylist,
