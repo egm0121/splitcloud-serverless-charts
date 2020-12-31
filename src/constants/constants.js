@@ -78,7 +78,8 @@ module.exports = {
     DE: 'Germany',
     US: 'United States',
   },
-  WRAPPED_YEAR_MONTH: [12],
+  WRAPPED_YEAR_MONTH: [],
+  WRAPPED_COUNTRY_YEAR_MONTH: [12, 1],
   COUNTRY_PROMOTION: {
     // BR: {
     //   ctaUrl: 'http://www.splitcloud-app.com/promo_BR.html',

@@ -56,7 +56,7 @@ custom:
     schedule_country_charts:
     schedule_wrapped_yearly:
     schedule_wrapped_chunk_pub:
-      schedule_country_wrapped:
+    schedule_country_wrapped:
     schedule_wrapped_serial:
     timeout_wrapped_serial: 180
     country_charts_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/splitcloud_charts_by_region_dev"

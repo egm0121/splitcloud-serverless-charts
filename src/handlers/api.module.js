@@ -12,7 +12,7 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Credentials': true,
 };
-const LATEST_VERSION = '6.0';
+const LATEST_VERSION = '6.3';
 const MIN_SUPPORTED_VERSION = '5.6'; // specify M.m without patch to allow matching client versions without patch
 const MIN_PLAYLIST_IN_CTA_VERSION = '6.0'; // first client version that supports embedding playlist in CTA response
 const MIN_SHARE_SCREEN_IN_CTA_VERSION = '6.3'; // first client version that supports opening the share_app_screen
@@ -371,7 +371,53 @@ const ctaHandleWrappedYearlyPlaylist = async (event, context, callback) => {
     }),
   });
 };
-
+const ctaHandleCountryWrappedPlaylist = async (event, context, callback) => {
+  const currMonth = new Date().getUTCMonth() + 1; // since Date months are 0 indexed
+  let currentYear = new Date().getUTCFullYear();
+  if (currMonth !== 12) currentYear -= 1;
+  const clientCountry = (
+    helpers.getQueryParam(event, 'region') || event.headers['CloudFront-Viewer-Country']
+  ).toUpperCase();
+  const clientVersion = helpers.getQueryParam(event, 'appVersion');
+  const dateInRange = constants.WRAPPED_COUNTRY_YEAR_MONTH.includes(currMonth);
+  const isRegionEnabled = clientCountry in constants.YEAR_WRAPPED_COUNTRIES;
+  if (semverCompare(clientVersion, MIN_PLAYLIST_IN_CTA_VERSION) === -1) return false;
+  if (context.selectedVariant === 'B') return false;
+  if (!isRegionEnabled) return false;
+  if (!dateInRange && !helpers.isDEV) {
+    console.log('disabled country wrapped on this date in prod');
+    return false;
+  }
+  const playlistPath = `charts/wrapped_country/${currentYear}/wrapped_${clientCountry}.json`;
+  let wrappedPlaylist;
+  try {
+    wrappedPlaylist = await helpers.readJSONFromS3(playlistPath);
+  } catch (err) {
+    console.log('no country wrapped playlist found', playlistPath);
+    return false;
+  }
+  if (!wrappedPlaylist.length) return false;
+  callback(null, {
+    statusCode: 200,
+    headers: {
+      ...corsHeaders,
+    },
+    body: JSON.stringify({
+      ctaUrl: '',
+      ctaLabel: `Top ${currentYear} ${clientCountry} Songs!`,
+      ctaButtonColor: '#FF7F50',
+      ctaAction: {
+        type: 'wrapped_playlist',
+        data: formatters.formatPlaylistPayload(
+          formatters.createPlaylistFromTrackList(
+            wrappedPlaylist,
+            `Top ${currentYear} ${clientCountry} Songs!`
+          )
+        ),
+      },
+    }),
+  });
+};
 const ctaHandleCountryPromotion = (event, context, callback) => {
   const { deviceId } = event.pathParameters;
   const isAndroidId = deviceId.length === 16;
@@ -456,8 +502,6 @@ module.exports.ctaEndpoint = metricScope(metrics =>
     const ctaLabelB = '⚡️ Follow @SplitCloud';
     const isAndroidId = deviceId.length === 16;
     metrics.setNamespace('ctaEndpoint');
-    // eslint-disable-next-line no-param-reassign
-    context.metrics = metrics;
     const selectedVariant = helpers.selectVariantFromHash(deviceId) ? 'A' : 'B';
     const ctaButtonColor = ctaBgBlue;
     let ctaUrl = `http://www.splitcloud-app.com/follow.html`;
@@ -466,8 +510,13 @@ module.exports.ctaEndpoint = metricScope(metrics =>
     }
     ctaUrl = `${ctaUrl}?variant=${selectedVariant}&v=5`;
     const ctaLabel = selectedVariant === 'A' ? ctaLabelA : ctaLabelB;
+    // eslint-disable-next-line no-param-reassign
+    context.metrics = metrics;
+    // eslint-disable-next-line no-param-reassign
+    context.selectedVariant = selectedVariant;
     if (ctaHandleEndOfLife(event, context, callback)) return true;
     if (await ctaHandleWrappedYearlyPlaylist(event, context, callback)) return true;
+    if (await ctaHandleCountryWrappedPlaylist(event, context, callback)) return true;
     if (ctaHandleCountryPromotion(event, context, callback)) return true;
     if (ctaHandleGiveaway(event, context, callback)) return true;
     if (ctaHandleReferralFeatureAndroid(event, context, callback)) return true;
