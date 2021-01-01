@@ -487,6 +487,34 @@ const ctaHandleReferralFeatureAndroid = (event, context, callback) => {
   }
   return false;
 };
+const ctaHandleDefaultStrategy = (event, context, callback) => {
+  const { deviceId } = event.pathParameters;
+  const { selectedVariant } = context;
+  const isAndroidId = deviceId.length === 16;
+  const ctaBgBlue = '#2196F3';
+  const ctaLabelA = 'Follow SplitCloud ✨';
+  const ctaLabelB = '⚡️ Follow @SplitCloud';
+  const ctaButtonColor = ctaBgBlue;
+  let ctaUrl = `http://www.splitcloud-app.com/follow.html`;
+  if (isAndroidId) {
+    ctaUrl = `http://www.splitcloud-app.com/follow_android_promo.html`;
+  }
+  ctaUrl = `${ctaUrl}?variant=${selectedVariant}&v=5`;
+  const ctaLabel = selectedVariant === 'A' ? ctaLabelA : ctaLabelB;
+  callback(null, {
+    statusCode: 200,
+    headers: {
+      ...corsHeaders,
+    },
+    body: JSON.stringify({
+      ctaLabel,
+      ctaUrl,
+      ctaButtonColor,
+      ctaAction: { type: 'url' },
+    }),
+  });
+  return true;
+};
 /**
  *  /cta/{deviceId}/{side}
  */
@@ -497,19 +525,8 @@ module.exports.ctaEndpoint = metricScope(metrics =>
     // eslint-disable-next-line no-param-reassign
     context.callbackWaitsForEmptyEventLoop = false;
     const { deviceId } = event.pathParameters;
-    const ctaBgBlue = '#2196F3';
-    const ctaLabelA = 'Follow SplitCloud ✨';
-    const ctaLabelB = '⚡️ Follow @SplitCloud';
-    const isAndroidId = deviceId.length === 16;
     metrics.setNamespace('ctaEndpoint');
     const selectedVariant = helpers.selectVariantFromHash(deviceId) ? 'A' : 'B';
-    const ctaButtonColor = ctaBgBlue;
-    let ctaUrl = `http://www.splitcloud-app.com/follow.html`;
-    if (isAndroidId) {
-      ctaUrl = `http://www.splitcloud-app.com/follow_android_promo.html`;
-    }
-    ctaUrl = `${ctaUrl}?variant=${selectedVariant}&v=5`;
-    const ctaLabel = selectedVariant === 'A' ? ctaLabelA : ctaLabelB;
     // eslint-disable-next-line no-param-reassign
     context.metrics = metrics;
     // eslint-disable-next-line no-param-reassign
@@ -521,18 +538,7 @@ module.exports.ctaEndpoint = metricScope(metrics =>
     if (ctaHandleGiveaway(event, context, callback)) return true;
     if (ctaHandleReferralFeatureAndroid(event, context, callback)) return true;
     metrics.putMetric(`test_variant_${selectedVariant}`, 1);
-    return callback(null, {
-      statusCode: 200,
-      headers: {
-        ...corsHeaders,
-      },
-      body: JSON.stringify({
-        ctaLabel,
-        ctaUrl,
-        ctaButtonColor,
-        ctaAction: { type: 'url' },
-      }),
-    });
+    return ctaHandleDefaultStrategy(event, context, callback);
   })
 );
 /**
