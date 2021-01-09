@@ -1,7 +1,6 @@
 const crypto = require('crypto');
 const AWS = require('aws-sdk');
 const constants = require('../constants/constants');
-const { clear } = require('console');
 
 AWS.config.update({ region: 'us-east-1' });
 const isDEV = process.env.STAGE === 'dev';
@@ -178,6 +177,47 @@ function timeoutAfter(promise, timeout) {
       });
   });
 }
+
+const middleware = (middList, opts = { debug: false }) => {
+  const MIDD = 'helpers/middleware';
+  return (event, context, callback) => {
+    const middStack = [...middList];
+    let lastRetValue;
+    // eslint-disable-next-line no-param-reassign
+    context.abort = middleware.abort;
+    const next = () => {
+      const nextCount = middList.length - middStack.length;
+      const curr = middStack.shift();
+      if (curr) {
+        const retVal = curr(event, context, callback, next);
+        lastRetValue = retVal;
+        if (opts.debug)
+          console.log(MIDD, `next(${nextCount})`, 'middleware invoked', curr, 'returned', retVal);
+        if (retVal instanceof Promise && middStack.length) {
+          if (opts.debug) console.log(MIDD, curr, 'returned promise , will  chain');
+          return retVal.then(next).catch(err => {
+            // eslint-disable-next-line no-underscore-dangle
+            if (err._midd_abort) {
+              return Promise.resolve(lastRetValue);
+            }
+            if (opts.debug) console.warn('Uncaught midd error', err);
+            throw err;
+          });
+        }
+        return retVal;
+      }
+      if (opts.debug) console.log(`next(${nextCount}) called but no midd found`);
+      return lastRetValue;
+    };
+    return next();
+  };
+};
+middleware.abort = () => {
+  const err = new Error('abort midd chain');
+  // eslint-disable-next-line no-underscore-dangle
+  err._midd_abort = true;
+  throw err;
+};
 module.exports = {
   saveFileToS3,
   saveBlobToS3,
@@ -196,4 +236,5 @@ module.exports = {
   getStringScripts,
   isStringNumeric,
   timeoutAfter,
+  middleware,
 };

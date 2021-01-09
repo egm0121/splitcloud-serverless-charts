@@ -1,10 +1,5 @@
 # Welcome to Serverless!
 #
-# This file is the main config file for your service.
-# It's very minimal at this point and uses default values.
-# You can always add more config options for more control.
-# We've included some commented out config examples here.
-# Just uncomment any of them to get that config option.
 #
 # For full config options, check the docs:
 #    docs.serverless.com
@@ -29,25 +24,15 @@ custom:
     schedule_discovery: rate(1 day)
     schedule_country_charts: cron(0 8 ? * MON *)
     schedule_wrapped_yearly: cron(0 13 1 12 ? *)
-    schedule_wrapped_chunk_pub: cron(0 13 1-30 12 ? *)
     schedule_country_wrapped: cron(0 13 15 12 ? *)
-    schedule_wrapped_serial:
-    timeout_wrapped_serial: 900
     country_charts_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/splitcloud_charts_by_region"
     country_charts_arn: "arn:aws:sqs:us-east-1:348868901434:splitcloud_charts_by_region"
     charts_queue_enabled: true
-    wrapped_playlist_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/wrapped_playlist_queue_prod"
-    wrapped_playlist_arn: "arn:aws:sqs:us-east-1:348868901434:wrapped_playlist_queue_prod"
-    wrapped_queue_enabled: false
-    wrapped_playlist_deadqueue: "https://sqs.us-east-1.amazonaws.com/348868901434/wrapped_playlist_deadletter_prod"
-    wrapped_playlist_deadqueue_arn: "arn:aws:sqs:us-east-1:348868901434:wrapped_playlist_deadletter_prod"
     post_generator_arn: "arn:aws:sqs:us-east-1:348868901434:post_generator_queue"
     post_generator_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/post_generator_queue"
     referrer_promocode_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/referrer_promocode_queue_prod"
     referrer_queue_arn: "arn:aws:sqs:us-east-1:348868901434:referrer_promocode_queue_prod"
     referrer_queue_enabled: true
-    wrapped_buffer_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/wrapped_buffer_queue_prod"
-    wrapped_buffer_arn: "arn:aws:sqs:us-east-1:348868901434:wrapped_buffer_queue_prod"
   dev: 
     sc_charts_cache: 
     schedule: 
@@ -55,25 +40,15 @@ custom:
     schedule_discovery:
     schedule_country_charts:
     schedule_wrapped_yearly:
-    schedule_wrapped_chunk_pub:
     schedule_country_wrapped:
-    schedule_wrapped_serial:
-    timeout_wrapped_serial: 180
     country_charts_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/splitcloud_charts_by_region_dev"
     country_charts_arn: "arn:aws:sqs:us-east-1:348868901434:splitcloud_charts_by_region_dev"
     charts_queue_enabled: true
-    wrapped_playlist_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/wrapped_playlist_queue_dev"
-    wrapped_playlist_arn: "arn:aws:sqs:us-east-1:348868901434:wrapped_playlist_queue_dev"
-    wrapped_queue_enabled: false
-    wrapped_playlist_deadqueue: "https://sqs.us-east-1.amazonaws.com/348868901434/wrapped_playlist_deadletter_dev"
-    wrapped_playlist_deadqueue_arn: "arn:aws:sqs:us-east-1:348868901434:wrapped_playlist_deadletter_dev"
     post_generator_arn: "arn:aws:sqs:us-east-1:348868901434:post_generator_queue_dev"
     post_generator_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/post_generator_queue_dev"
     referrer_promocode_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/referrer_promocode_queue_dev"
     referrer_queue_arn: "arn:aws:sqs:us-east-1:348868901434:referrer_promocode_queue_dev"
     referrer_queue_enabled: false
-    wrapped_buffer_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/wrapped_buffer_queue_dev"
-    wrapped_buffer_arn: "arn:aws:sqs:us-east-1:348868901434:wrapped_buffer_queue_dev"
   bucket: "www.splitcloud-app.com"
   cache_bucket: "com.splitcloud-app.cache"
   app_bucket: "com.splitcloud-app.app-sls"
@@ -120,13 +95,6 @@ provider:
       - sqs:GetQueueUrl
       - sqs:ReceiveMessage
       - sqs:DeleteMessage
-      Resource: ${self:custom.${self:custom.myStage}.wrapped_playlist_arn}
-    - Effect: "Allow"
-      Action:
-      - sqs:SendMessage
-      - sqs:GetQueueUrl
-      - sqs:ReceiveMessage
-      - sqs:DeleteMessage
       Resource: ${self:custom.${self:custom.myStage}.post_generator_arn}
     - Effect: "Allow"
       Action:
@@ -137,20 +105,6 @@ provider:
       Resource: ${self:custom.${self:custom.myStage}.referrer_queue_arn}
     - Effect: "Allow"
       Action:
-      - sqs:SendMessage
-      - sqs:GetQueueUrl
-      - sqs:ReceiveMessage
-      - sqs:DeleteMessage
-      Resource: ${self:custom.${self:custom.myStage}.wrapped_buffer_arn}
-    - Effect: "Allow"
-      Action:
-      - sqs:SendMessage
-      - sqs:GetQueueUrl
-      - sqs:ReceiveMessage
-      - sqs:DeleteMessage
-      Resource: ${self:custom.${self:custom.myStage}.wrapped_playlist_deadqueue_arn}
-    - Effect: "Allow"
-      Action:
       - SNS:Publish
       Resource: !Ref chartCreatedTopic
   environment:
@@ -159,12 +113,8 @@ provider:
       CACHE_BUCKET: ${self:custom.cache_bucket}
       APP_BUCKET: ${self:custom.app_bucket}
       COUNTRY_CHARTS_QUEUE: ${self:custom.${self:custom.myStage}.country_charts_queue}
-      WRAPPED_PLAYLIST_QUEUE: ${self:custom.${self:custom.myStage}.wrapped_playlist_queue}
       REFERRER_PROMO_QUEUE: ${self:custom.${self:custom.myStage}.referrer_promocode_queue}
       CHART_CREATED_TOPIC: !Ref chartCreatedTopic
-      WRAPPED_BUFFER_QUEUE: ${self:custom.${self:custom.myStage}.wrapped_buffer_queue}
-      WRAPPED_PLAYLIST_DEAD_QUEUE: ${self:custom.${self:custom.myStage}.wrapped_playlist_deadqueue}
-
 resources:
   Resources:
     chartCreatedTopic:
@@ -175,14 +125,6 @@ resources:
       Type: "AWS::SQS::Queue"
       Properties:
         QueueName: referrer_promocode_queue_${self:custom.myStage}
-    wrappedBufferQueue:
-      Type: "AWS::SQS::Queue"
-      Properties:
-        QueueName: wrapped_buffer_queue_${self:custom.myStage}
-    # wrappedDeadletterQueue:
-    #   Type: "AWS::SQS::Queue"
-    #   Properties:
-    #     QueueName: wrapped_playlist_deadletter_${self:custom.myStage}
     snsToPostGeneratorSqsPolicy:
       Type: AWS::SQS::QueuePolicy
       Properties:
@@ -330,11 +272,6 @@ functions:
     timeout: 60
     events:
       - schedule: ${self:custom.${self:custom.myStage}.schedule_country_charts}
-  wrappedCountriesCharts:
-    handler: src/handlers/batch.wrappedCountriesCharts
-    timeout: 600
-    events:
-      - schedule: ${self:custom.${self:custom.myStage}.schedule_country_wrapped}
   country_charts_sub:
     handler: src/handlers/batch.countryChartsSubscribe
     timeout: 120
@@ -352,35 +289,16 @@ functions:
        - sqs:
           arn: ${self:custom.${self:custom.myStage}.post_generator_arn}
           batchSize: 1
+  wrappedCountriesCharts:
+    handler: src/handlers/batch.wrappedCountriesCharts
+    timeout: 600
+    events:
+      - schedule: ${self:custom.${self:custom.myStage}.schedule_country_wrapped}
   wrappedPlaylistPub:
-    handler: src/handlers/batch.wrappedPlaylistPublisher
+    handler: src/handlers/batch.wrappedPlaylistDevices
     timeout: 120
     events:
       - schedule: ${self:custom.${self:custom.myStage}.schedule_wrapped_yearly}
-  wrappedChunkPublisher:
-    handler: src/handlers/batch.wrappedChunkPublisher
-    timeout: 120
-    events:
-      - schedule: ${self:custom.${self:custom.myStage}.schedule_wrapped_chunk_pub}
-  serialWrappedProcessor:
-    handler: src/handlers/batch.serialWrappedProcessor
-    timeout: ${self:custom.${self:custom.myStage}.timeout_wrapped_serial}
-    events:
-      - schedule: ${self:custom.${self:custom.myStage}.schedule_wrapped_serial}
-  wrappedDeadQueuePub:
-    handler: src/handlers/batch.wrappedDeadQueuePublisher
-    timeout: 120
-    events:
-      - schedule: ${self:custom.${self:custom.myStage}.schedule_wrapped_chunk_pub}
-  wrappedPlaylistSub:
-    handler: src/handlers/batch.wrappedPlaylistSubscribe
-    timeout: 120
-    reservedConcurrency: 4
-    events:
-      - sqs:
-          arn: ${self:custom.${self:custom.myStage}.wrapped_playlist_arn}
-          batchSize: 1
-          enabled: ${self:custom.${self:custom.myStage}.wrapped_queue_enabled}
   referrerPromoSub:
     handler: src/handlers/batch.referrerPromoSub
     timeout: 30
