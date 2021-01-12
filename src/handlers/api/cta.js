@@ -104,7 +104,9 @@ const ctaHandleCountryWrappedPlaylist = async (event, context, callback) => {
   let currentYear = new Date().getUTCFullYear();
   if (currMonth !== 12) currentYear -= 1;
   const clientCountry = (
-    helpers.getQueryParam(event, 'region') || event.headers['CloudFront-Viewer-Country']
+    helpers.getQueryParam(event, 'region') ||
+    event.headers['CloudFront-Viewer-Country'] ||
+    'US'
   ).toUpperCase();
   const clientVersion = helpers.getQueryParam(event, 'appVersion');
   const dateInRange = constants.WRAPPED_COUNTRY_YEAR_MONTH.includes(currMonth);
@@ -150,8 +152,11 @@ const ctaHandleCountryWrappedPlaylist = async (event, context, callback) => {
 const ctaHandleCountryPromotion = (event, context, callback) => {
   const { deviceId } = event.pathParameters;
   const isAndroidId = deviceId.length === 16;
-  const clientCountry =
-    helpers.getQueryParam(event, 'region') || event.headers['CloudFront-Viewer-Country'];
+  const clientCountry = (
+    helpers.getQueryParam(event, 'region') ||
+    event.headers['CloudFront-Viewer-Country'] ||
+    'US'
+  ).toUpperCase();
   if (isAndroidId && clientCountry in constants.COUNTRY_PROMOTION) {
     const promo = constants.COUNTRY_PROMOTION[clientCountry];
     callback(null, {

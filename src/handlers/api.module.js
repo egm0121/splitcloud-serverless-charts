@@ -26,8 +26,11 @@ module.exports.chartsEndpoint = helpers.middleware([
   corsHeadersMiddleware(),
   blockVersionsMiddleware(),
   async (event, context, callback) => {
-    let clientCountry =
-      helpers.getQueryParam(event, 'region') || event.headers['CloudFront-Viewer-Country'];
+    let clientCountry = (
+      helpers.getQueryParam(event, 'region') ||
+      event.headers['CloudFront-Viewer-Country'] ||
+      'US'
+    ).toUpperCase();
     const playlistKind = event.queryStringParameters.kind;
     if (!['popular', 'trending'].includes(playlistKind)) {
       callback(null, {
@@ -90,8 +93,11 @@ module.exports.radioCountryCodes = helpers.middleware([
   blockVersionsMiddleware(),
   (event, context, callback) => {
     const radioCountryList = constants.RADIO_COUNTRY_CODES;
-    const clientCountry =
-      helpers.getQueryParam(event, 'region') || event.headers['CloudFront-Viewer-Country'];
+    const clientCountry = (
+      helpers.getQueryParam(event, 'region') ||
+      event.headers['CloudFront-Viewer-Country'] ||
+      'US'
+    ).toUpperCase();
     const currentCountryCode = radioCountryList.find(item => item.value === clientCountry)
       ? clientCountry
       : 'US';

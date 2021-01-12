@@ -53,8 +53,11 @@ export default async (event, context, callback) => {
     constants.EXPLORE_RELATED.MAX_USER_SOURCE_TRACKS
   );
   let sourceTrackIds = [...userInputTracks];
-  let clientCountry =
-    helpers.getQueryParam(event, 'region') || event.headers['CloudFront-Viewer-Country'];
+  let clientCountry = (
+    helpers.getQueryParam(event, 'region') ||
+    event.headers['CloudFront-Viewer-Country'] ||
+    'US'
+  ).toUpperCase();
 
   const hasCountryPlaylist = Object.keys(constants.TOP_COUNTRIES).includes(clientCountry);
   if (!hasCountryPlaylist) clientCountry = 'GLOBAL';

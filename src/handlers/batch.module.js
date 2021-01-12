@@ -145,6 +145,7 @@ module.exports.countryChartsSubscribe = async event => {
 };
 
 module.exports.scChartsCache = async () => {
+  // TODO: reimplement alternative with track resolve
   const chartData = await chartService.getScTrendingChart();
   await saveToS3(`charts/soundcloud/weekly_trending.json`, chartData);
   return true;
