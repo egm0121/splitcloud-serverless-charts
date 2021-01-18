@@ -14,7 +14,7 @@ const constants = require('../constants/constants');
 const weekOfYear = moment().isoWeek();
 const saveToS3 = helpers.saveFileToS3;
 
-module.exports.wrappedPlaylistPublisher = async () => {
+module.exports.wrappedPlaylistDevices = async () => {
   // count as active any device with at least 15 tracks across playback sides in the last 3months
   const activeDevices = await DeviceReports.getActiveDevices(15, undefined, '90daysAgo');
   console.log('total active devices:', activeDevices.length);
@@ -27,158 +27,6 @@ module.exports.wrappedPlaylistPublisher = async () => {
   } catch (err) {
     console.error('wrapped playlist device list write failure:', err.message);
   }
-  const writeMessages = activeDevices.map(row => {
-    const deviceId = row.dimensions[0];
-    console.log('adding to wrapped queue:', deviceId);
-    return helpers.sqs
-      .sendMessage({
-        DelaySeconds: 5,
-        MessageAttributes: {
-          deviceId: {
-            DataType: 'String',
-            StringValue: deviceId,
-          },
-          currentYear: {
-            DataType: 'String',
-            StringValue: currentYear,
-          },
-        },
-        MessageBody: `Generate wrapped playlist for device: ${deviceId}`,
-        QueueUrl: process.env.WRAPPED_BUFFER_QUEUE,
-      })
-      .promise();
-  });
-  const enquedMessages = await Promise.all(writeMessages);
-  return {
-    success: true,
-    totalDevices: activeDevices.length,
-    enquedMessages,
-  };
-};
-const chunkMessageMover = async (sourceQueue, destQueue, MAX_MESSAGES_CHUNK = 600) => {
-  console.log(
-    'chunkMessageMover started from queue',
-    sourceQueue,
-    'to queue',
-    destQueue,
-    'max messages',
-    MAX_MESSAGES_CHUNK
-  );
-  const maxMessageIterator = new Array(MAX_MESSAGES_CHUNK).fill(1).map((v, k) => k);
-  // eslint-disable-next-line no-restricted-syntax
-  for (let i of maxMessageIterator) {
-    // eslint-disable-next-line no-await-in-loop
-    const response = await helpers.sqs
-      .receiveMessage({
-        QueueUrl: sourceQueue,
-        MaxNumberOfMessages: 1,
-        MessageAttributeNames: ['.*'],
-      })
-      .promise();
-    if (!response.Messages) {
-      console.log('empty receive', i);
-    } else {
-      const messageAttr = response.Messages[0].MessageAttributes;
-      const messageBody = response.Messages[0].Body;
-      const receiptForDelete = response.Messages[0].ReceiptHandle;
-      const deviceId = messageAttr.deviceId.StringValue;
-      const currentYear = messageAttr.currentYear.StringValue;
-      // eslint-disable-next-line no-await-in-loop
-      await helpers.sqs
-        .sendMessage({
-          MessageAttributes: {
-            deviceId: {
-              DataType: 'String',
-              StringValue: deviceId,
-            },
-            currentYear: {
-              DataType: 'String',
-              StringValue: currentYear,
-            },
-          },
-          MessageBody: messageBody,
-          QueueUrl: destQueue,
-        })
-        .promise();
-      console.log('pushed message from ', sourceQueue, ':', i, ' for device:', deviceId);
-      // eslint-disable-next-line no-await-in-loop
-      await helpers.sqs
-        .deleteMessage({
-          QueueUrl: sourceQueue,
-          ReceiptHandle: receiptForDelete,
-        })
-        .promise();
-    }
-  }
-};
-module.exports.wrappedChunkPublisher = async () => {
-  return chunkMessageMover(process.env.WRAPPED_BUFFER_QUEUE, process.env.WRAPPED_PLAYLIST_QUEUE);
-};
-module.exports.wrappedDeadQueuePublisher = async () => {
-  return chunkMessageMover(
-    process.env.WRAPPED_PLAYLIST_DEAD_QUEUE,
-    process.env.WRAPPED_PLAYLIST_QUEUE
-  );
-};
-const computeAndStoreWrappedSidePlaylist = async (side, deviceId, currentYear) => {
-  console.log('Process wrapped playlist message:', { deviceId, currentYear });
-  const playlistFileName = `charts/wrapped/${currentYear}/${deviceId}_${side}.json`;
-  const trackList = await chartService.getYearlyPopularTrackByDeviceId(10, deviceId, side);
-  if (trackList.length) {
-    await saveToS3(playlistFileName, trackList);
-    return true;
-  }
-  console.log(`empty tracklist detected: ${deviceId}-${side}`);
-  return false;
-};
-const wrappedPlaylistSubscribe = metricScope(metrics => async event => {
-  const messageAttr = event.Records[0].messageAttributes;
-  const deviceId = messageAttr.deviceId.StringValue || messageAttr.deviceId.stringValue;
-  const currYear = messageAttr.currentYear.StringValue || messageAttr.currentYear.stringValue;
-  const sideL = await computeAndStoreWrappedSidePlaylist('L', deviceId, currYear);
-  const sideR = await computeAndStoreWrappedSidePlaylist('R', deviceId, currYear);
-  [sideL, sideR].filter(e => !e).forEach(() => metrics.putMetric('wrappedPlaylistEmpty', 1));
-  return true;
-});
-module.exports.wrappedPlaylistSubscribe = wrappedPlaylistSubscribe;
-const waitFor = secs => new Promise(res => setTimeout(res, secs * 1e3));
-
-module.exports.serialWrappedProcessor = async (event, context) => {
-  const sourceQueue = process.env.WRAPPED_PLAYLIST_QUEUE;
-  let execTimeLeft = Math.round(context.getRemainingTimeInMillis() / 1000);
-  let emptyReceive = 0;
-  while (execTimeLeft > 120 && emptyReceive < 3) {
-    const messageResponse = await helpers.sqs
-      .receiveMessage({
-        QueueUrl: sourceQueue,
-        MaxNumberOfMessages: 1,
-        MessageAttributeNames: ['.*'],
-      })
-      .promise();
-    if (!messageResponse.Messages) {
-      console.log('empty receive wait 10 seconds');
-      await waitFor(10);
-      emptyReceive += 1;
-    } else {
-      const messageAttributes = messageResponse.Messages[0].MessageAttributes;
-      const receiptForDelete = messageResponse.Messages[0].ReceiptHandle;
-      console.log('processing message', messageAttributes);
-      try {
-        await wrappedPlaylistSubscribe({ Records: [{ messageAttributes }] });
-      } catch (err) {
-        console.log('processing of message failed:', err);
-      }
-      // eslint-disable-next-line no-await-in-loop
-      await helpers.sqs
-        .deleteMessage({
-          QueueUrl: sourceQueue,
-          ReceiptHandle: receiptForDelete,
-        })
-        .promise();
-    }
-    execTimeLeft = Math.round(context.getRemainingTimeInMillis() / 1000);
-  }
-  console.log('exiting work loop, only', execTimeLeft, 'secs left, emptyreceives', emptyReceive);
 };
 
 module.exports.countryChartsPublisher = async () => {
@@ -297,6 +145,7 @@ module.exports.countryChartsSubscribe = async event => {
 };
 
 module.exports.scChartsCache = async () => {
+  // TODO: reimplement alternative with track resolve
   const chartData = await chartService.getScTrendingChart();
   await saveToS3(`charts/soundcloud/weekly_trending.json`, chartData);
   return true;
