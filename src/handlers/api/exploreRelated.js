@@ -98,16 +98,24 @@ export default async (event, context, callback) => {
       track.description = '';
       return track;
     });
-  // add weekly soundcloud trending tracks that match user favorites tags
+  // add weekly soundcloud trending & popular tracks that match user favorites tags
   let recentSCTracks = [];
   try {
     recentSCTracks = await helpers.readJSONFromS3(`charts/soundcloud/weekly_trending.json`);
   } catch (err) {
     console.error(err, 'issue getting soundcloud weekly trending list');
   }
+  try {
+    const popularSCTracks = await helpers.readJSONFromS3(`charts/soundcloud/weekly_popular.json`);
+    recentSCTracks.push(...popularSCTracks);
+  } catch (err) {
+    console.error(err, 'issue getting soundcloud weekly popular list');
+  }
   const recentRelated = recentSCTracks.filter(t => {
     // exclude duplicate tracks
     if (uniqueSet.has(t.id)) return false;
+    // include all sc tracks if user does not have any prefered tags yet
+    if (relatedTagsSet.size === 0) return true;
     const hasTagMatch = getTrackTags(t).find(scTag => relatedTagsSet.has(scTag));
     // if tags are matching and track is unique, add it to results
     if (hasTagMatch) {

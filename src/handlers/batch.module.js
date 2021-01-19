@@ -2,6 +2,7 @@
 import PostGenerator from 'egm0121-rn-common-lib/modules/IGPostGenerator';
 import DeviceReports from '../modules/deviceReports';
 import ScreenshotConfig from '../../key/getScreenshots.json';
+import SoundCloudChartsService from '../modules/SoundCloudChartsService';
 
 const moment = require('moment');
 const { metricScope } = require('aws-embedded-metrics');
@@ -146,8 +147,10 @@ module.exports.countryChartsSubscribe = async event => {
 
 module.exports.scChartsCache = async () => {
   // TODO: reimplement alternative with track resolve
-  const chartData = await chartService.getScTrendingChart();
+  let chartData = await SoundCloudChartsService.getTrendingChart();
   await saveToS3(`charts/soundcloud/weekly_trending.json`, chartData);
+  chartData = await SoundCloudChartsService.getPopularChart();
+  await saveToS3(`charts/soundcloud/weekly_popular.json`, chartData);
   return true;
 };
 module.exports.wrappedCountriesCharts = async () => {

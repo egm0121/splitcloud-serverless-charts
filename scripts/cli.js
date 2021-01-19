@@ -8,6 +8,7 @@ const reportStats = require('../src/modules/reportStats');
 const constants = require('../src/constants/constants');
 const getScreenshots = require('../key/getScreenshots');
 const DeviceReports = require('../src/modules/deviceReports');
+const SoundCloudChartsService = require('../src/modules/SoundCloudChartsService').default;
 
 const logTracks = tracks => {
   console.log(
@@ -39,11 +40,13 @@ const logTracks = tracks => {
   const timeStart = performance.now();
   const currDate = moment().format('L');
   // await chartService.getTrendingChart().then(logTracks);
+  const response = await SoundCloudChartsService.getTrendingChart();
+  console.log(response);
   // console.log('TRENDING on ', currDate);
   const country = 'United States';
   console.log('POPULAR on ', currDate, ' country ', country);
   // await chartService.getTrendingChart(50, country).then(logTracks);
-  await chartService.getTopChart(50, country, '7daysAgo').then(logTracks);
+  // await chartService.getTopChart(50, country, '7daysAgo').then(logTracks);
   // const playlists = require('./discover_playlists_payload_dev.json');
   // await discoverApi(playlists);
   // console.log('Average songs playback per day NEW USERS');

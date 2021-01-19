@@ -27,6 +27,7 @@
     "aws-embedded-metrics": "^1.1.1",
     "aws-sdk": "2.382.0",
     "axios": "0.18.0",
+    "cheerio": "^1.0.0-rc.5",
     "egm0121-rn-common-lib": "git+ssh://git@github.com/egm0121/egm0121-rn-common-lib.git#release/v6.1",
     "esm": "^3.2.25",
     "googleapis": "36.0.0",
