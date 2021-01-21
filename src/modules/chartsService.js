@@ -395,14 +395,14 @@ class ChartsService {
     return fetchScTrackById(id);
   }
 
-  async fetchAllRelated(sourceTrackIds) {
+  async fetchAllRelated(sourceTrackIds, maxRelatedTracks = Infinity) {
     const allRelatedReq = sourceTrackIds.map(trackId =>
       this.fetchRelatedTracksById(trackId).catch(() => ({ data: [] }))
     );
     const responsesArr = await Promise.all(allRelatedReq);
     // flatten all related tracks in one list
     return responsesArr.reduce((finalList, resp) => {
-      const subsetRelated = resp.data;
+      const subsetRelated = resp.data.slice(0, maxRelatedTracks);
       finalList.push(...subsetRelated);
       return finalList;
     }, []);

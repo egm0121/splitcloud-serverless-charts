@@ -1,3 +1,5 @@
+import SoundCloudChartsService from '../../modules/SoundCloudChartsService';
+
 const chartService = require('../../modules/chartsService');
 const helpers = require('../../modules/helpers');
 const constants = require('../../constants/constants');
@@ -39,6 +41,7 @@ const extractSongNameFromTitle = track => {
   return trackName.trim();
 };
 
+const logDev = (...args) => (helpers.isDEV ? console.log(...args) : null);
 export default async (event, context, callback) => {
   // eslint-disable-next-line prefer-const
   let allInputTracks = JSON.parse(event.body) || [];
@@ -52,6 +55,7 @@ export default async (event, context, callback) => {
     0,
     constants.EXPLORE_RELATED.MAX_USER_SOURCE_TRACKS
   );
+  const hasUserInputTracks = !!userInputTracks.length;
   let sourceTrackIds = [...userInputTracks];
   let clientCountry = (
     helpers.getQueryParam(event, 'region') ||
@@ -82,48 +86,71 @@ export default async (event, context, callback) => {
   // generate input tracks allowed tags
   const relatedTagsSet = new Set();
   resolvedInputTracks.forEach(track => getTrackTags(track).forEach(tag => relatedTagsSet.add(tag)));
-  let relatedTrackList = await chartService.fetchAllRelated(sourceTrackIds);
+  let relatedTrackList = [];
+  // if user favorite tracks are provided, get the latest tracks for favorite artists
+  if (hasUserInputTracks) {
+    const sourceArtistIds = resolvedInputTracks.map(t => t && t.user && t.user.id);
+    const newTracksByArtists = await SoundCloudChartsService.fetchAllUserLatest(sourceArtistIds);
+    logDev(
+      'got newTracksByArtists ',
+      newTracksByArtists.map(t => `${t.title} - ${t.user.username} - ${t.genre} - ${t.streamable}`)
+    );
+    context.metrics.putMetric('newTracksByArtist', newTracksByArtists.length);
+    relatedTrackList.push(...newTracksByArtists);
+  }
+  const allRelatedTracks = await chartService.fetchAllRelated(
+    sourceTrackIds,
+    constants.EXPLORE_RELATED.MAX_RELATED_TRACKS
+  );
+  relatedTrackList.push(...allRelatedTracks);
   const uniqueSet = new Set();
-  relatedTrackList = relatedTrackList
-    .filter(track => {
-      if (track.playback_count < constants.EXPLORE_RELATED.MIN_PLAYBACK_COUNT) {
-        return false;
-      }
-      if (uniqueSet.has(track.id)) return false;
-      uniqueSet.add(track.id);
-      return track.duration > MIN_TRACK_DURATION && !allInputTracks.includes(track.id);
-    })
-    .map(track => {
-      // eslint-disable-next-line no-param-reassign
-      track.description = '';
-      return track;
-    });
+  // filter out any track included in the original input tracks
+  relatedTrackList = relatedTrackList.filter(track => {
+    if (track.playback_count < constants.EXPLORE_RELATED.MIN_PLAYBACK_COUNT) {
+      logDev('excluded track min playback count:', track.title);
+      return false;
+    }
+    if (uniqueSet.has(track.id)) {
+      logDev('excluded track duplicate:', track.title);
+      return false;
+    }
+    uniqueSet.add(track.id);
+    if (allInputTracks.includes(track.id)) {
+      logDev('excluded track already in user input:', track.title);
+      return false;
+    }
+    if (track.duration <= MIN_TRACK_DURATION) {
+      logDev('excluded track duration:', track.title);
+      return false;
+    }
+    return true;
+  });
   // add weekly soundcloud trending & popular tracks that match user favorites tags
   let recentSCTracks = [];
   try {
-    recentSCTracks = await helpers.readJSONFromS3(`charts/soundcloud/weekly_trending.json`);
+    const scChartsTracks = await Promise.all([
+      helpers.readJSONFromS3(`charts/soundcloud/weekly_trending.json`),
+      helpers.readJSONFromS3(`charts/soundcloud/weekly_popular.json`)
+    ]);
+    scChartsTracks.forEach(chartTracks => {
+      recentSCTracks.push(...chartTracks);
+    });
+    recentSCTracks = recentSCTracks.filter(t => {
+      // exclude duplicate tracks
+      if (uniqueSet.has(t.id)) return false;
+      // include all sc tracks if user does not have any prefered tags yet
+      if (relatedTagsSet.size === 0) return true;
+      const hasTagMatch = getTrackTags(t).find(scTag => relatedTagsSet.has(scTag));
+      // if tags are matching and track is unique, add it to results
+      if (hasTagMatch) {
+        logDev(`adding SC track: ${t.title} because matched tag:`, hasTagMatch);
+      }
+      return hasTagMatch;
+    });
+    relatedTrackList.push(...recentSCTracks);
   } catch (err) {
-    console.error(err, 'issue getting soundcloud weekly trending list');
+    console.error(err, 'issue getting soundcloud charts tracks');
   }
-  try {
-    const popularSCTracks = await helpers.readJSONFromS3(`charts/soundcloud/weekly_popular.json`);
-    recentSCTracks.push(...popularSCTracks);
-  } catch (err) {
-    console.error(err, 'issue getting soundcloud weekly popular list');
-  }
-  const recentRelated = recentSCTracks.filter(t => {
-    // exclude duplicate tracks
-    if (uniqueSet.has(t.id)) return false;
-    // include all sc tracks if user does not have any prefered tags yet
-    if (relatedTagsSet.size === 0) return true;
-    const hasTagMatch = getTrackTags(t).find(scTag => relatedTagsSet.has(scTag));
-    // if tags are matching and track is unique, add it to results
-    if (hasTagMatch) {
-      console.log(`adding SC track: ${t.title} because matched tag:`, hasTagMatch);
-    }
-    return hasTagMatch;
-  });
-  relatedTrackList.push(...recentRelated); // add sc recents tracks relevant for feed
   // filter all tracks by input unicode scripts
   const userTrackTitles = resolvedInputTracks.map(item => item.title).join(' ');
   console.log('source tracks titles', userTrackTitles);
@@ -134,7 +161,7 @@ export default async (event, context, callback) => {
     const currTrackScript = helpers.getStringScripts(track.title);
     if (currTrackScript.length === 0 && helpers.isStringNumeric(track.title)) return true;
     const isAllowed = helpers.arrayIntersect(allowedLangScripts, currTrackScript).length > 0;
-    if (!isAllowed) console.log('excluding track for unicode script:', track.title);
+    if (!isAllowed) logDev('excluding track for unicode script:', track.title);
     return isAllowed;
   });
   // add in any promoted tracks payload from s3
@@ -162,6 +189,7 @@ export default async (event, context, callback) => {
     if (track.streamable) {
       return true;
     }
+    logDev('exclude non streamable track:', track.label);
     // eslint-disable-next-line no-plusplus
     nonPlayableTracksPerFeed++;
     return false;
@@ -174,7 +202,7 @@ export default async (event, context, callback) => {
     // exclude duplicate tracks
     if (uniqSongTitle.has(songTitle)) {
       context.metrics.putMetric('excludeDuplicateTrack', 1);
-      console.log('exclude track: ', t.title, 'a song', songTitle, 'already exists');
+      logDev('exclude track: ', t.title, 'a song', songTitle, 'already exists');
       return false;
     }
     uniqSongTitle.add(songTitle);
@@ -187,6 +215,7 @@ export default async (event, context, callback) => {
     if (!(trackUploader in trackPerUploader)) trackPerUploader[trackUploader] = 0;
     if (trackPerUploader[trackUploader] === constants.EXPLORE_RELATED.MAX_TRACKS_PER_ALBUM) {
       context.metrics.putMetric('excludeFromSameUser', 1);
+      logDev('exclude by artist track', t.title, trackUploader);
       return false;
     }
     // eslint-disable-next-line no-plusplus
@@ -195,7 +224,6 @@ export default async (event, context, callback) => {
   });
   // order all by recency
   relatedTrackList.sort(sortByDateDay);
-
   return callback(null, {
     statusCode: 200,
     headers: {

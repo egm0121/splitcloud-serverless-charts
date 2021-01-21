@@ -40,8 +40,7 @@ const logTracks = tracks => {
   const timeStart = performance.now();
   const currDate = moment().format('L');
   // await chartService.getTrendingChart().then(logTracks);
-  const response = await SoundCloudChartsService.getTrendingChart();
-  console.log(response);
+  await SoundCloudChartsService.getPopularChart().then(logTracks);
   // console.log('TRENDING on ', currDate);
   const country = 'United States';
   console.log('POPULAR on ', currDate, ' country ', country);
