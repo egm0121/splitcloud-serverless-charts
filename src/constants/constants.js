@@ -39,7 +39,7 @@ module.exports = {
     MAX_RECENT_FAVORITES_TRACKS: 20,
     MAX_SOURCE_TRACKS: 10,
     MAX_USER_SOURCE_TRACKS: 10, // do not use the splitcloud charts tracks at all if user has enough favorites
-    MAX_RELATED_TRACKS: 20,
+    MAX_RELATED_TRACKS: 30,
     MIN_PLAYBACK_COUNT: 1000,
     MAX_TRACKS_PER_ALBUM: 3,
   },

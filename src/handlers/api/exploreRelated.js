@@ -65,12 +65,12 @@ export default async (event, context, callback) => {
 
   const hasCountryPlaylist = Object.keys(constants.TOP_COUNTRIES).includes(clientCountry);
   if (!hasCountryPlaylist) clientCountry = 'GLOBAL';
-  const playlistFilename = `charts/country/weekly_trending_country_${clientCountry}.json`;
+  const playlistFilename = `charts/country/weekly_popular_country_${clientCountry}.json`;
   let trendingWeeklyPlaylist = [];
   try {
     trendingWeeklyPlaylist = await helpers.readJSONFromS3(playlistFilename);
   } catch (err) {
-    console.error('weekly trending for country not avaiable', clientCountry);
+    console.error('weekly popular for country not avaiable', clientCountry);
   }
   const topTrackIds = trendingWeeklyPlaylist
     .slice(0, constants.EXPLORE_RELATED.MAX_SOURCE_TRACKS)
@@ -82,10 +82,11 @@ export default async (event, context, callback) => {
   );
   sourceTrackIds = [...sourceTrackIds, ...topTrackIds.slice(0, fillNbr)];
   console.log('final source tracks', sourceTrackIds);
-  const resolvedInputTracks = await chartService.fetchScTrackList(userInputTracks);
+  const resolvedInputTracks = await chartService.fetchScTrackList(sourceTrackIds);
   // generate input tracks allowed tags
   const relatedTagsSet = new Set();
   resolvedInputTracks.forEach(track => getTrackTags(track).forEach(tag => relatedTagsSet.add(tag)));
+  logDev('relatedTagsSet', Array.from(relatedTagsSet));
   let relatedTrackList = [];
   // if user favorite tracks are provided, get the latest tracks for favorite artists
   if (hasUserInputTracks) {
@@ -130,7 +131,7 @@ export default async (event, context, callback) => {
   try {
     const scChartsTracks = await Promise.all([
       helpers.readJSONFromS3(`charts/soundcloud/weekly_trending.json`),
-      helpers.readJSONFromS3(`charts/soundcloud/weekly_popular.json`)
+      helpers.readJSONFromS3(`charts/soundcloud/weekly_popular.json`),
     ]);
     scChartsTracks.forEach(chartTracks => {
       recentSCTracks.push(...chartTracks);
@@ -224,6 +225,7 @@ export default async (event, context, callback) => {
   });
   // order all by recency
   relatedTrackList.sort(sortByDateDay);
+  logDev('TOTAL FEED TRACKS', relatedTrackList.length);
   return callback(null, {
     statusCode: 200,
     headers: {
