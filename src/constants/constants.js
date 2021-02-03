@@ -79,8 +79,8 @@ module.exports = {
     DE: 'Germany',
     US: 'United States',
   },
-  WRAPPED_YEAR_MONTH: [],
-  WRAPPED_COUNTRY_YEAR_MONTH: [12, 1],
+  WRAPPED_YEAR_MONTH: [], // what months to show the cta to compute personal top of year list
+  WRAPPED_COUNTRY_YEAR_MONTH: [12, 1], // what months to show per country top of the year playlist
   COUNTRY_PROMOTION: {
     // BR: {
     //   ctaUrl: 'http://www.splitcloud-app.com/promo_BR.html',
