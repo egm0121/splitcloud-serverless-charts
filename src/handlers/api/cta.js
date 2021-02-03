@@ -179,7 +179,7 @@ const ctaHandleCountryPromotion = (event, context, callback) => {
 const ctaHandleGiveaway = (event, context, callback) => {
   const { deviceId } = event.pathParameters;
   const isAndroidId = deviceId.length === 16;
-  const promoExpiry = new Date(constants.CTA.REFERRAL_FEATURE_EXPIRY);
+  const promoExpiry = new Date(constants.CTA.GIVEAWAY_EXPIRY);
   if (isAndroidId && new Date() < promoExpiry) {
     callback(null, {
       statusCode: 200,
@@ -187,7 +187,7 @@ const ctaHandleGiveaway = (event, context, callback) => {
         ...context.headers,
       },
       body: JSON.stringify({
-        ctaLabel: '✨Tap to WIN ✨',
+        ctaLabel: '✨ Tap to WIN ✨',
         ctaUrl: `http://www.splitcloud-app.com/giveaway.html`,
         ctaButtonColor: '#9f0202',
         ctaAction: { type: 'url' },
