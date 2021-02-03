@@ -43,6 +43,10 @@ module.exports = {
     MIN_PLAYBACK_COUNT: 1000,
     MAX_TRACKS_PER_ALBUM: 3,
   },
+  CTA: {
+    REFERRAL_FEATURE_EXPIRY: '2021-03-01T23:59:00.000Z',
+    GIVEAWAY_EXPIRY: '2020-08-31T23:59:00.000Z',
+  },
   EMOJI_FLAGS: {
     US: '🇺🇸',
     IN: '🇮🇳',

@@ -179,7 +179,7 @@ const ctaHandleCountryPromotion = (event, context, callback) => {
 const ctaHandleGiveaway = (event, context, callback) => {
   const { deviceId } = event.pathParameters;
   const isAndroidId = deviceId.length === 16;
-  const promoExpiry = new Date('2020-08-31T23:59:00.000Z');
+  const promoExpiry = new Date(constants.CTA.REFERRAL_FEATURE_EXPIRY);
   if (isAndroidId && new Date() < promoExpiry) {
     callback(null, {
       statusCode: 200,
@@ -202,7 +202,7 @@ const ctaHandleReferralFeatureAndroid = (event, context, callback) => {
   const { deviceId } = event.pathParameters;
   const isAndroidId = deviceId.length === 16;
   const clientVersion = helpers.getQueryParam(event, 'appVersion');
-  const promoExpiry = new Date('2021-01-30T23:59:00.000Z');
+  const promoExpiry = new Date(constants.CTA.REFERRAL_FEATURE_EXPIRY);
   if (semverCompare(clientVersion, MIN_SHARE_SCREEN_IN_CTA_VERSION) === -1) return false;
   if (isAndroidId && new Date() < promoExpiry) {
     callback(null, {
@@ -227,7 +227,7 @@ const ctaHandleDefaultStrategy = (event, context, callback) => {
   const isAndroidId = deviceId.length === 16;
   const ctaBgBlue = '#2196F3';
   const ctaLabelA = 'Follow SplitCloud ✨';
-  const ctaLabelB = '⚡️ Follow @SplitCloud';
+  const ctaLabelB = 'Follow SplitCloud ✨';
   const ctaButtonColor = ctaBgBlue;
   let ctaUrl = `http://www.splitcloud-app.com/follow.html`;
   if (isAndroidId) {
@@ -258,8 +258,6 @@ export default async (event, context, callback) => {
   const { deviceId } = event.pathParameters;
   context.metrics.setNamespace('ctaEndpoint');
   const selectedVariant = helpers.selectVariantFromHash(deviceId) ? 'A' : 'B';
-  // eslint-disable-next-line no-param-reassign
-
   // eslint-disable-next-line no-param-reassign
   context.selectedVariant = selectedVariant;
   if (ctaHandleEndOfLife(event, context, callback)) return true;
