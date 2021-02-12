@@ -149,13 +149,13 @@ function selectVariantFromHash(str, variants = 2) {
     .digest('hex');
   return parseInt(hash.substr(0, 8), 16) % variants;
 }
-function getStringScripts(str) {
+function getStringScripts(str = '') {
   return constants.SUPPORTED_UNICODE_SCRIPTS.filter(scriptObj => str.match(scriptObj.regexp)).map(
     scriptObj => scriptObj.name
   );
 }
 
-function isStringNumeric(str) {
+function isStringNumeric(str = '') {
   return str.match(/\p{Number}/u);
 }
 
