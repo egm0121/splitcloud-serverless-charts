@@ -11,6 +11,7 @@ const blockVersionsMiddleware = (opts = {}) => (event, context, callback, next) 
   const errBody = opts.errBody || { error: 'unsupported client version' };
   const errCode = opts.errCode || 400;
   if (isUnsupportedVersion(clientVersion)) {
+    console.log({ middleware: 'blockVersions', logEvent: 'unsupportedClient', clientVersion });
     return callback(null, {
       statusCode: errCode,
       headers: {

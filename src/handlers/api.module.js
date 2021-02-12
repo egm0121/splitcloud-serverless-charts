@@ -325,7 +325,7 @@ module.exports.appReferrer = helpers.middleware([
     let referrerList;
     if (parsedReferrerParams.get('utm_source') !== 'inapp' || !referrerId) {
       callback(null, {
-        statusCode: 400,
+        statusCode: 200,
         body: JSON.stringify({ success: false, error: 'referrer id not found' }),
       });
       return;
