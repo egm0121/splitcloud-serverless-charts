@@ -20,7 +20,7 @@ custom:
   myStage: ${opt:stage, self:provider.stage}
   prod: 
     sc_charts_cache: rate(1 day)
-    schedule_token: rate(5 minutes)
+    schedule_token: rate(2 minutes)
     schedule_discovery: rate(1 day)
     schedule_country_charts: cron(0 8 ? * MON *)
     schedule_wrapped_yearly: cron(0 13 1 12 ? *)
