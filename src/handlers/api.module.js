@@ -5,6 +5,7 @@ import exploreFeedHandler from './api/exploreRelated';
 import corsHeadersMiddleware from '../middlewares/corsHeaders';
 import blockVersionsMiddleware from '../middlewares/blockAppVersion';
 import metricsReporterMiddleware from '../middlewares/metricsReporter';
+import requestCountryCodeMiddleware from '../middlewares/requestCountryCode';
 
 const helpers = require('../modules/helpers');
 const constants = require('../constants/constants');
@@ -410,5 +411,6 @@ module.exports.exploreRelated = helpers.middleware([
   metricsReporterMiddleware(),
   corsHeadersMiddleware(),
   blockVersionsMiddleware(),
+  requestCountryCodeMiddleware(),
   exploreFeedHandler,
 ]);

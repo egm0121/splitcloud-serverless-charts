@@ -175,6 +175,18 @@ export default async (event, context, callback) => {
   if (Array.isArray(promotedScTracks)) {
     promotedScTracks.forEach(promoTrack => {
       if (
+        Array.isArray(promoTrack.countryWhitelist) &&
+        !promoTrack.countryWhitelist.includes(context.requestCountryCode)
+      ) {
+        console.log(
+          'exclude promoted track, country not whitelisted',
+          context.requestCountryCode,
+          'for track',
+          promoTrack.id
+        );
+        return;
+      }
+      if (
         relatedTagsSet.size === 0 ||
         getTrackTags(promoTrack).find(promoTag => relatedTagsSet.has(promoTag))
       ) {
