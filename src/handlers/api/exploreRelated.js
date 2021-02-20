@@ -178,18 +178,14 @@ export default async (event, context, callback) => {
         Array.isArray(promoTrack.countryWhitelist) &&
         !promoTrack.countryWhitelist.includes(context.requestCountryCode)
       ) {
-        console.log(
-          'exclude promoted track, country not whitelisted',
-          context.requestCountryCode,
-          'for track',
-          promoTrack.id
-        );
         return;
       }
+      // show promoted tracks if user pref are not available or if matches users tags set
       if (
-        relatedTagsSet.size === 0 ||
+        !hasUserInputTracks ||
         getTrackTags(promoTrack).find(promoTag => relatedTagsSet.has(promoTag))
       ) {
+        console.log('adding promoted track', promoTrack.id);
         context.metrics.putMetric('includePromotedTrack', 1);
         context.metrics.putMetric(`track-${promoTrack.id}-promo-impression`, 1);
         relatedTrackList.push(promoTrack);
