@@ -188,7 +188,8 @@ export default async (event, context, callback) => {
         console.log('adding promoted track', promoTrack.id);
         context.metrics.putMetric('includePromotedTrack', 1);
         context.metrics.putMetric(`track-${promoTrack.id}-promo-impression`, 1);
-        relatedTrackList.push(promoTrack);
+        // prepend suggested so that dedup process keeps the promoted occurence of the track
+        relatedTrackList.unshift(promoTrack);
       }
     });
   }
