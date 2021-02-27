@@ -1,7 +1,7 @@
 /* eslint-disable no-param-reassign */
 import RadioApi from '../modules/radioApi';
 import ctaHandler from './api/cta';
-import exploreFeedHandler from './api/exploreRelated';
+import feedGeneratorMiddleware, { testScoreWithDecaySorting } from './api/exploreRelated';
 import corsHeadersMiddleware from '../middlewares/corsHeaders';
 import blockVersionsMiddleware from '../middlewares/blockAppVersion';
 import metricsReporterMiddleware from '../middlewares/metricsReporter';
@@ -412,5 +412,16 @@ module.exports.exploreRelated = helpers.middleware([
   corsHeadersMiddleware(),
   blockVersionsMiddleware(),
   requestCountryCodeMiddleware(),
-  exploreFeedHandler,
+  feedGeneratorMiddleware(),
+  testScoreWithDecaySorting(),
+  (event, context, callback) => {
+    console.log(`got ${context.relatedTrackList.length} tracks from FeedGenerator`);
+    callback(null, {
+      statusCode: 200,
+      headers: {
+        ...context.headers,
+      },
+      body: JSON.stringify(formatters.formatTrackListPayload(context.relatedTrackList)),
+    });
+  },
 ]);

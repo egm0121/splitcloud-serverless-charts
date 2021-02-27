@@ -1,9 +1,9 @@
+import moment from 'moment';
 import SoundCloudChartsService from '../../modules/SoundCloudChartsService';
 
 const chartService = require('../../modules/chartsService');
 const helpers = require('../../modules/helpers');
 const constants = require('../../constants/constants');
-const formatters = require('../../modules/formatters');
 
 const MIN_TRACK_DURATION = 30 * 1e3;
 
@@ -42,7 +42,35 @@ const extractSongNameFromTitle = track => {
 };
 
 const logDev = (...args) => (helpers.isDEV ? console.log(...args) : null);
-export default async (event, context, callback) => {
+const homeFeedDecayFn = x => Math.max(Math.min(1.2 * Math.pow(2, -7 * x), 1), 0.001);
+const calculateTimeDecay = createdDate => {
+  const sinceDayYear = moment().diff(moment(new Date(createdDate)), 'days') / 365;
+  return homeFeedDecayFn(sinceDayYear);
+};
+
+export const testScoreWithDecaySorting = (opts) => (event, context, callback, next) => {
+  if (!constants.EXPLORE_RELATED.SMART_FEED_COUNTRY.includes(context.requestCountryCode)) {
+    return next();
+  }
+  console.log('using score + decay for sorting');
+  const highestPlaybackCount = context.relatedTrackList.reduce(
+    (acc, curr) => (curr.playback_count > acc ? curr.playback_count : acc),
+    0
+  );
+  console.log('highest playback count is', highestPlaybackCount);
+  const scoredTracks = context.relatedTrackList.map(track => {
+    const baseScore = track.isPromotedTrack ? highestPlaybackCount : track.playback_count;
+    const score = baseScore * calculateTimeDecay(track.created_at);
+    return {
+      ...track,
+      score,
+    };
+  });
+  // eslint-disable-next-line no-param-reassign
+  context.relatedTrackList = scoredTracks.sort((a, b) => b.score - a.score);
+};
+
+export default () => async (event, context) => {
   // eslint-disable-next-line prefer-const
   let allInputTracks = JSON.parse(event.body) || [];
   context.metrics.setNamespace('splitcloud-exploreRelated');
@@ -189,6 +217,8 @@ export default async (event, context, callback) => {
         context.metrics.putMetric('includePromotedTrack', 1);
         context.metrics.putMetric(`track-${promoTrack.id}-promo-impression`, 1);
         // prepend suggested so that dedup process keeps the promoted occurence of the track
+        // eslint-disable-next-line no-param-reassign
+        promoTrack.isPromotedTrack = true;
         relatedTrackList.unshift(promoTrack);
       }
     });
@@ -234,12 +264,7 @@ export default async (event, context, callback) => {
   });
   // order all by recency
   relatedTrackList.sort(sortByDateDay);
-  logDev('TOTAL FEED TRACKS', relatedTrackList.length);
-  return callback(null, {
-    statusCode: 200,
-    headers: {
-      ...context.headers,
-    },
-    body: JSON.stringify(formatters.formatTrackListPayload(relatedTrackList)),
-  });
+
+  // eslint-disable-next-line no-param-reassign
+  context.relatedTrackList = relatedTrackList;
 };

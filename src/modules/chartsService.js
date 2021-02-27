@@ -192,20 +192,20 @@ function filterBySCValidId(item) {
   return !isNaN(parseInt(item.id, 10));
 }
 /**
- * Calculate the decay factor used for trending score
- * @param {*} x number of days ago / 365
+ * Calculate the decay factor used for weekly trending score
+ * @param {*} x days ago / 365
  */
 function decayTimeFunc(x) {
-  // this graph gives highest possible value (1) to tracks published between 0 and 14 days ago,
-  // then steeply exponetialy falls to 0 when days ago are getting near to 365 or more
-  return Math.exp(-20 * x) * 2.5;
+  // this function gives highest possible value (1) to tracks published between 0 to 14 days ago (0.03),
+  // then exponetially falls to 0 when days ago are getting near to 365 or more
+  return Math.max(Math.min(1.2 * Math.pow(2, -7 * x), 1), 0.001);
 }
 function calulateBaseScore(item) {
   return Math.floor(item.splitcloud_unique_plays * 2 + Math.log(item.playback_count));
 }
 function calculateTrendingScore(item) {
   // double check this
-  const daysDistance = Math.min(moment().diff(moment(new Date(item.created_at)), 'days'), 1535);
+  const daysDistance = moment().diff(moment(new Date(item.created_at)), 'days');
   const decayFactor = decayTimeFunc(daysDistance / 365);
   return Object.assign({}, item, {
     score: calulateBaseScore(item) * decayFactor,
