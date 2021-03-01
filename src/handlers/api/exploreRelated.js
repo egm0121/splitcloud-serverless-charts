@@ -19,16 +19,9 @@ const getTrackTags = t => {
     .filter(tag => tag && tag.length > 1 && !(tag in constants.TAGS_BLACKLIST));
 };
 
-const roundToWeek = d => {
-  d.setHours(0, 0, 0);
-  d.setDate(d.getDate() - (d.getDay() - 1));
-  return d;
-};
-// sorts by week, rounds dates to closest preceeding monday
+// sorts by date DESC
 const sortByDateDay = (ta, tb) => {
-  const dateB = roundToWeek(new Date(tb.created_at));
-  const dateA = roundToWeek(new Date(ta.created_at));
-  return dateB - dateA;
+  return new Date(tb.created_at) - new Date(ta.created_at);
 };
 // extracts title only from the song, to de-duplicate diff version of same track
 const extractSongNameFromTitle = track => {
