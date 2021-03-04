@@ -35,13 +35,14 @@ const extractSongNameFromTitle = track => {
 };
 
 const logDev = (...args) => (helpers.isDEV ? console.log(...args) : null);
+
 const homeFeedDecayFn = x => Math.max(Math.min(1.2 * Math.pow(2, -7 * x), 1), 0.001);
 const calculateTimeDecay = createdDate => {
   const sinceDayYear = moment().diff(moment(new Date(createdDate)), 'days') / 365;
   return homeFeedDecayFn(sinceDayYear);
 };
 
-export const testScoreWithDecaySorting = (opts) => (event, context, callback, next) => {
+export const testScoreWithDecaySorting = () => (event, context, callback, next) => {
   if (!constants.EXPLORE_RELATED.SMART_FEED_COUNTRY.includes(context.requestCountryCode)) {
     return next();
   }
@@ -66,6 +67,11 @@ export const testScoreWithDecaySorting = (opts) => (event, context, callback, ne
 export default () => async (event, context) => {
   // eslint-disable-next-line prefer-const
   let allInputTracks = JSON.parse(event.body) || [];
+  const startReq = Date.now();
+  const logDuration = label =>
+    console.log(
+      JSON.stringify({ eventType: 'profile', label, msSinceStart: Date.now() - startReq })
+    );
   context.metrics.setNamespace('splitcloud-exploreRelated');
   context.metrics.putMetric('inputFavTracks', allInputTracks.length);
   const recentInputTracks = allInputTracks.slice(
@@ -87,13 +93,14 @@ export default () => async (event, context) => {
   const hasCountryPlaylist = Object.keys(constants.TOP_COUNTRIES).includes(clientCountry);
   if (!hasCountryPlaylist) clientCountry = 'GLOBAL';
   const playlistFilename = `charts/country/weekly_popular_country_${clientCountry}.json`;
-  let trendingWeeklyPlaylist = [];
+  let popularWeeklyPlaylist = [];
   try {
-    trendingWeeklyPlaylist = await helpers.readJSONFromS3(playlistFilename);
+    popularWeeklyPlaylist = await helpers.readJSONFromS3(playlistFilename);
   } catch (err) {
     console.error('weekly popular for country not avaiable', clientCountry);
   }
-  const topTrackIds = trendingWeeklyPlaylist
+  logDuration('fetched_splitcloud_popular_tracks');
+  const topTrackIds = popularWeeklyPlaylist
     .slice(0, constants.EXPLORE_RELATED.MAX_SOURCE_TRACKS)
     .map(t => t.id);
   console.log(`fetching trending chart for country ${clientCountry}`);
@@ -103,12 +110,18 @@ export default () => async (event, context) => {
   );
   sourceTrackIds = [...sourceTrackIds, ...topTrackIds.slice(0, fillNbr)];
   console.log('final source tracks', sourceTrackIds);
-  const resolvedInputTracks = await chartService.fetchScTrackList(sourceTrackIds);
+  let relatedTrackList = [];
+  // fetch in parallel both input track metadata && related tracks to input tracks
+  const [resolvedInputTracks, allRelatedTracks] = await Promise.all([
+    chartService.fetchScTrackList(sourceTrackIds),
+    chartService.fetchAllRelated(sourceTrackIds, constants.EXPLORE_RELATED.MAX_RELATED_TRACKS),
+  ]);
+  relatedTrackList.push(...allRelatedTracks);
+  logDuration('fetch_input_and_related_tracks_sc_api');
   // generate input tracks allowed tags
   const relatedTagsSet = new Set();
   resolvedInputTracks.forEach(track => getTrackTags(track).forEach(tag => relatedTagsSet.add(tag)));
   logDev('relatedTagsSet', Array.from(relatedTagsSet));
-  let relatedTrackList = [];
   // if user favorite tracks are provided, get the latest tracks for favorite artists
   if (hasUserInputTracks) {
     const sourceArtistIds = resolvedInputTracks.map(t => t && t.user && t.user.id);
@@ -119,12 +132,8 @@ export default () => async (event, context) => {
     );
     context.metrics.putMetric('newTracksByArtist', newTracksByArtists.length);
     relatedTrackList.push(...newTracksByArtists);
+    logDuration('resolve_last_artist_tracks_sc_api ');
   }
-  const allRelatedTracks = await chartService.fetchAllRelated(
-    sourceTrackIds,
-    constants.EXPLORE_RELATED.MAX_RELATED_TRACKS
-  );
-  relatedTrackList.push(...allRelatedTracks);
   const uniqueSet = new Set();
   // filter out any track included in the original input tracks
   relatedTrackList = relatedTrackList.filter(track => {
@@ -154,6 +163,7 @@ export default () => async (event, context) => {
       helpers.readJSONFromS3(`charts/soundcloud/weekly_trending.json`),
       helpers.readJSONFromS3(`charts/soundcloud/weekly_popular.json`),
     ]);
+    logDuration('fetch_SC_charts_s3');
     scChartsTracks.forEach(chartTracks => {
       recentSCTracks.push(...chartTracks);
     });
@@ -190,6 +200,7 @@ export default () => async (event, context) => {
   let promotedScTracks;
   try {
     promotedScTracks = await helpers.readJSONFromS3(`app/suggested_tracklist.json`);
+    logDuration('fetch_sponsored_tracks_s3');
   } catch (err) {
     promotedScTracks = [];
   }
@@ -257,7 +268,6 @@ export default () => async (event, context) => {
   });
   // order all by recency
   relatedTrackList.sort(sortByDateDay);
-
   // eslint-disable-next-line no-param-reassign
   context.relatedTrackList = relatedTrackList;
 };
