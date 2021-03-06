@@ -53,11 +53,13 @@ export const testScoreWithDecaySorting = () => (event, context, callback, next) 
   );
   console.log('highest playback count is', highestPlaybackCount);
   const scoredTracks = context.relatedTrackList.map(track => {
-    const baseScore = track.isPromotedTrack ? highestPlaybackCount : track.playback_count;
+    let baseScore = track.isPromotedTrack ? highestPlaybackCount : track.playback_count;
+    baseScore = Math.log(baseScore);
     const score = baseScore * calculateTimeDecay(track.created_at);
     return {
       ...track,
       score,
+      baseScore,
     };
   });
   // eslint-disable-next-line no-param-reassign
