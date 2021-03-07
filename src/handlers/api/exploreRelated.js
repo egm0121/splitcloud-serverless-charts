@@ -36,7 +36,7 @@ const extractSongNameFromTitle = track => {
 
 const logDev = (...args) => (helpers.isDEV ? console.log(...args) : null);
 
-const homeFeedDecayFn = x => Math.max(Math.min(1.2 * Math.pow(2, -7 * x), 1), 0.001);
+const homeFeedDecayFn = x => Math.max(Math.min(Math.pow(2, -7 * x), 1), 0.0001);
 const calculateTimeDecay = createdDate => {
   const sinceDayYear = moment().diff(moment(new Date(createdDate)), 'days') / 365;
   return homeFeedDecayFn(sinceDayYear);
