@@ -39,7 +39,13 @@ async function checkTokenIsValid(token) {
 }
 
 async function setActiveToken(currToken) {
-  const toSerialize = { STREAM_CLIENT_ID: currToken };
+  let toSerialize = {};
+  try {
+    toSerialize = await helpers.readJSONFromS3(ACTIVE_TOKEN_S3_PATH_V2);
+  } catch (err) {
+    console.error('error reading active token payload', ACTIVE_TOKEN_S3_PATH_V2);
+  }
+  toSerialize.STREAM_CLIENT_ID = currToken; // updates the active token, preserve existing config keys
   return helpers.saveFileToS3(ACTIVE_TOKEN_S3_PATH_V2, toSerialize);
 }
 function getUsageByToken(data) {
