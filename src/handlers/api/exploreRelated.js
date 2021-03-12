@@ -47,23 +47,29 @@ export const testScoreWithDecaySorting = () => (event, context, callback, next) 
     return next();
   }
   console.log('using score + decay for sorting');
-  const highestPlaybackCount = context.relatedTrackList.reduce(
-    (acc, curr) => (curr.playback_count > acc ? curr.playback_count : acc),
-    0
-  );
-  console.log('highest playback count is', highestPlaybackCount);
   const scoredTracks = context.relatedTrackList.map(track => {
-    let baseScore = track.isPromotedTrack ? highestPlaybackCount : track.playback_count;
-    baseScore = Math.log(baseScore);
+    const baseScore = Math.log(track.playback_count);
     const score = baseScore * calculateTimeDecay(track.created_at);
     return {
       ...track,
       score,
-      baseScore,
     };
   });
+  const trackList = scoredTracks.sort((a, b) => b.score - a.score);
+  const highestScorePlays = trackList[0].playback_count;
+  // update baseScore for suggested tracks
+  trackList.forEach(track => {
+    if (track.isPromotedTrack) {
+      // eslint-disable-next-line no-param-reassign
+      track.baseScore = highestScorePlays;
+      // eslint-disable-next-line no-param-reassign
+      track.score = Math.log(highestScorePlays) * calculateTimeDecay(track.created_at);
+    }
+  });
+  // resort by score to account for the new suggested scores
+  trackList.sort((a, b) => b.score - a.score);
   // eslint-disable-next-line no-param-reassign
-  context.relatedTrackList = scoredTracks.sort((a, b) => b.score - a.score);
+  context.relatedTrackList = trackList;
 };
 
 export default () => async (event, context) => {
