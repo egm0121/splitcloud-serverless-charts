@@ -198,22 +198,31 @@ const ctaHandleGiveaway = (event, context, callback) => {
   return false;
 };
 
-const ctaHandleReferralFeatureAndroid = (event, context, callback) => {
+const ctaHandleReferralFeatureAndroid = async (event, context, callback) => {
   const { deviceId } = event.pathParameters;
   const isAndroidId = deviceId.length === 16;
   const clientVersion = helpers.getQueryParam(event, 'appVersion');
   const promoExpiry = new Date(constants.CTA.REFERRAL_FEATURE_EXPIRY);
   if (semverCompare(clientVersion, MIN_SHARE_SCREEN_IN_CTA_VERSION) === -1) return false;
   if (isAndroidId && new Date() < promoExpiry) {
+    let rewardedReferralMap = {};
+    try {
+      rewardedReferralMap = await helpers.readJSONFromS3(`referrers/rewarded/devicemap.json`);
+    } catch (err) {
+      console.error(`No devicemap found`);
+    }
+    const hasPromoCode = rewardedReferralMap[deviceId];
+    const ctaLabel = hasPromoCode ? '✅ Remove Ads Unlocked!' : '👫 FREE Remove ADS 🎁';
+    const ctaButtonColor = hasPromoCode ? '#2196F3' : '#FF7F50';
     callback(null, {
       statusCode: 200,
       headers: {
         ...context.headers,
       },
       body: JSON.stringify({
-        ctaLabel: '👫 FREE Remove ADS 🎁',
+        ctaLabel,
         ctaUrl: '',
-        ctaButtonColor: '#FF7F50',
+        ctaButtonColor,
         ctaAction: { type: 'share_app_screen' },
       }),
     });
@@ -265,7 +274,7 @@ export default async (event, context, callback) => {
   if (await ctaHandleCountryWrappedPlaylist(event, context, callback)) return true;
   if (ctaHandleCountryPromotion(event, context, callback)) return true;
   if (ctaHandleGiveaway(event, context, callback)) return true;
-  if (ctaHandleReferralFeatureAndroid(event, context, callback)) return true;
+  if (await ctaHandleReferralFeatureAndroid(event, context, callback)) return true;
   context.metrics.putMetric(`test_variant_${selectedVariant}`, 1);
   return ctaHandleDefaultStrategy(event, context, callback);
 };
