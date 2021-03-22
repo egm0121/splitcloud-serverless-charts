@@ -164,33 +164,36 @@ export default () => async (event, context) => {
     }
     return true;
   });
-  // add weekly soundcloud trending & popular tracks that match user favorites tags
-  let recentSCTracks = [];
-  try {
-    const scChartsTracks = await Promise.all([
-      helpers.readJSONFromS3(`charts/soundcloud/weekly_trending.json`),
-      helpers.readJSONFromS3(`charts/soundcloud/weekly_popular.json`),
-    ]);
-    logDuration('fetch_SC_charts_s3');
-    scChartsTracks.forEach(chartTracks => {
-      recentSCTracks.push(...chartTracks);
-    });
-    recentSCTracks = recentSCTracks.filter(t => {
-      // exclude duplicate tracks
-      if (uniqueSet.has(t.id)) return false;
-      // include all sc tracks if user does not have any prefered tags yet
-      if (relatedTagsSet.size === 0) return true;
-      const hasTagMatch = getTrackTags(t).find(scTag => relatedTagsSet.has(scTag));
-      // if tags are matching and track is unique, add it to results
-      if (hasTagMatch) {
-        logDev(`adding SC track: ${t.title} because matched tag:`, hasTagMatch);
-      }
-      return hasTagMatch;
-    });
-    relatedTrackList.push(...recentSCTracks);
-  } catch (err) {
-    console.error(err, 'issue getting soundcloud charts tracks');
+  // add weekly sc trending & popular tracks for supported countries
+  if (constants.EXPLORE_RELATED.FEED_SC_CHARTS_COUNTRY.includes(context.requestCountryCode)) {
+    try {
+      let recentSCTracks = [];
+      const scChartsTracks = await Promise.all([
+        helpers.readJSONFromS3(`charts/soundcloud/weekly_trending.json`),
+        helpers.readJSONFromS3(`charts/soundcloud/weekly_popular.json`),
+      ]);
+      logDuration('fetch_SC_charts_s3');
+      scChartsTracks.forEach(chartTracks => {
+        recentSCTracks.push(...chartTracks);
+      });
+      recentSCTracks = recentSCTracks.filter(t => {
+        // exclude duplicate tracks
+        if (uniqueSet.has(t.id)) return false;
+        // include all sc tracks if user does not have any prefered tags yet
+        if (relatedTagsSet.size === 0) return true;
+        const hasTagMatch = getTrackTags(t).find(scTag => relatedTagsSet.has(scTag));
+        // if tags are matching and track is unique, add it to results
+        if (hasTagMatch) {
+          logDev(`adding SC track: ${t.title} because matched tag:`, hasTagMatch);
+        }
+        return hasTagMatch;
+      });
+      relatedTrackList.push(...recentSCTracks);
+    } catch (err) {
+      console.error(err, 'issue getting soundcloud charts tracks');
+    }
   }
+
   // filter all tracks by input unicode scripts
   const userTrackTitles = resolvedInputTracks.map(item => item.title).join(' ');
   console.log('source tracks titles', userTrackTitles);
