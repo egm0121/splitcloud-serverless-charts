@@ -155,6 +155,12 @@ functions:
       - http:
           path: charts
           method: get
+  searchTermsPopular:
+    handler: src/handlers/api.searchTermsPopular
+    events:
+      - http:
+          path: searchterms/popular
+          method: get
   top_regions:
     handler: src/handlers/api.topRegions
     events:

@@ -11,6 +11,8 @@ const helpers = require('../modules/helpers');
 const constants = require('../constants/constants');
 const formatters = require('../modules/formatters');
 
+const { APP_BUCKET } = process.env;
+
 const saveToS3 = helpers.saveFileToS3;
 
 const MIN_REFERRER_REWARD = 3;
@@ -52,6 +54,41 @@ module.exports.chartsEndpoint = helpers.middleware([
         ...context.headers,
       },
       body: JSON.stringify(formatters.formatTrackListPayload(playlistPayload)),
+    };
+    callback(null, resp);
+  },
+]);
+/**
+ * GET
+ * /searchterms/popular
+ */
+module.exports.searchTermsPopular = helpers.middleware([
+  corsHeadersMiddleware(),
+  blockVersionsMiddleware(),
+  requestCountryCodeMiddleware(),
+  async (event, context, callback) => {
+    let clientCountry = context.requestCountryCode;
+    const hasCountryPlaylist = Object.keys(constants.TOP_COUNTRIES).includes(clientCountry);
+    if (!hasCountryPlaylist) {
+      clientCountry = 'GLOBAL';
+    }
+    const topTermsObjectPath = `charts/searchterms/country/weekly_popular_country_${clientCountry}.json`;
+    console.log('serve searchterms from s3', topTermsObjectPath);
+    let searchTermsList = [];
+    try {
+      searchTermsList = await helpers.readJSONFromS3({
+        bucket: APP_BUCKET,
+        keyName: topTermsObjectPath,
+      });
+    } catch (err) {
+      searchTermsList = [];
+    }
+    const resp = {
+      statusCode: 200,
+      headers: {
+        ...context.headers,
+      },
+      body: JSON.stringify(searchTermsList),
     };
     callback(null, resp);
   },
@@ -231,7 +268,7 @@ module.exports.yearWrappedTopList = helpers.middleware([
 ]);
 /**
  * Returns top of the current year playlist
- * /wrapped/gloabl/:kind
+ * /wrapped/global/:kind
  */
 module.exports.globalYearWrapped = helpers.middleware([
   blockVersionsMiddleware(),
@@ -402,7 +439,7 @@ module.exports.appPromocodeRef = helpers.middleware([
 /**
  * Home feed generation handler
  * uses input fav track or country charts to grab related tracks
- * relevant add SoundCloud trending songs
+ * adds relevant SoundCloud trending songs or all SC trending songs if no fav input tracks available
  * adds any system defined suggested tracks if matching genre or no genre preference available
  * [POST] /explore/related
  */
