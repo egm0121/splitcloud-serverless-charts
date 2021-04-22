@@ -14,6 +14,7 @@ const constants = require('../constants/constants');
 
 const weekOfYear = moment().isoWeek();
 const saveToS3 = helpers.saveFileToS3;
+const { APP_BUCKET } = process.env;
 
 module.exports.wrappedPlaylistDevices = async () => {
   // count as active any device with at least 15 tracks across playback sides in the last 3months
@@ -84,6 +85,18 @@ module.exports.countryChartsSubscribe = async event => {
         25,
         maybeCountryName
       );
+      const topSearchTerms = await chartService.getTopSearchTermsByCountry(3, maybeCountryName);
+      await saveToS3(
+        `charts/radios/weekly_popular_country_${countryCode}.json`,
+        topRadioStationsData
+      );
+      await saveToS3(
+        {
+          bucket: APP_BUCKET,
+          keyName: `charts/searchterms/country/weekly_popular_country_${countryCode}.json`,
+        },
+        topSearchTerms
+      );
       if (!topChartData.length && !trendingChartData.length) {
         console.log(`Empty charts, skip country ${countryCode}`);
         return false;
@@ -97,10 +110,6 @@ module.exports.countryChartsSubscribe = async event => {
       await saveToS3(
         `charts/country/history/popular_country_${countryCode}_${weekOfYear}.json`,
         topChartData
-      );
-      await saveToS3(
-        `charts/radios/weekly_popular_country_${countryCode}.json`,
-        topRadioStationsData
       );
       await helpers.pushToTopic(
         {

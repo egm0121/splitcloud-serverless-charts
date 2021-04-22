@@ -40,10 +40,10 @@ const logTracks = tracks => {
   const timeStart = performance.now();
   const currDate = moment().format('L');
   // await chartService.getTrendingChart().then(logTracks);
-  await SoundCloudChartsService.getPopularChart().then(logTracks);
+  // await SoundCloudChartsService.getPopularChart().then(logTracks);
   // console.log('TRENDING on ', currDate);
   const country = 'United States';
-  console.log('POPULAR on ', currDate, ' country ', country);
+  // console.log('POPULAR on ', currDate, ' country ', country);
   // await chartService.getTrendingChart(50, country).then(logTracks);
   // await chartService.getTopChart(50, country, '7daysAgo').then(logTracks);
   // const playlists = require('./discover_playlists_payload_dev.json');
@@ -71,11 +71,11 @@ const logTracks = tracks => {
   // const deviceId = 'F80A9F98-07F7-45EC-9C5B-C4F9BAA19FEF'; // piphone
   // const deviceId = '1e3e5ed0634a86c3';
   // const topTracks = await chartService.getPopularTracksByDeviceId(25, '2020-01-01', deviceId, 'L');
-  // const topRadioStations = await chartService.getTopRadioStationsByCountry(
-  //   20,
-  //   constants.TOP_COUNTRIES.IN
-  // );
-  // logTracks(topRadioStations);
+  const topSearchTerms = await chartService.getTopSearchTermsByCountry(
+    3,
+    constants.TOP_COUNTRIES.ES
+  );
+  logTracks(topSearchTerms);
   // const activeDevices = await DeviceReports.getActiveDevices(15, undefined, '60daysAgo');
   // console.log(JSON.stringify(activeDevices.map(e => e.dimensions[0])));
   // console.log('active devices:', activeDevices.length);

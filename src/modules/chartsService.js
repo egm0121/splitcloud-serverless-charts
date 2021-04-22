@@ -18,7 +18,12 @@ async function fetchAnalyticsReport(
   deviceId = false,
   category,
   eventAction = 'playback-completed',
-  endDate = '0daysAgo'
+  endDate = '0daysAgo',
+  dimensions = [
+    {
+      name: 'ga:dimension1',
+    },
+  ]
 ) {
   const reportingClient = await GAReporting.initReportingClient();
   const reportRequest = {
@@ -40,11 +45,7 @@ async function fetchAnalyticsReport(
               expression: 'ga:uniqueEvents',
             },
           ],
-          dimensions: [
-            {
-              name: 'ga:dimension1',
-            },
-          ],
+          dimensions,
           orderBys: [
             { fieldName: 'ga:uniqueEvents', sortOrder: 'DESCENDING' },
             { fieldName: 'ga:totalEvents', sortOrder: 'DESCENDING' },
@@ -94,7 +95,7 @@ async function fetchAnalyticsReport(
     // if filtering by deviceId we only need totalEvents dimension
     reportRequest.requestBody.reportRequests[0].orderBys = [
       { fieldName: 'ga:totalEvents', sortOrder: 'DESCENDING' },
-    ]
+    ];
   }
   if (category) {
     reportRequest.requestBody.reportRequests[0].dimensionFilterClauses.push({
@@ -293,6 +294,23 @@ class ChartsService {
       )
       .then(hydrateRadioStations)
       .then(sortByTotalPlays);
+  }
+
+  getTopSearchTermsByCountry(limit = 5, country = '') {
+    return fetchAnalyticsReport(
+      limit,
+      country,
+      '7daysAgo',
+      false,
+      false,
+      'ADD_SEARCH_TERM_TO_HISTORY',
+      '1DaysAgo',
+      [
+        {
+          name: 'ga:eventLabel',
+        },
+      ]
+    ).then(extractResponseRows);
   }
 
   getPopularTracksByDeviceId(limit = 10, startDate, deviceId, side) {
