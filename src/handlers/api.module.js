@@ -73,13 +73,13 @@ module.exports.searchTermsPopular = helpers.middleware([
       clientCountry = 'GLOBAL';
     }
     const topTermsObjectPath = `charts/searchterms/country/weekly_popular_country_${clientCountry}.json`;
-    console.log('serve searchterms from s3', topTermsObjectPath);
     let searchTermsList = [];
     try {
-      searchTermsList = await helpers.readJSONFromS3({
+      const rawTermsList = await helpers.readJSONFromS3({
         bucket: APP_BUCKET,
         keyName: topTermsObjectPath,
       });
+      searchTermsList = rawTermsList.map(term => term.id);
     } catch (err) {
       searchTermsList = [];
     }
