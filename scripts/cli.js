@@ -87,7 +87,7 @@ const logTracks = tracks => {
   console.log(
     rawEvents
       .slice(0, 10)
-      .map(res => res.dimensions.join(','))
+      .map(res => res.dimensions.concat(res.metrics).join(','))
       .join('\n')
   );
   console.log('Time taken', (performance.now() - timeStart) / 1000);

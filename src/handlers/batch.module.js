@@ -301,7 +301,7 @@ module.exports.rawGaEventExtractor = async event => {
   console.log(`extracting all event of type ${eventActionStr} for date: ${targetDateStr}`);
   if (!eventActionStr || !targetDateStr) return false;
   const rawEvents = await RawEventsExtractor.fetchDailyEvents(targetDateStr, eventActionStr);
-  const csvData = rawEvents.map(res => res.dimensions.join(',')).join('\n');
+  const csvData = rawEvents.map(res => res.dimensions.concat(res.metrics).join(',')).join('\n');
   const result = await helpers.saveFileToS3(
     {
       bucket: APP_BUCKET,
