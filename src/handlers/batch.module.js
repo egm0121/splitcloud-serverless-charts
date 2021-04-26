@@ -3,6 +3,7 @@ import PostGenerator from 'egm0121-rn-common-lib/modules/IGPostGenerator';
 import DeviceReports from '../modules/deviceReports';
 import ScreenshotConfig from '../../key/getScreenshots.json';
 import SoundCloudChartsService from '../modules/SoundCloudChartsService';
+import RawEventsExtractor from '../modules/RawEventsExtractor';
 
 const moment = require('moment');
 const { metricScope } = require('aws-embedded-metrics');
@@ -291,3 +292,102 @@ module.exports.referrerPromoSub = metricScope(metrics => async event => {
     },
   };
 });
+
+module.exports.rawGaEventExtractor = async event => {
+  const messageAttr = event.Records[0].messageAttributes;
+  const targetDateStr = messageAttr.targetDate.stringValue;
+  const eventActionStr = messageAttr.eventAction.stringValue;
+  const parsedDate = new Date(targetDateStr);
+  console.log(`extracting all event of type ${eventActionStr} for date: ${targetDateStr}`);
+  if (!eventActionStr || !targetDateStr) return false;
+  const rawEvents = await RawEventsExtractor.fetchDailyEvents(targetDateStr, eventActionStr);
+  const csvData = rawEvents.map(res => res.dimensions.join(',')).join('\n');
+  const result = await helpers.saveFileToS3(
+    {
+      bucket: APP_BUCKET,
+      keyName: `events/raw/events/${eventActionStr}/${parsedDate.getFullYear()}/${targetDateStr}.csv`,
+    },
+    csvData,
+    false
+  );
+  return {
+    statusCode: 200,
+    body: {
+      success: true,
+      result,
+    },
+  };
+};
+
+module.exports.dailyGaEventExtract = async () => {
+  const yesterdayDate = new Date();
+  const dayInMillis = 24 * 60 * 60 * 1e3;
+  yesterdayDate.setTime(yesterdayDate.getTime() - 1 * dayInMillis);
+  const toFormattedDate = yesterdayDate
+    .toISOString()
+    .split('T')
+    .shift();
+  console.log(`ingest daily ga events for ${toFormattedDate}`);
+  const queueMsg = await helpers.sqs
+    .sendMessage({
+      DelaySeconds: 5,
+      MessageAttributes: {
+        targetDate: {
+          DataType: 'String',
+          StringValue: toFormattedDate,
+        },
+        eventAction: {
+          DataType: 'String',
+          StringValue: 'PLAYBACK-COMPLETED',
+        },
+      },
+      MessageBody: `inject daily events for ${toFormattedDate}`,
+      QueueUrl: process.env.GA_EXTRACTOR_QUEUE,
+    })
+    .promise();
+
+  return {
+    statusCode: 200,
+    body: queueMsg,
+  };
+};
+
+module.exports.historyGaEventExtract = async () => {
+  const yesterdayDate = new Date();
+  const dayInMillis = 24 * 60 * 60 * 1e3;
+  yesterdayDate.setTime(yesterdayDate.getTime() - 1 * dayInMillis);
+  const yesterDayMillis = yesterdayDate.getTime();
+  const sinceDate = new Date();
+  sinceDate.setUTCMonth(0);
+  sinceDate.setUTCDate(1);
+  let sinceDateMillis = sinceDate.getTime();
+  while (sinceDateMillis < yesterDayMillis) {
+    const toFormattedDate = new Date(sinceDateMillis)
+      .toISOString()
+      .split('T')
+      .shift();
+    console.log(`ingest historical ga events for ${toFormattedDate}`);
+    await helpers.sqs
+      .sendMessage({
+        DelaySeconds: 5,
+        MessageAttributes: {
+          targetDate: {
+            DataType: 'String',
+            StringValue: toFormattedDate,
+          },
+          eventAction: {
+            DataType: 'String',
+            StringValue: 'PLAYBACK-COMPLETED',
+          },
+        },
+        MessageBody: `inject daily events for ${toFormattedDate}`,
+        QueueUrl: process.env.GA_EXTRACTOR_QUEUE,
+      })
+      .promise();
+    sinceDateMillis += dayInMillis;
+  }
+
+  return {
+    statusCode: 200,
+  };
+};

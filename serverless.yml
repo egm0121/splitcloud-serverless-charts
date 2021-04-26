@@ -19,6 +19,7 @@ custom:
     dev: dev-rest.splitcloud-app.com
   myStage: ${opt:stage, self:provider.stage}
   prod: 
+    ga_daily_extract: rate(1 day)
     sc_charts_cache: rate(1 day)
     schedule_token: rate(2 minutes)
     schedule_discovery: rate(1 day)
@@ -33,7 +34,11 @@ custom:
     referrer_promocode_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/referrer_promocode_queue_prod"
     referrer_queue_arn: "arn:aws:sqs:us-east-1:348868901434:referrer_promocode_queue_prod"
     referrer_queue_enabled: true
+    ga_extractor_arn: "arn:aws:sqs:us-east-1:348868901434:ga_extractor_queue_prod"
+    ga_extractor_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/ga_extractor_queue_prod"
+    ga_extractor_queue_enabled: true
   dev: 
+    ga_daily_extract:
     sc_charts_cache: 
     schedule: 
     schedule_token:
@@ -49,6 +54,9 @@ custom:
     referrer_promocode_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/referrer_promocode_queue_dev"
     referrer_queue_arn: "arn:aws:sqs:us-east-1:348868901434:referrer_promocode_queue_dev"
     referrer_queue_enabled: false
+    ga_extractor_arn: "arn:aws:sqs:us-east-1:348868901434:ga_extractor_queue_dev"
+    ga_extractor_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/ga_extractor_queue_dev"
+    ga_extractor_queue_enabled: false
   bucket: "www.splitcloud-app.com"
   cache_bucket: "com.splitcloud-app.cache"
   app_bucket: "com.splitcloud-app.app-sls"
@@ -105,6 +113,13 @@ provider:
       Resource: ${self:custom.${self:custom.myStage}.referrer_queue_arn}
     - Effect: "Allow"
       Action:
+      - sqs:SendMessage
+      - sqs:GetQueueUrl
+      - sqs:ReceiveMessage
+      - sqs:DeleteMessage
+      Resource: ${self:custom.${self:custom.myStage}.ga_extractor_arn}
+    - Effect: "Allow"
+      Action:
       - SNS:Publish
       Resource: !Ref chartCreatedTopic
   environment:
@@ -114,6 +129,7 @@ provider:
       APP_BUCKET: ${self:custom.app_bucket}
       COUNTRY_CHARTS_QUEUE: ${self:custom.${self:custom.myStage}.country_charts_queue}
       REFERRER_PROMO_QUEUE: ${self:custom.${self:custom.myStage}.referrer_promocode_queue}
+      GA_EXTRACTOR_QUEUE: ${self:custom.${self:custom.myStage}.ga_extractor_queue}
       CHART_CREATED_TOPIC: !Ref chartCreatedTopic
 resources:
   Resources:
@@ -125,6 +141,10 @@ resources:
       Type: "AWS::SQS::Queue"
       Properties:
         QueueName: referrer_promocode_queue_${self:custom.myStage}
+    gaExtractorQueue:
+      Type: "AWS::SQS::Queue"
+      Properties:
+        QueueName: ga_extractor_queue_${self:custom.myStage}
     snsToPostGeneratorSqsPolicy:
       Type: AWS::SQS::QueuePolicy
       Properties:
@@ -273,6 +293,14 @@ functions:
     timeout: 30
     events:
       - schedule: ${self:custom.${self:custom.myStage}.sc_charts_cache}
+  gaDailyExtract:
+    handler: src/handlers/batch.dailyGaEventExtract
+    timeout: 30
+    events:
+      - schedule: ${self:custom.${self:custom.myStage}.ga_daily_extract}
+  historyGaEventExtract: 
+    handler: src/handlers/batch.historyGaEventExtract
+    timeout: 30
   country_charts_pub:
     handler: src/handlers/batch.countryChartsPublisher
     timeout: 60
@@ -305,6 +333,14 @@ functions:
     timeout: 120
     events:
       - schedule: ${self:custom.${self:custom.myStage}.schedule_wrapped_yearly}
+  rawGaEventExtractor:
+    handler: src/handlers/batch.rawGaEventExtractor
+    timeout: 30
+    events:
+      - sqs:
+          arn: ${self:custom.${self:custom.myStage}.ga_extractor_arn}
+          batchSize: 1
+          enabled: ${self:custom.${self:custom.myStage}.ga_extractor_queue_enabled}
   referrerPromoSub:
     handler: src/handlers/batch.referrerPromoSub
     timeout: 30

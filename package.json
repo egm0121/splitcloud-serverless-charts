@@ -15,6 +15,7 @@
     "country-charts:dev": "sls invoke -f country_charts_pub --stage=dev -l",
     "check-token:prod": "sls invoke -f token  --staged=prod -l",
     "check-token:dev": "sls invoke -f token  --stage=dev -l",
+    "ga-extract-daily:local": "serverless invoke local -f rawGaEventExtractor --data='{ \"Records\": [{ \"messageAttributes\": { \"targetDate\": { \"stringValue\": \"2021-04-24\" }, \"eventAction\": { \"stringValue\": \"PLAYBACK-COMPLETED\" } } }] }' -l --stage dev",
     "lint": "eslint \"{,!(node_modules)/**/}*.js\"",
     "format": "prettier --config ./.prettierrc  --write \"{,!(node_modules)/**/}*.js\"",
     "pre-commit": "npm run format && npm run lint",

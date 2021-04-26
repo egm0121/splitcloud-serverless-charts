@@ -9,6 +9,7 @@ const constants = require('../src/constants/constants');
 const getScreenshots = require('../key/getScreenshots');
 const DeviceReports = require('../src/modules/deviceReports');
 const SoundCloudChartsService = require('../src/modules/SoundCloudChartsService').default;
+const RawEventsExtractor = require('../src/modules/RawEventsExtractor');
 
 const logTracks = tracks => {
   console.log(
@@ -71,16 +72,24 @@ const logTracks = tracks => {
   // const deviceId = 'F80A9F98-07F7-45EC-9C5B-C4F9BAA19FEF'; // piphone
   // const deviceId = '1e3e5ed0634a86c3';
   // const topTracks = await chartService.getPopularTracksByDeviceId(25, '2020-01-01', deviceId, 'L');
-  const topSearchTerms = await chartService.getTopSearchTermsByCountry(
-    3,
-    constants.TOP_COUNTRIES.ES
-  );
-  logTracks(topSearchTerms);
+  // const topSearchTerms = await chartService.getTopSearchTermsByCountry(
+  //   3,
+  //   constants.TOP_COUNTRIES.ES
+  // );
+  // logTracks(topSearchTerms);
   // const activeDevices = await DeviceReports.getActiveDevices(15, undefined, '60daysAgo');
   // console.log(JSON.stringify(activeDevices.map(e => e.dimensions[0])));
   // console.log('active devices:', activeDevices.length);
   // logTracks(await chartService.getYearlyPopularTrackByDeviceId(10, deviceId, 'L'));
   // logTracks(await chartService.getYearlyPopularTrackByCountry(10, 'India'));
+  const rawEvents = await RawEventsExtractor.fetchDailyEvents('1DaysAgo');
+  console.log(rawEvents.length);
+  console.log(
+    rawEvents
+      .slice(0, 10)
+      .map(res => res.dimensions.join(','))
+      .join('\n')
+  );
   console.log('Time taken', (performance.now() - timeStart) / 1000);
   //   const grabScreenshot = async (year = '2019', deviceId, side) => {
   //     const targetUrl = `http://www.splitcloud-app.com/wrapped.html?id=${deviceId}&year=${year}&side=${side}&t=3`;
