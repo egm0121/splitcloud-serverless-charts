@@ -42,7 +42,7 @@ module.exports = {
     MAX_RELATED_TRACKS: 30,
     MIN_PLAYBACK_COUNT: 1000,
     MAX_TRACKS_PER_ALBUM: 3,
-    SMART_FEED_COUNTRY: ['US', 'EG', 'PK'],
+    SMART_FEED_COUNTRY: [], // disabled for perf testing of the feature ['US', 'EG', 'PK']
     FEED_SC_CHARTS_COUNTRY: ['US', 'UK', 'CA'],
   },
   CTA: {
