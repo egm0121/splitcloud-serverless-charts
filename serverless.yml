@@ -19,7 +19,7 @@ custom:
     dev: dev-rest.splitcloud-app.com
   myStage: ${opt:stage, self:provider.stage}
   prod: 
-    ga_daily_extract: rate(1 day)
+    ga_daily_extract: cron(0 10 * * ? *)
     sc_charts_cache: rate(1 day)
     schedule_token: rate(2 minutes)
     schedule_discovery: rate(1 day)
