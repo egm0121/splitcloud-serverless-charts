@@ -4,6 +4,7 @@ import DeviceReports from '../modules/deviceReports';
 import ScreenshotConfig from '../../key/getScreenshots.json';
 import SoundCloudChartsService from '../modules/SoundCloudChartsService';
 import RawEventsExtractor from '../modules/RawEventsExtractor';
+import AthenaQueryClient from '../modules/AthenaQueryClient';
 
 const moment = require('moment');
 const { metricScope } = require('aws-embedded-metrics');
@@ -14,16 +15,24 @@ const helpers = require('../modules/helpers');
 const constants = require('../constants/constants');
 
 const weekOfYear = moment().isoWeek();
-const saveToS3 = helpers.saveFileToS3;
 const { APP_BUCKET } = process.env;
+const {
+  ATHENA_SPLITCLOUD_WRAPPED_DATABASE,
+  WRAPPED_EVENT_TABLE_PREFIX,
+  WRAPPED_TOP_TRACKS_TABLE_PREFIX,
+} = constants;
 
+/**
+ * builds the whitelist of deviceIds that are being active enough
+ * to compute the top played track for the year.
+ */
 module.exports.wrappedPlaylistDevices = async () => {
   // count as active any device with at least 15 tracks across playback sides in the last 3months
   const activeDevices = await DeviceReports.getActiveDevices(15, undefined, '90daysAgo');
   console.log('total active devices:', activeDevices.length);
   const currentYear = new Date().getUTCFullYear().toString();
   try {
-    await saveToS3(
+    await helpers.saveFileToS3(
       `charts/wrapped/${currentYear}/wrappedDeviceList.json`,
       activeDevices.map(row => row.dimensions[0])
     );
@@ -32,6 +41,47 @@ module.exports.wrappedPlaylistDevices = async () => {
   }
 };
 
+module.exports.computeWrappedAggregateTable = async () => {
+  const athenaClient = new AthenaQueryClient({
+    db: ATHENA_SPLITCLOUD_WRAPPED_DATABASE,
+  });
+  const currYear = new Date().getUTCFullYear();
+  const rawEventTableName = `${WRAPPED_EVENT_TABLE_PREFIX}${currYear}`;
+  const topTracksMaterializedTable = `${WRAPPED_TOP_TRACKS_TABLE_PREFIX}${currYear}`;
+  try {
+    const databaseCreation = await athenaClient.executeQuery(
+      `CREATE DATABASE IF NOT EXISTS ${ATHENA_SPLITCLOUD_WRAPPED_DATABASE}`
+    );
+    const rawEventsTable = await athenaClient.executeQuery(`CREATE EXTERNAL TABLE IF NOT EXISTS ${rawEventTableName} (
+      \`datetime\` string,
+      \`device_id\` string,
+      \`device_side\` string,
+      \`music_provider\` string,
+      \`song_id\` string,
+      \`playback_mode\` string,
+      \`country_code\` string,
+      \`eventTotal\` int
+     )
+    ROW FORMAT DELIMITED FIELDS TERMINATED BY ','
+    LOCATION 's3://${APP_BUCKET}/events/raw/events/PLAYBACK-COMPLETED/${currYear}'
+    tblproperties ("skip.header.line.count"="1")
+    ;`);
+    console.log(`athena table created: ${rawEventTableName}`);
+    const topTracksMaterializedView = await athenaClient.executeQuery(`CREATE TABLE IF NOT EXISTS ${topTracksMaterializedTable} AS 
+      SELECT SUM(eventtotal) as plays, song_id, device_id, device_side FROM ${rawEventTableName} 
+      GROUP BY device_id,device_side,song_id ORDER BY device_id,device_side,plays DESC 
+    `);
+    console.log(`athena aggregated table created: ${topTracksMaterializedTable}`);
+    console.log(
+      'athena queries succeded',
+      databaseCreation,
+      rawEventsTable,
+      topTracksMaterializedView
+    );
+  } catch (err) {
+    console.error('Error while computWrappedAggregateTable', err);
+  }
+};
 module.exports.countryChartsPublisher = async () => {
   const topCountryMap = {
     ...constants.TOP_COUNTRIES,
@@ -87,11 +137,11 @@ module.exports.countryChartsSubscribe = async event => {
         maybeCountryName
       );
       const topSearchTerms = await chartService.getTopSearchTermsByCountry(3, maybeCountryName);
-      await saveToS3(
+      await helpers.saveFileToS3(
         `charts/radios/weekly_popular_country_${countryCode}.json`,
         topRadioStationsData
       );
-      await saveToS3(
+      await helpers.saveFileToS3(
         {
           bucket: APP_BUCKET,
           keyName: `charts/searchterms/country/weekly_popular_country_${countryCode}.json`,
@@ -103,12 +153,15 @@ module.exports.countryChartsSubscribe = async event => {
         return false;
       }
       console.log(`Save to s3 top and trending charts for ${countryName}...`);
-      await saveToS3(`charts/country/weekly_popular_country_${countryCode}.json`, topChartData);
-      await saveToS3(
+      await helpers.saveFileToS3(
+        `charts/country/weekly_popular_country_${countryCode}.json`,
+        topChartData
+      );
+      await helpers.saveFileToS3(
         `charts/country/weekly_trending_country_${countryCode}.json`,
         trendingChartData
       );
-      await saveToS3(
+      await helpers.saveFileToS3(
         `charts/country/history/popular_country_${countryCode}_${weekOfYear}.json`,
         topChartData
       );
@@ -158,21 +211,24 @@ module.exports.countryChartsSubscribe = async event => {
 module.exports.scChartsCache = async () => {
   // TODO: reimplement alternative with track resolve
   let chartData = await SoundCloudChartsService.getTrendingChart();
-  await saveToS3(`charts/soundcloud/weekly_trending.json`, chartData);
+  await helpers.saveFileToS3(`charts/soundcloud/weekly_trending.json`, chartData);
   chartData = await SoundCloudChartsService.getPopularChart();
-  await saveToS3(`charts/soundcloud/weekly_popular.json`, chartData);
+  await helpers.saveFileToS3(`charts/soundcloud/weekly_popular.json`, chartData);
   return true;
 };
 module.exports.wrappedCountriesCharts = async () => {
   const topCountryMap = Object.keys(constants.YEAR_WRAPPED_COUNTRIES);
   const currYear = new Date().getFullYear();
-  // eslint-disable-next-line no-restricted-syntax
+  // eslint-disable-next-line no-restricted-syntax, prefer-const
   for (let countryCode of topCountryMap) {
     try {
       const countryName = constants.YEAR_WRAPPED_COUNTRIES[countryCode];
       console.log(`calculate top of year ${currYear} for country ${countryName}`);
       const topTracks = await chartService.getYearlyPopularTrackByCountry(10, countryName);
-      await saveToS3(`charts/wrapped_country/${currYear}/wrapped_${countryCode}.json`, topTracks);
+      await helpers.saveFileToS3(
+        `charts/wrapped_country/${currYear}/wrapped_${countryCode}.json`,
+        topTracks
+      );
     } catch (err) {
       console.error(`Failed generation country: ${countryCode}, err: ${err.message}`);
     }
@@ -248,7 +304,6 @@ module.exports.generateChartsPosts = async event => {
 module.exports.referrerPromoSub = metricScope(metrics => async event => {
   const messageAttr = event.Records[0].messageAttributes;
   const referrerId = messageAttr.referrerId.stringValue;
-  const { APP_BUCKET } = process.env;
   let promoCodesList = [];
   try {
     promoCodesList = await helpers.readJSONFromS3({
@@ -319,33 +374,31 @@ module.exports.rawGaEventExtractor = async event => {
   };
 };
 
-module.exports.dailyGaEventExtract = async () => {
-  const yesterdayDate = new Date();
-  const dayInMillis = 24 * 60 * 60 * 1e3;
-  yesterdayDate.setTime(yesterdayDate.getTime() - 1 * dayInMillis);
-  const toFormattedDate = yesterdayDate
-    .toISOString()
-    .split('T')
-    .shift();
-  console.log(`ingest daily ga events for ${toFormattedDate}`);
-  const queueMsg = await helpers.sqs
+const pushEventIngestionJob = async (targetDate, eventName = 'PLAYBACK-COMPLETED') =>
+  helpers.sqs
     .sendMessage({
       DelaySeconds: 5,
       MessageAttributes: {
         targetDate: {
           DataType: 'String',
-          StringValue: toFormattedDate,
+          StringValue: targetDate,
         },
         eventAction: {
           DataType: 'String',
-          StringValue: 'PLAYBACK-COMPLETED',
+          StringValue: eventName,
         },
       },
-      MessageBody: `inject daily events for ${toFormattedDate}`,
+      MessageBody: `pushEventIngestionJob ${targetDate} - ${eventName}`,
       QueueUrl: process.env.GA_EXTRACTOR_QUEUE,
     })
     .promise();
 
+module.exports.dailyGaEventExtract = async () => {
+  const yesterdayDate = new Date();
+  const dayInMillis = 24 * 60 * 60 * 1e3;
+  yesterdayDate.setTime(yesterdayDate.getTime() - 1 * dayInMillis);
+  const toFormattedDate = helpers.formatToISODate(yesterdayDate);
+  const queueMsg = await pushEventIngestionJob(toFormattedDate);
   return {
     statusCode: 200,
     body: queueMsg,
@@ -362,31 +415,11 @@ module.exports.historyGaEventExtract = async () => {
   sinceDate.setUTCDate(1);
   let sinceDateMillis = sinceDate.getTime();
   while (sinceDateMillis < yesterDayMillis) {
-    const toFormattedDate = new Date(sinceDateMillis)
-      .toISOString()
-      .split('T')
-      .shift();
-    console.log(`ingest historical ga events for ${toFormattedDate}`);
-    await helpers.sqs
-      .sendMessage({
-        DelaySeconds: 5,
-        MessageAttributes: {
-          targetDate: {
-            DataType: 'String',
-            StringValue: toFormattedDate,
-          },
-          eventAction: {
-            DataType: 'String',
-            StringValue: 'PLAYBACK-COMPLETED',
-          },
-        },
-        MessageBody: `inject daily events for ${toFormattedDate}`,
-        QueueUrl: process.env.GA_EXTRACTOR_QUEUE,
-      })
-      .promise();
+    const currDayDate = helpers.formatToISODate(new Date(sinceDateMillis));
+    console.log(`ingest historical ga events for ${currDayDate}`);
+    await pushEventIngestionJob(currDayDate);
     sinceDateMillis += dayInMillis;
   }
-
   return {
     statusCode: 200,
   };

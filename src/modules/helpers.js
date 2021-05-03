@@ -6,9 +6,8 @@ AWS.config.update({ region: 'us-east-1' });
 const isDEV = process.env.STAGE === 'dev';
 const s3 = new AWS.S3();
 const SNS = new AWS.SNS();
-const getQueryParam = (event, param) => {
-  return event.queryStringParameters && event.queryStringParameters[param];
-};
+const getQueryParam = (event, param) =>
+  event.queryStringParameters && event.queryStringParameters[param];
 const sqs = new AWS.SQS({ apiVersion: 'latest' });
 
 async function pushToTopic(messageObj, topic) {
@@ -218,6 +217,11 @@ middleware.abort = () => {
   err._midd_abort = true;
   throw err;
 };
+const formatToISODate = dateObj =>
+  dateObj
+    .toISOString()
+    .split('T')
+    .shift();
 module.exports = {
   saveFileToS3,
   saveBlobToS3,
@@ -237,4 +241,5 @@ module.exports = {
   isStringNumeric,
   timeoutAfter,
   middleware,
+  formatToISODate,
 };

@@ -45,6 +45,9 @@ module.exports = {
     SMART_FEED_COUNTRY: [], // disabled for perf testing of the feature ['US', 'EG', 'PK']
     FEED_SC_CHARTS_COUNTRY: ['US', 'UK', 'CA'],
   },
+  ATHENA_SPLITCLOUD_WRAPPED_DATABASE: 'splitcloud_wrapped_db',
+  WRAPPED_EVENT_TABLE_PREFIX: 'raw_playback_events_',
+  WRAPPED_TOP_TRACKS_TABLE_PREFIX: 'plays_by_trackIdDeviceSide_',
   CTA: {
     REFERRAL_FEATURE_EXPIRY: '2022-03-01T23:59:00.000Z',
     GIVEAWAY_EXPIRY: '2020-08-31T23:59:00.000Z',
@@ -85,8 +88,8 @@ module.exports = {
     DE: 'Germany',
     US: 'United States',
   },
-  WRAPPED_YEAR_MONTH: [], // what months to show the cta to compute personal top of year list
-  WRAPPED_COUNTRY_YEAR_MONTH: [12, 1], // what months to show per country top of the year playlist
+  WRAPPED_YEAR_MONTH: [12, 1, 5], // what months to show the cta to compute personal top of year list
+  WRAPPED_COUNTRY_YEAR_MONTH: [], // what months to show per country top of the year playlist
   COUNTRY_PROMOTION: {
     // BR: {
     //   ctaUrl: 'http://www.splitcloud-app.com/promo_BR.html',

@@ -25,7 +25,6 @@ custom:
     schedule_discovery: rate(1 day)
     schedule_country_charts: cron(0 8 ? * MON *)
     schedule_wrapped_yearly: cron(0 13 1 12 ? *)
-    schedule_country_wrapped: cron(0 13 15 12 ? *)
     country_charts_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/splitcloud_charts_by_region"
     country_charts_arn: "arn:aws:sqs:us-east-1:348868901434:splitcloud_charts_by_region"
     charts_queue_enabled: true
@@ -45,7 +44,6 @@ custom:
     schedule_discovery:
     schedule_country_charts:
     schedule_wrapped_yearly:
-    schedule_country_wrapped:
     country_charts_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/splitcloud_charts_by_region_dev"
     country_charts_arn: "arn:aws:sqs:us-east-1:348868901434:splitcloud_charts_by_region_dev"
     charts_queue_enabled: true
@@ -90,6 +88,10 @@ provider:
       Action:
         - s3:*
       Resource: "arn:aws:s3:::${self:custom.app_bucket}/*"
+    - Effect: Allow
+      Action:
+        - athena:*
+      Resource: "*"
     - Effect: "Allow"
       Action:
       - sqs:SendMessage
@@ -326,8 +328,6 @@ functions:
   wrappedCountriesCharts:
     handler: src/handlers/batch.wrappedCountriesCharts
     timeout: 600
-    events:
-      - schedule: ${self:custom.${self:custom.myStage}.schedule_country_wrapped}
   wrappedPlaylistPub:
     handler: src/handlers/batch.wrappedPlaylistDevices
     timeout: 120
@@ -350,6 +350,11 @@ functions:
             arn: ${self:custom.${self:custom.myStage}.referrer_queue_arn}
             batchSize: 1
             enabled: ${self:custom.${self:custom.myStage}.referrer_queue_enabled}
+  scheduleWrappedAggregate:
+    handler: src/handlers/batch.computeWrappedAggregateTable
+    timeout: 60
+    events:
+      - schedule: ${self:custom.${self:custom.myStage}.schedule_wrapped_aggregate}
 plugins:
   - serverless-domain-manager
   - serverless-offline

@@ -6,15 +6,13 @@ import corsHeadersMiddleware from '../middlewares/corsHeaders';
 import blockVersionsMiddleware from '../middlewares/blockAppVersion';
 import metricsReporterMiddleware from '../middlewares/metricsReporter';
 import requestCountryCodeMiddleware from '../middlewares/requestCountryCode';
+import wrappedPlaylistGenerator from '../modules/wrappedPlaylistGenerator';
 
 const helpers = require('../modules/helpers');
 const constants = require('../constants/constants');
 const formatters = require('../modules/formatters');
 
 const { APP_BUCKET } = process.env;
-
-const saveToS3 = helpers.saveFileToS3;
-
 const MIN_REFERRER_REWARD = 3;
 
 /**
@@ -221,7 +219,7 @@ module.exports.logCollector = helpers.middleware([
     // eslint-disable-next-line prettier/prettier
     const [date, time] = (new Date()).toISOString().split('T');
     const timeNoMillis = time.split('.')[0];
-    await saveToS3(
+    await helpers.saveFileToS3(
       {
         bucket: APP_BUCKET,
         keyName: `feedback_logs/${date}/${deviceid}-${timeNoMillis}.log`,
@@ -239,15 +237,14 @@ module.exports.logCollector = helpers.middleware([
   },
 ]);
 /**
- * Returns wrapped playlist for year -deviceId- side only if generated
+ * Returns wrapped playlist for year -deviceId- side from cache or athena
  * /wrapped/{year}/{deviceId}/{side}
  */
 module.exports.yearWrappedTopList = helpers.middleware([
   corsHeadersMiddleware(),
   async (event, context, callback) => {
     const { year, deviceId, side } = event.pathParameters;
-    const sideUpper = (side || '').toUpperCase();
-
+    const sideUpper = (side || '').toUpperCase()[0];
     const jsonCacheFileName = `charts/wrapped/${year}/${deviceId}_${sideUpper}.json`;
     let trackList;
     try {
@@ -264,12 +261,17 @@ module.exports.yearWrappedTopList = helpers.middleware([
         body: JSON.stringify(trackList),
       });
     }
-    callback(null, {
-      statusCode: 204,
+    trackList = await wrappedPlaylistGenerator.getWrappedForDeviceIdSideYear(
+      deviceId,
+      sideUpper,
+      year
+    );
+    return callback(null, {
+      statusCode: 200,
       headers: {
         ...context.headers,
       },
-      body: JSON.stringify([]),
+      body: JSON.stringify(trackList),
     });
   },
 ]);
