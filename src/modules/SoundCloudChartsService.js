@@ -30,7 +30,7 @@ async function fetchUserTracks(userId) {
 }
 
 function filterStreambleTracks(item) {
-  return !!item && item.streamable;
+  return !!item && item.streamable && item.access && item.access !== 'blocked';
 }
 
 class SoundCloudChartsService {

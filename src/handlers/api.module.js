@@ -221,7 +221,14 @@ module.exports.logCollector = helpers.middleware([
     // eslint-disable-next-line prettier/prettier
     const [date, time] = (new Date()).toISOString().split('T');
     const timeNoMillis = time.split('.')[0];
-    await saveToS3(`feedback_logs/${date}/${deviceid}-${timeNoMillis}.log`, logStr, false);
+    await saveToS3(
+      {
+        bucket: APP_BUCKET,
+        keyName: `feedback_logs/${date}/${deviceid}-${timeNoMillis}.log`,
+      },
+      logStr,
+      false
+    );
     callback(null, {
       statusCode: 200,
       headers: {
