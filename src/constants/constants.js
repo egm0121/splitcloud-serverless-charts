@@ -88,8 +88,8 @@ module.exports = {
     DE: 'Germany',
     US: 'United States',
   },
-  WRAPPED_YEAR_MONTH: [12, 1, 5], // what months to show the cta to compute personal top of year list
-  WRAPPED_COUNTRY_YEAR_MONTH: [], // what months to show per country top of the year playlist
+  WRAPPED_YEAR_MONTH: [1, 5], // what months to show the cta to compute personal top of year list -> this has to happen after computeWrappedAggregateTable runs.
+  WRAPPED_COUNTRY_YEAR_MONTH: [], // what months to show per country top of the year - depreacted feature
   COUNTRY_PROMOTION: {
     // BR: {
     //   ctaUrl: 'http://www.splitcloud-app.com/promo_BR.html',

@@ -38,10 +38,7 @@ const ctaHandleWrappedYearlyPlaylist = async (event, context, callback) => {
   const clientVersion = helpers.getQueryParam(event, 'appVersion');
   const dateInRange = constants.WRAPPED_YEAR_MONTH.includes(currMonth);
   if (semverCompare(clientVersion, MIN_PLAYLIST_IN_CTA_VERSION) === -1) return false;
-  if (!dateInRange && !helpers.isDEV) {
-    console.log('disabled wrapped on this date in prod');
-    return false;
-  }
+  if (!dateInRange) return false;
   const playlistPath = `charts/wrapped/${currentYear}/${deviceId}_${side}.json`;
   let wrappedPlaylist;
   try {
@@ -56,13 +53,13 @@ const ctaHandleWrappedYearlyPlaylist = async (event, context, callback) => {
         10 * 1e3 // 8 sec of time to generate
       );
       await helpers.saveFileToS3(playlistPath, wrappedPlaylist);
-      if (!wrappedPlaylist.length) return false;
       context.metrics.putMetric('ctaWrappedGenerated', 1);
     } catch (err) {
       console.error('wrapped playlist failed:', err.message);
       return false;
     }
   }
+  if (!wrappedPlaylist.length) return false;
   context.metrics.putMetric('ctaWrappedPlaylist', 1);
   return callback(null, {
     statusCode: 200,

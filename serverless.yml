@@ -24,7 +24,8 @@ custom:
     schedule_token: rate(2 minutes)
     schedule_discovery: rate(1 day)
     schedule_country_charts: cron(0 8 ? * MON *)
-    schedule_wrapped_yearly: cron(0 13 1 12 ? *)
+    schedule_wrapped_yearly:
+    schedule_wrapped_aggregate: cron(0 13 20 12 ? *)
     country_charts_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/splitcloud_charts_by_region"
     country_charts_arn: "arn:aws:sqs:us-east-1:348868901434:splitcloud_charts_by_region"
     charts_queue_enabled: true
@@ -350,7 +351,7 @@ functions:
             arn: ${self:custom.${self:custom.myStage}.referrer_queue_arn}
             batchSize: 1
             enabled: ${self:custom.${self:custom.myStage}.referrer_queue_enabled}
-  scheduleWrappedAggregate:
+  batchWrapped:
     handler: src/handlers/batch.computeWrappedAggregateTable
     timeout: 60
     events:
