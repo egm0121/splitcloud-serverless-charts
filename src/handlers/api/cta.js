@@ -1,5 +1,6 @@
+import wrappedPlaylistGenerator from '../../modules/wrappedPlaylistGenerator';
+
 const semverCompare = require('semver-compare');
-const chartService = require('../../modules/chartsService');
 const helpers = require('../../modules/helpers');
 const constants = require('../../constants/constants');
 const formatters = require('../../modules/formatters');
@@ -7,8 +8,6 @@ const formatters = require('../../modules/formatters');
 const LATEST_VERSION = '6.0'; // stuck for ios to 6.0
 const MIN_PLAYLIST_IN_CTA_VERSION = '6.0'; // first client version that supports embedding playlist in CTA response
 const MIN_SHARE_SCREEN_IN_CTA_VERSION = '6.3'; // first client version that supports opening the share_app_screen
-
-let wrappedDeviceList;
 
 const ctaHandleEndOfLife = (event, context, callback) => {
   const clientVersion = helpers.getQueryParam(event, 'appVersion');
@@ -33,55 +32,36 @@ const ctaHandleEndOfLife = (event, context, callback) => {
 
 const ctaHandleWrappedYearlyPlaylist = async (event, context, callback) => {
   const currMonth = new Date().getUTCMonth() + 1; // since Date months are 0 indexed
-  const currentYear = new Date().getUTCFullYear();
+  let currentYear = new Date().getUTCFullYear();
+  if (currMonth === 1) currentYear -= 1; // use prev year if running in january
   const { deviceId, side } = event.pathParameters;
   const clientVersion = helpers.getQueryParam(event, 'appVersion');
   const dateInRange = constants.WRAPPED_YEAR_MONTH.includes(currMonth);
   if (semverCompare(clientVersion, MIN_PLAYLIST_IN_CTA_VERSION) === -1) return false;
-  if (!dateInRange && !helpers.isDEV) {
-    console.log('disabled wrapped on this date in prod');
-    return false;
-  }
-  if (!wrappedDeviceList) {
-    console.log('read wrapped device list from storage');
-    try {
-      wrappedDeviceList = await helpers.readJSONFromS3(
-        `charts/wrapped/${currentYear}/wrappedDeviceList.json`
-      );
-    } catch (err) {
-      wrappedDeviceList = [];
-      console.log('no wrapped device list found');
-    }
-  }
-  if (wrappedDeviceList.indexOf(deviceId) === -1) {
-    console.log('deviceId not found');
-    return false;
-  }
+  if (!dateInRange) return false;
   const playlistPath = `charts/wrapped/${currentYear}/${deviceId}_${side}.json`;
   let wrappedPlaylist;
   try {
     wrappedPlaylist = await helpers.readJSONFromS3(playlistPath);
   } catch (err) {
-    console.log('no wrapped playlist found', playlistPath);
+    console.log('no cached wrapped playlist found', playlistPath);
   }
   if (!wrappedPlaylist) {
     try {
       wrappedPlaylist = await helpers.timeoutAfter(
-        chartService.getYearlyPopularTrackByDeviceId(10, deviceId, side),
-        8 * 1e3 // 8 sec of time to generate
+        wrappedPlaylistGenerator.getWrappedForDeviceIdSideYear(deviceId, side, currentYear),
+        8 * 1e3 // 8 sec of time to generate (cta req has a timeout of 10s)
       );
-      await saveToS3(playlistPath, wrappedPlaylist);
+      await helpers.saveFileToS3(playlistPath, wrappedPlaylist);
       context.metrics.putMetric('ctaWrappedGenerated', 1);
     } catch (err) {
       console.error('wrapped playlist failed:', err.message);
       return false;
     }
   }
-  if (!wrappedPlaylist.length) {
-    return false;
-  }
+  if (!wrappedPlaylist.length) return false;
   context.metrics.putMetric('ctaWrappedPlaylist', 1);
-  callback(null, {
+  return callback(null, {
     statusCode: 200,
     headers: {
       ...context.headers,
@@ -94,56 +74,6 @@ const ctaHandleWrappedYearlyPlaylist = async (event, context, callback) => {
         type: 'wrapped_playlist',
         data: formatters.formatPlaylistPayload(
           formatters.createPlaylistFromTrackList(wrappedPlaylist, `Your ${currentYear} Top 10`)
-        ),
-      },
-    }),
-  });
-};
-const ctaHandleCountryWrappedPlaylist = async (event, context, callback) => {
-  const currMonth = new Date().getUTCMonth() + 1; // since Date months are 0 indexed
-  let currentYear = new Date().getUTCFullYear();
-  if (currMonth !== 12) currentYear -= 1;
-  const clientCountry = (
-    helpers.getQueryParam(event, 'region') ||
-    event.headers['CloudFront-Viewer-Country'] ||
-    'US'
-  ).toUpperCase();
-  const clientVersion = helpers.getQueryParam(event, 'appVersion');
-  const dateInRange = constants.WRAPPED_COUNTRY_YEAR_MONTH.includes(currMonth);
-  const isRegionEnabled = clientCountry in constants.YEAR_WRAPPED_COUNTRIES;
-  if (clientCountry === 'US') return false; // exclude US from year wrapped playlist
-  if (semverCompare(clientVersion, MIN_PLAYLIST_IN_CTA_VERSION) === -1) return false;
-  if (context.selectedVariant === 'B') return false;
-  if (!isRegionEnabled) return false;
-  if (!dateInRange && !helpers.isDEV) {
-    console.log('disabled country wrapped on this date in prod');
-    return false;
-  }
-  const playlistPath = `charts/wrapped_country/${currentYear}/wrapped_${clientCountry}.json`;
-  let wrappedPlaylist;
-  try {
-    wrappedPlaylist = await helpers.readJSONFromS3(playlistPath);
-  } catch (err) {
-    console.log('no country wrapped playlist found', playlistPath);
-    return false;
-  }
-  if (!wrappedPlaylist.length) return false;
-  callback(null, {
-    statusCode: 200,
-    headers: {
-      ...context.headers,
-    },
-    body: JSON.stringify({
-      ctaUrl: '',
-      ctaLabel: `Top ${currentYear} ${clientCountry} Songs!`,
-      ctaButtonColor: '#FF7F50',
-      ctaAction: {
-        type: 'playlist',
-        data: formatters.formatPlaylistPayload(
-          formatters.createPlaylistFromTrackList(
-            wrappedPlaylist,
-            `Top ${currentYear} ${clientCountry} Songs!`
-          )
         ),
       },
     }),
@@ -271,7 +201,6 @@ export default async (event, context, callback) => {
   context.selectedVariant = selectedVariant;
   if (ctaHandleEndOfLife(event, context, callback)) return true;
   if (await ctaHandleWrappedYearlyPlaylist(event, context, callback)) return true;
-  if (await ctaHandleCountryWrappedPlaylist(event, context, callback)) return true;
   if (ctaHandleCountryPromotion(event, context, callback)) return true;
   if (ctaHandleGiveaway(event, context, callback)) return true;
   if (await ctaHandleReferralFeatureAndroid(event, context, callback)) return true;

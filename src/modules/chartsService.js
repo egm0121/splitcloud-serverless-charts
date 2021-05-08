@@ -1,3 +1,4 @@
+/* eslint-disable no-restricted-globals */
 /* eslint-disable class-methods-use-this */
 const axios = require('axios');
 const moment = require('moment');
@@ -199,6 +200,7 @@ function filterBySCValidId(item) {
 function decayTimeFunc(x) {
   // this function gives highest possible value (1) to tracks published between 0 to 14 days ago (0.03),
   // then exponetially falls to 0 when days ago are getting near to 365 or more
+  // eslint-disable-next-line no-restricted-properties
   return Math.max(Math.min(1.2 * Math.pow(2, -7 * x), 1), 0.001);
 }
 function calulateBaseScore(item) {
@@ -362,7 +364,7 @@ class ChartsService {
     }
     const category = side ? `side-${side}` : null;
     const allTracks = [];
-    // eslint-disable-next-line no-restricted-syntax
+    // eslint-disable-next-line no-restricted-syntax, prefer-const
     for (let period of coupleOfMonths) {
       let tracks = [];
       if (filterName === 'deviceId') {
@@ -378,8 +380,10 @@ class ChartsService {
     }
     const uniqueTracksMap = allTracks.reduce((map, currTrack) => {
       if (currTrack.id in map) {
+        // eslint-disable-next-line no-param-reassign
         map[currTrack.id].splitcloud_total_plays += currTrack.splitcloud_total_plays;
       } else {
+        // eslint-disable-next-line no-param-reassign
         map[currTrack.id] = currTrack;
       }
       return map;
@@ -430,6 +434,13 @@ class ChartsService {
     const trackProms = trackList.map(id => this.fetchScTrackById(id).catch(() => ({ data: {} })));
     const respArr = await Promise.all(trackProms);
     return respArr.map(resp => resp.data);
+  }
+
+  async hydrateScTrackObjects(rawTrackObjArr) {
+    const validScTrackList = rawTrackObjArr.filter(filterBySCValidId);
+    return hydrateSoundcloudTracks(validScTrackList, soundcloudkey.BATCH_FETCHING_KEY).then(
+      sortByTotalPlays
+    );
   }
 
   getScTrendingChart() {

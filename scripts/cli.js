@@ -82,7 +82,7 @@ const logTracks = tracks => {
   // console.log('active devices:', activeDevices.length);
   // logTracks(await chartService.getYearlyPopularTrackByDeviceId(10, deviceId, 'L'));
   // logTracks(await chartService.getYearlyPopularTrackByCountry(10, 'India'));
-  const rawEvents = await RawEventsExtractor.fetchDailyEvents('1DaysAgo');
+  const rawEvents = await RawEventsExtractor.fetchDailyEvents('1DaysAgo', 'PLAYBACK-COMPLETED');
   console.log(rawEvents.length);
   console.log(
     rawEvents

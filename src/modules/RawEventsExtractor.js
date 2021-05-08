@@ -49,7 +49,11 @@ async function fetchGaReport(
   metrics = ['ga:totalEvents'],
   limit = 100000
 ) {
-  const dimensionFilter = dimensionPayloadMap[filterDimension];
+  const dimensionFilter = dimensionPayloadMap[filterDimension] || {
+    dimensionName: 'ga:eventAction',
+    operator: 'EXACT',
+    expressions: [filterDimension],
+  };
   const reportingClient = await GAReporting.initReportingClient();
   const reportRequest = {
     requestBody: {
