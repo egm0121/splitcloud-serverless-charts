@@ -80,18 +80,22 @@ provider:
     - Effect: Allow
       Action:
         - s3:*
-      Resource: "arn:aws:s3:::${self:custom.bucket}/*"
+      Resource: "arn:aws:s3:::${self:custom.bucket}*"
     - Effect: Allow
       Action:
         - s3:*
-      Resource: "arn:aws:s3:::${self:custom.cache_bucket}/*"
+      Resource: "arn:aws:s3:::${self:custom.cache_bucket}*"
     - Effect: Allow
       Action:
         - s3:*
-      Resource: "arn:aws:s3:::${self:custom.app_bucket}/*"
+      Resource: "arn:aws:s3:::${self:custom.app_bucket}*"
     - Effect: Allow
       Action:
         - athena:*
+      Resource: "*"
+    - Effect: Allow
+      Action:
+        - glue:*
       Resource: "*"
     - Effect: "Allow"
       Action:

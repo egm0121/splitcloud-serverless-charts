@@ -50,7 +50,7 @@ const ctaHandleWrappedYearlyPlaylist = async (event, context, callback) => {
     try {
       wrappedPlaylist = await helpers.timeoutAfter(
         wrappedPlaylistGenerator.getWrappedForDeviceIdSideYear(deviceId, side, currentYear),
-        10 * 1e3 // 8 sec of time to generate
+        8 * 1e3 // 8 sec of time to generate (cta req has a timeout of 10s)
       );
       await helpers.saveFileToS3(playlistPath, wrappedPlaylist);
       context.metrics.putMetric('ctaWrappedGenerated', 1);
