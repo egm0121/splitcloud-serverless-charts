@@ -48,6 +48,12 @@ module.exports.computeWrappedAggregateTable = async () => {
   const currYear = new Date().getUTCFullYear();
   const rawEventTableName = `${WRAPPED_EVENT_TABLE_PREFIX}${currYear}`;
   const topTracksMaterializedTable = `${WRAPPED_TOP_TRACKS_TABLE_PREFIX}${currYear}`;
+  // drop older CTAS table if exists to make sure that the materialized view is updated.
+  try {
+    await athenaClient.executeQuery(`DROP TABLE IF EXISTS ${topTracksMaterializedTable}`);
+  } catch (err) {
+    console.error('drop wrapped table failure...');
+  }
   try {
     const databaseCreation = await athenaClient.executeQuery(
       `CREATE DATABASE IF NOT EXISTS ${ATHENA_SPLITCLOUD_WRAPPED_DATABASE}`
