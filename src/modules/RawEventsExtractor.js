@@ -94,12 +94,10 @@ async function fetchGaReport(
 }
 
 function extractResponseRows(response) {
-  return response.data.reports[0].data.rows.map(row => {
-    return {
-      dimensions: row.dimensions,
-      metrics: row.metrics[0].values,
-    };
-  });
+  return response.data.reports[0].data.rows.map(row => ({
+    dimensions: row.dimensions,
+    metrics: row.metrics[0].values,
+  }));
 }
 
 module.exports = {

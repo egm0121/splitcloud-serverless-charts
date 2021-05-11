@@ -20,9 +20,7 @@ const getTrackTags = t => {
 };
 
 // sorts by date DESC
-const sortByDateDay = (ta, tb) => {
-  return new Date(tb.created_at) - new Date(ta.created_at);
-};
+const sortByDateDay = (ta, tb) => new Date(tb.created_at) - new Date(ta.created_at);
 // extracts title only from the song, to de-duplicate diff version of same track
 const extractSongNameFromTitle = track => {
   const allTitle = track.title.toLowerCase() || '';
@@ -36,6 +34,7 @@ const extractSongNameFromTitle = track => {
 
 const logDev = (...args) => (helpers.isDEV ? console.log(...args) : null);
 
+// eslint-disable-next-line no-restricted-properties
 const homeFeedDecayFn = x => Math.max(Math.min(Math.pow(2, -7 * x), 1), 0.0001);
 const calculateTimeDecay = createdDate => {
   const sinceDayYear = moment().diff(moment(new Date(createdDate)), 'days') / 365;
@@ -43,7 +42,10 @@ const calculateTimeDecay = createdDate => {
 };
 
 export const testScoreWithDecaySorting = () => (event, context, callback, next) => {
-  if (!constants.EXPLORE_RELATED.SMART_FEED_COUNTRY.includes(context.requestCountryCode)) {
+  if (
+    Array.isArray(constants.EXPLORE_RELATED.SMART_FEED_COUNTRY) &&
+    !constants.EXPLORE_RELATED.SMART_FEED_COUNTRY.includes(context.requestCountryCode)
+  ) {
     return next();
   }
   console.log('using score + decay for sorting');
@@ -70,6 +72,7 @@ export const testScoreWithDecaySorting = () => (event, context, callback, next) 
   trackList.sort((a, b) => b.score - a.score);
   // eslint-disable-next-line no-param-reassign
   context.relatedTrackList = trackList;
+  return true;
 };
 
 export default () => async (event, context) => {

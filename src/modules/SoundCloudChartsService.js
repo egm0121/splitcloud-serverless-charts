@@ -9,7 +9,9 @@ const SC_API_ENDPOINT = 'api.soundcloud.com';
 const SC_WEB_ENDPOINT = 'soundcloud.com';
 
 async function resolveScTrackPermalink(trackPerma) {
-  const trackUrl = `https://${SC_API_ENDPOINT}/resolve?client_id=${soundcloudkey.SC_CLIENT_ID}&url=${trackPerma}`;
+  const trackUrl = `https://${SC_API_ENDPOINT}/resolve?client_id=${
+    soundcloudkey.SC_CLIENT_ID
+  }&url=${trackPerma}`;
   const resp = await axios({ method: 'GET', url: trackUrl, timeout: 1500 }).catch(() =>
     Promise.resolve({})
   );
@@ -17,12 +19,14 @@ async function resolveScTrackPermalink(trackPerma) {
 }
 
 async function fetchSoundCloudTrendingChart(scChartType, scCountry = 'all-countries') {
-  const relatedUrl = `https://${SC_WEB_ENDPOINT}/charts/${scChartType}\?genre\=all-music\&country\=${scCountry}`;
+  const relatedUrl = `https://${SC_WEB_ENDPOINT}/charts/${scChartType}?genre=all-music&country=${scCountry}`;
   return axios({ method: 'GET', url: relatedUrl, timeout: 3000, responseType: 'text' });
 }
 
 async function fetchUserTracks(userId) {
-  const trackUrl = `https://${SC_API_ENDPOINT}/users/${userId}/tracks?client_id=${soundcloudkey.SC_CLIENT_ID}`;
+  const trackUrl = `https://${SC_API_ENDPOINT}/users/${userId}/tracks?client_id=${
+    soundcloudkey.SC_CLIENT_ID
+  }`;
   const resp = await axios({ method: 'GET', url: trackUrl, timeout: 1500 }).catch(() =>
     Promise.resolve({})
   );

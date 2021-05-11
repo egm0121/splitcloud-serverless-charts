@@ -22,6 +22,11 @@
     "cli": "node -r esm ./scripts/cli.js",
     "prefetch": "node -r esm ./scripts/prefetchWrapped.js"
   },
+  "husky": {
+    "hooks": {
+      "pre-commit": "npm run lint"
+    }
+  },
   "author": "",
   "license": "ISC",
   "dependencies": {
@@ -44,7 +49,7 @@
     "eslint-plugin-jsx-a11y": "^6.1.2",
     "eslint-plugin-prettier": "^3.0.0",
     "eslint-plugin-react": "^7.11.1",
-    "husky": "^1.2.1",
+    "husky": "^4.3.8",
     "prettier": "^1.15.3",
     "serverless-api-gateway-throttling": "^1.0.1",
     "serverless-domain-manager": "^3.3.0",
