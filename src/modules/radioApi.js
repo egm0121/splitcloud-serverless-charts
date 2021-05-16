@@ -25,8 +25,10 @@ class RadioApi {
     cancelToken,
     timeout
   ) {
-    const urlParams = method === RadioApi.methods.GET && Object.keys(params).length
-      ? `?${this.toQueryString(params)}` : '';
+    const urlParams =
+      method === RadioApi.methods.GET && Object.keys(params).length
+        ? `?${this.toQueryString(params)}`
+        : '';
 
     const reqObj = {
       method,

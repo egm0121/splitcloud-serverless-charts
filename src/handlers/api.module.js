@@ -128,6 +128,7 @@ module.exports.radioCountryCodes = helpers.middleware([
   corsHeadersMiddleware(),
   blockVersionsMiddleware(),
   (event, context, callback) => {
+    console.log(constants)
     const radioCountryList = constants.RADIO_COUNTRY_CODES;
     const clientCountry = (
       helpers.getQueryParam(event, 'region') ||
@@ -181,10 +182,13 @@ module.exports.radioListByCountryCode = helpers.middleware([
         const radioList = resp.data.filter(station => !stationsBlacklist[station.stationuuid]);
         popularStations.forEach(popularItem => {
           const radioItem = radioList.find(item => item.stationuuid === popularItem.stationuuid);
-          radioItem.votes += popularItem.splitcloud_unique_plays * 1e3; // make the unique plays on splitcloud count 1k more than a vote
+          if (radioItem) {
+            radioItem.votes += popularItem.splitcloud_unique_plays * 1e3; // make the unique plays on splitcloud count 1k more than a vote
+          }
         });
         // add custom stations for countryCode
         if (constants.STATIONS_CUSTOM[countryCode]) {
+          console.log('pushed custom stations', countryCode);
           radioList.push(...constants.STATIONS_CUSTOM[countryCode]);
         }
         formattedRadioList = formatters.formatRadioStationListPayload(radioList);

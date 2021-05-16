@@ -1,10 +1,8 @@
 import AthenaQueryClient from './AthenaQueryClient';
 import chartsService from './chartsService';
-import {
-  ATHENA_SPLITCLOUD_WRAPPED_DATABASE,
-  WRAPPED_TOP_TRACKS_TABLE_PREFIX,
-} from '../constants/constants';
+import constants from '../constants/constants';
 
+const { ATHENA_SPLITCLOUD_WRAPPED_DATABASE, WRAPPED_TOP_TRACKS_TABLE_PREFIX } = constants;
 class WrappedPlaylistGenerator {
   constructor() {
     this.athena = new AthenaQueryClient({
