@@ -87,7 +87,11 @@ const ctaHandleCountryPromotion = (event, context, callback) => {
     event.headers['CloudFront-Viewer-Country'] ||
     'US'
   ).toUpperCase();
-  if (isAndroidId && clientCountry in constants.COUNTRY_PROMOTION) {
+  if (
+    isAndroidId &&
+    clientCountry in constants.COUNTRY_PROMOTION &&
+    context.selectedVariant === 'A'
+  ) {
     const promo = constants.COUNTRY_PROMOTION[clientCountry];
     callback(null, {
       statusCode: 200,

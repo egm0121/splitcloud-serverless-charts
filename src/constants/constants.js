@@ -91,6 +91,10 @@ module.exports = {
     // BR: {
     //   ctaUrl: 'http://www.splitcloud-app.com/promo_BR.html',
     // },
+    IN: {
+      ctaLabel: 'Remove ADS for 20₹ 🎉',
+      ctaUrl: 'http://www.splitcloud-app.com/promo_IN_20.html',
+    },
   },
   TOP_COUNTRIES: {
     IN: 'India',
