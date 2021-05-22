@@ -90,7 +90,7 @@ const ctaHandleCountryPromotion = (event, context, callback) => {
   if (
     isAndroidId &&
     clientCountry in constants.COUNTRY_PROMOTION &&
-    context.selectedVariant === 'A'
+    context.selectedVariant === 'B'
   ) {
     const promo = constants.COUNTRY_PROMOTION[clientCountry];
     callback(null, {
