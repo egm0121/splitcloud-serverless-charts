@@ -43,10 +43,10 @@ const logTracks = tracks => {
   // await chartService.getTrendingChart().then(logTracks);
   // await SoundCloudChartsService.getPopularChart().then(logTracks);
   // console.log('TRENDING on ', currDate);
-  const country = 'United States';
+  const country = 'India';
   // console.log('POPULAR on ', currDate, ' country ', country);
-  // await chartService.getTrendingChart(50, country).then(logTracks);
-  // await chartService.getTopChart(50, country, '7daysAgo').then(logTracks);
+  await chartService.getTrendingChart(100, country).then(logTracks);
+  // await chartService.getTopChart(300, country, '30daysAgo').then(logTracks);
   // const playlists = require('./discover_playlists_payload_dev.json');
   // await discoverApi(playlists);
   // console.log('Average songs playback per day NEW USERS');
@@ -82,14 +82,14 @@ const logTracks = tracks => {
   // console.log('active devices:', activeDevices.length);
   // logTracks(await chartService.getYearlyPopularTrackByDeviceId(10, deviceId, 'L'));
   // logTracks(await chartService.getYearlyPopularTrackByCountry(10, 'India'));
-  const rawEvents = await RawEventsExtractor.fetchDailyEvents('1DaysAgo', 'PLAYBACK-COMPLETED');
-  console.log(rawEvents.length);
-  console.log(
-    rawEvents
-      .slice(0, 10)
-      .map(res => res.dimensions.concat(res.metrics).join(','))
-      .join('\n')
-  );
+  // const rawEvents = await RawEventsExtractor.fetchDailyEvents('1DaysAgo', 'PLAYBACK-COMPLETED');
+  // console.log(rawEvents.length);
+  // console.log(
+  //   rawEvents
+  //     .slice(0, 10)
+  //     .map(res => res.dimensions.concat(res.metrics).join(','))
+  //     .join('\n')
+  // );
   console.log('Time taken', (performance.now() - timeStart) / 1000);
   //   const grabScreenshot = async (year = '2019', deviceId, side) => {
   //     const targetUrl = `http://www.splitcloud-app.com/wrapped.html?id=${deviceId}&year=${year}&side=${side}&t=3`;

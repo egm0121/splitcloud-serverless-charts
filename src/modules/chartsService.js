@@ -155,6 +155,7 @@ async function hydrateRadioStations(stationList) {
 }
 async function hydrateSoundcloudTracks(trackList, scApiToken) {
   const finalTracks = {};
+  console.log('hydrating ', trackList.length);
   return trackList
     .map(track => {
       const resolveTrack = Object.assign({}, track);
@@ -178,6 +179,7 @@ async function hydrateSoundcloudTracks(trackList, scApiToken) {
 }
 function extractResponseRows(response) {
   try {
+    console.log('tot rows from GA api:', response.data.reports[0].data.rows.length);
     return response.data.reports[0].data.rows.map(row => {
       const [totalPlays, uniquePlays] = row.metrics[0].values;
       return {
@@ -191,7 +193,7 @@ function extractResponseRows(response) {
   }
 }
 function filterBySCValidId(item) {
-  return !isNaN(parseInt(item.id, 10));
+  return item.id && !item.id.startsWith('local');
 }
 /**
  * Calculate the decay factor used for weekly trending score
@@ -270,13 +272,13 @@ class ChartsService {
       .then(t => t.filter(filterGenre(constants.GENRE_CHARTS_BLACKLIST)))
       .then(t => t.filter(filterTrackNameExclude(constants.TITLE_CHARTS_BLACKLIST)))
       .then(sortByPopularity)
-      .then(chart => chart.slice(0, 50));
+      .then(chart => chart.slice(0, limit));
   }
 
   getTrendingChart(limit = 100, country = '') {
     return this.getTopChart(limit, country)
       .then(sortByPopularityWithDecay)
-      .then(chart => chart.slice(0, 50));
+      .then(chart => chart.slice(0, Math.floor(limit / 2)));
   }
 
   getTopRadioStationsByCountry(limit = 75, country = '') {

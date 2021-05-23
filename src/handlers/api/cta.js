@@ -207,6 +207,7 @@ export default async (event, context, callback) => {
   if (await ctaHandleWrappedYearlyPlaylist(event, context, callback)) return true;
   if (ctaHandleCountryPromotion(event, context, callback)) return true;
   if (ctaHandleGiveaway(event, context, callback)) return true;
+  // TODO: make sure that users with activated referral are always presented the link the promo-code
   if (await ctaHandleReferralFeatureAndroid(event, context, callback)) return true;
   context.metrics.putMetric(`test_variant_${selectedVariant}`, 1);
   return ctaHandleDefaultStrategy(event, context, callback);
