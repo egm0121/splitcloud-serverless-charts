@@ -24,7 +24,6 @@ custom:
     schedule_token: rate(2 minutes)
     schedule_discovery: rate(1 day)
     schedule_country_charts: cron(0 8 ? * MON *)
-    schedule_wrapped_yearly:
     schedule_wrapped_aggregate: cron(0 13 20 12 ? *)
     country_charts_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/splitcloud_charts_by_region"
     country_charts_arn: "arn:aws:sqs:us-east-1:348868901434:splitcloud_charts_by_region"
@@ -44,7 +43,6 @@ custom:
     schedule_token:
     schedule_discovery:
     schedule_country_charts:
-    schedule_wrapped_yearly:
     country_charts_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/splitcloud_charts_by_region_dev"
     country_charts_arn: "arn:aws:sqs:us-east-1:348868901434:splitcloud_charts_by_region_dev"
     charts_queue_enabled: true
@@ -285,6 +283,7 @@ functions:
               paths:
                 deviceId: true
                 side: true
+# batch & offline running lambda functions
   token:
     handler: src/handlers/batch.selectActiveToken
     timeout: 30
@@ -330,14 +329,6 @@ functions:
        - sqs:
           arn: ${self:custom.${self:custom.myStage}.post_generator_arn}
           batchSize: 1
-  wrappedCountriesCharts:
-    handler: src/handlers/batch.wrappedCountriesCharts
-    timeout: 600
-  wrappedPlaylistPub:
-    handler: src/handlers/batch.wrappedPlaylistDevices
-    timeout: 120
-    events:
-      - schedule: ${self:custom.${self:custom.myStage}.schedule_wrapped_yearly}
   rawGaEventExtractor:
     handler: src/handlers/batch.rawGaEventExtractor
     timeout: 30
@@ -364,49 +355,3 @@ plugins:
   - serverless-domain-manager
   - serverless-offline
   - serverless-prune-plugin
- 
-
-#    The following are a few example events you can configure
-#    NOTE: Please make sure to change your handler code to work with those events
-#    Check the event documentation for details
-#    events:
-#      - http:
-#          path: users/create
-#          method: get
-#      - s3: ${env:BUCKET}
-#      - schedule: rate(10 minutes)
-#      - sns: greeter-topic
-#      - stream: arn:aws:dynamodb:region:XXXXXX:table/foo/stream/1970-01-01T00:00:00.000
-#      - alexaSkill: amzn1.ask.skill.xx-xx-xx-xx
-#      - alexaSmartHome: amzn1.ask.skill.xx-xx-xx-xx
-#      - iot:
-#          sql: "SELECT * FROM 'some_topic'"
-#      - cloudwatchEvent:
-#          event:
-#            source:
-#              - "aws.ec2"
-#            detail-type:
-#              - "EC2 Instance State-change Notification"
-#            detail:
-#              state:
-#                - pending
-#      - cloudwatchLog: '/aws/lambda/hello'
-#      - cognitoUserPool:
-#          pool: MyUserPool
-#          trigger: PreSignUp
-
-#    Define function environment variables here
-#    environment:
-#      variable2: value2
-
-# you can add CloudFormation resource templates here
-#resources:
-#  Resources:
-#    NewResource:
-#      Type: AWS::S3::Bucket
-#      Properties:
-#        BucketName: my-new-bucket
-#  Outputs:
-#     NewOutput:
-#       Description: "Description for the output"
-#       Value: "Some output value"

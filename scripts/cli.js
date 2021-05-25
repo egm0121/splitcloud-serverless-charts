@@ -1,3 +1,4 @@
+/* eslint-disable */
 const { performance } = require('perf_hooks');
 const fs = require('fs');
 const axios = require('axios');
@@ -7,7 +8,6 @@ const discoverApi = require('../src/modules/discoverApi');
 const reportStats = require('../src/modules/reportStats');
 const constants = require('../src/constants/constants');
 const getScreenshots = require('../key/getScreenshots');
-const DeviceReports = require('../src/modules/deviceReports');
 const SoundCloudChartsService = require('../src/modules/SoundCloudChartsService').default;
 const RawEventsExtractor = require('../src/modules/RawEventsExtractor');
 
@@ -39,14 +39,14 @@ const logTracks = tracks => {
 };
 (async () => {
   const timeStart = performance.now();
-  const currDate = moment().format('L');
+  // const currDate = moment().format('L');
   // await chartService.getTrendingChart().then(logTracks);
   // await SoundCloudChartsService.getPopularChart().then(logTracks);
   // console.log('TRENDING on ', currDate);
-  const country = 'India';
+  const country = 'Pakistan';
   // console.log('POPULAR on ', currDate, ' country ', country);
-  await chartService.getTrendingChart(100, country).then(logTracks);
-  // await chartService.getTopChart(300, country, '30daysAgo').then(logTracks);
+  // await chartService.getTrendingChart(100, country).then(logTracks);
+  await chartService.getTopChart(300, country, '30daysAgo').then(logTracks);
   // const playlists = require('./discover_playlists_payload_dev.json');
   // await discoverApi(playlists);
   // console.log('Average songs playback per day NEW USERS');

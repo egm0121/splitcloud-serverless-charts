@@ -128,7 +128,6 @@ module.exports.radioCountryCodes = helpers.middleware([
   corsHeadersMiddleware(),
   blockVersionsMiddleware(),
   (event, context, callback) => {
-    console.log(constants)
     const radioCountryList = constants.RADIO_COUNTRY_CODES;
     const clientCountry = (
       helpers.getQueryParam(event, 'region') ||

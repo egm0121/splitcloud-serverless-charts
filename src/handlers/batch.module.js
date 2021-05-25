@@ -1,6 +1,5 @@
 /* eslint-disable no-await-in-loop */
 import PostGenerator from 'egm0121-rn-common-lib/modules/IGPostGenerator';
-import DeviceReports from '../modules/deviceReports';
 import ScreenshotConfig from '../../key/getScreenshots.json';
 import SoundCloudChartsService from '../modules/SoundCloudChartsService';
 import RawEventsExtractor from '../modules/RawEventsExtractor';
@@ -21,25 +20,6 @@ const {
   WRAPPED_EVENT_TABLE_PREFIX,
   WRAPPED_TOP_TRACKS_TABLE_PREFIX,
 } = constants;
-
-/**
- * builds the whitelist of deviceIds that are being active enough
- * to compute the top played track for the year.
- */
-module.exports.wrappedPlaylistDevices = async () => {
-  // count as active any device with at least 15 tracks across playback sides in the last 3months
-  const activeDevices = await DeviceReports.getActiveDevices(15, undefined, '90daysAgo');
-  console.log('total active devices:', activeDevices.length);
-  const currentYear = new Date().getUTCFullYear().toString();
-  try {
-    await helpers.saveFileToS3(
-      `charts/wrapped/${currentYear}/wrappedDeviceList.json`,
-      activeDevices.map(row => row.dimensions[0])
-    );
-  } catch (err) {
-    console.error('wrapped playlist device list write failure:', err.message);
-  }
-};
 
 module.exports.computeWrappedAggregateTable = async () => {
   const athenaClient = new AthenaQueryClient({
@@ -222,28 +202,7 @@ module.exports.scChartsCache = async () => {
   await helpers.saveFileToS3(`charts/soundcloud/weekly_popular.json`, chartData);
   return true;
 };
-module.exports.wrappedCountriesCharts = async () => {
-  const topCountryMap = Object.keys(constants.YEAR_WRAPPED_COUNTRIES);
-  const currYear = new Date().getFullYear();
-  // eslint-disable-next-line no-restricted-syntax, prefer-const
-  for (let countryCode of topCountryMap) {
-    try {
-      const countryName = constants.YEAR_WRAPPED_COUNTRIES[countryCode];
-      console.log(`calculate top of year ${currYear} for country ${countryName}`);
-      const topTracks = await chartService.getYearlyPopularTrackByCountry(10, countryName);
-      await helpers.saveFileToS3(
-        `charts/wrapped_country/${currYear}/wrapped_${countryCode}.json`,
-        topTracks
-      );
-    } catch (err) {
-      console.error(`Failed generation country: ${countryCode}, err: ${err.message}`);
-    }
-  }
 
-  return {
-    statusCode: 200,
-  };
-};
 module.exports.selectActiveToken = metricScope(metrics => async () => {
   const newToken = await selectActiveStreamToken(metrics);
   return {
