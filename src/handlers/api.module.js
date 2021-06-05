@@ -34,6 +34,12 @@ module.exports.chartsEndpoint = helpers.middleware([
     ).toUpperCase();
     const playlistKind = event.queryStringParameters.kind;
     if (!['popular', 'trending'].includes(playlistKind)) {
+      console.warn({
+        endpoint: 'chartsEndpoint',
+        logEvent: 'badRequest',
+        statusCode: 400,
+        playlistKind,
+      });
       callback(null, {
         statusCode: 400,
       });
