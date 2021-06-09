@@ -362,6 +362,16 @@ module.exports.ctaEndpoint = helpers.middleware([
   blockVersionsMiddleware(),
   ctaHandler,
 ]);
+
+const fetchRewardedReferralsMap = async () => {
+  let deviceIdMap = {};
+  try {
+    deviceIdMap = await helpers.readJSONFromS3(`referrers/rewarded/devicemap.json`);
+  } catch (err) {
+    console.warn(`No rewarded deviceIds map found`);
+  }
+  return deviceIdMap;
+};
 /**
  * POST
  * /app/referrer
@@ -372,6 +382,7 @@ module.exports.appReferrer = helpers.middleware([
   corsHeadersMiddleware(),
   blockVersionsMiddleware(),
   async (event, context, callback) => {
+    context.metrics.setNamespace('splitcloud-appReferrer');
     const deviceId = helpers.getQueryParam(event, 'deviceId');
     const bodyPayload = JSON.parse(event.body) || {};
     const { referrerString } = bodyPayload;
@@ -386,8 +397,6 @@ module.exports.appReferrer = helpers.middleware([
       });
       return;
     }
-    context.metrics.setNamespace('splitcloud-appReferrer');
-    context.metrics.putMetric('userReferrerInstall', 1);
     try {
       referrerList = await helpers.readJSONFromS3(`referrers/device/${referrerId}.json`);
     } catch (err) {
@@ -399,14 +408,17 @@ module.exports.appReferrer = helpers.middleware([
       return;
     }
     referrerList.push(deviceId);
+    context.metrics.putMetric('userReferrerInstall', 1);
     try {
       console.log(`updated referrers for ${referrerId}: ${referrerList.join(',')}`);
       await helpers.saveFileToS3(`referrers/device/${referrerId}.json`, referrerList);
     } catch (err) {
       console.warn(`failed updating referral for ${referrerId}`, err);
     }
-    if (referrerList.length >= MIN_REFERRER_REWARD) {
-      console.log('will rewared referrer, send message to sqs REFERRER_PROMO_QUEUE');
+    const rewardedReferrals = await fetchRewardedReferralsMap();
+    // only assign a promocode to a referralId if the min number of referees has been reached and no promocode has been assigned yet.
+    if (referrerList.length >= MIN_REFERRER_REWARD && !rewardedReferrals[referrerId]) {
+      console.log(`will reward referrer: ${referrerId}. send message to sqs REFERRER_PROMO_QUEUE`);
       helpers.sqs
         .sendMessage({
           DelaySeconds: 5,
@@ -435,17 +447,12 @@ module.exports.appPromocodeRef = helpers.middleware([
   corsHeadersMiddleware(),
   blockVersionsMiddleware(),
   async (event, context, callback) => {
+    context.metrics.setNamespace('splitcloud-appPromocodeRef');
     const deviceId = helpers.getQueryParam(event, 'deviceId');
-    let rewardedReferralMap = {};
-    try {
-      rewardedReferralMap = await helpers.readJSONFromS3(`referrers/rewarded/devicemap.json`);
-    } catch (err) {
-      rewardedReferralMap = [];
-    }
-    if (rewardedReferralMap[deviceId]) {
-      const promocode = rewardedReferralMap[deviceId];
-      context.metrics.setNamespace('splitcloud-appPromocodeRef');
-      context.metrics.putMetric('deviceRewardedPromocode', 1);
+    const rewardedMap = await fetchRewardedReferralsMap();
+    if (deviceId && rewardedMap[deviceId]) {
+      const promocode = rewardedMap[deviceId];
+      context.metrics.putMetric('rewardedPromocodeServed', 1);
       console.log('referral promocode found for', deviceId);
       callback(null, { statusCode: 200, body: JSON.stringify({ success: true, code: promocode }) });
       return;
@@ -459,6 +466,8 @@ module.exports.appPromocodeRef = helpers.middleware([
  * uses input fav track or country charts to grab related tracks
  * adds relevant SoundCloud trending songs or all SC trending songs if no fav input tracks available
  * adds any system defined suggested tracks if matching genre or no genre preference available
+ * sorts all results by popularity + an exponential decay function to penalize older tracks
+ * artificially gives system sponsored tracks the higest base_score so that only track age impacts its ranking
  * [POST] /explore/related
  */
 
