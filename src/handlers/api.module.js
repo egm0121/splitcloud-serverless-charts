@@ -252,6 +252,14 @@ module.exports.logCollector = helpers.middleware([
 module.exports.yearWrappedTopList = helpers.middleware([
   corsHeadersMiddleware(),
   async (event, context, callback) => {
+    const responseWithTrackList = trackList =>
+      callback(null, {
+        statusCode: 200,
+        headers: {
+          ...context.headers,
+        },
+        body: JSON.stringify(trackList),
+      });
     const { year, deviceId, side } = event.pathParameters;
     const sideUpper = (side || '').toUpperCase()[0];
     const jsonCacheFileName = `charts/wrapped/${year}/${deviceId}_${sideUpper}.json`;
@@ -262,26 +270,21 @@ module.exports.yearWrappedTopList = helpers.middleware([
       console.log('no cache found for', jsonCacheFileName, 'generating...');
     }
     if (trackList) {
-      return callback(null, {
-        statusCode: 200,
-        headers: {
-          ...context.headers,
-        },
-        body: JSON.stringify(trackList),
-      });
+      responseWithTrackList(trackList);
+      return;
     }
-    trackList = await wrappedPlaylistGenerator.getWrappedForDeviceIdSideYear(
-      deviceId,
-      sideUpper,
-      year
-    );
-    return callback(null, {
-      statusCode: 200,
-      headers: {
-        ...context.headers,
-      },
-      body: JSON.stringify(trackList),
-    });
+    try {
+      trackList = await wrappedPlaylistGenerator.getWrappedForDeviceIdSideYear(
+        deviceId,
+        sideUpper,
+        year
+      );
+      responseWithTrackList(trackList);
+      return;
+    } catch (err) {
+      console.error({ err, year, deviceId, side }, 'wrapped playlist fetch failed');
+      responseWithTrackList([]);
+    }
   },
 ]);
 /**
