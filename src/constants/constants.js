@@ -38,13 +38,13 @@ module.exports = {
   TITLE_CHARTS_BLACKLIST: ['asmr', 'relaxing', 'ambient', 'ambiance', 'type beat', 'instrumental'],
   EXPLORE_RELATED: {
     // how many of the most recent user favorites will be used to as user_input_tracks;
-    // this is to avoid getting tracks related to older favorites
-    MAX_RECENT_FAVORITES_TRACKS: 20,
-    MAX_SOURCE_TRACKS: 10,
-    MAX_USER_SOURCE_TRACKS: 10, // do not use the splitcloud charts tracks at all if user has enough favorites
-    MAX_RELATED_TRACKS: 30,
-    MIN_PLAYBACK_COUNT: 1000,
-    MAX_TRACKS_PER_ALBUM: 3,
+    // this is to avoid getting tracks present in older favorites
+    MAX_RECENT_FAVORITES_TRACKS: 20, // DEPRECATED
+    MAX_USER_SOURCE_TRACKS: 25, // how many of the user favorites to consider for home feed logic
+    MAX_SOURCE_TRACKS: 25 + 5, // always use at least 5 tracks from splitcloud weekly popular chart
+    MAX_RELATED_TRACKS: 30, // how many related tracks to use per each source track
+    MIN_PLAYBACK_COUNT: 1000, // min number of plays needed for a track to be listed in the home feed
+    MAX_TRACKS_PER_ALBUM: 3, // how many track per same artist/album to feature in the same feed
     SMART_FEED_COUNTRY: true, // disabled for perf testing of the feature ['US', 'EG', 'PK']
     FEED_SC_CHARTS_COUNTRY: ['US', 'UK', 'CA'],
   },

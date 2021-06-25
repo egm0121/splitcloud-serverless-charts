@@ -85,14 +85,7 @@ export default () => async (event, context) => {
     );
   context.metrics.setNamespace('splitcloud-exploreRelated');
   context.metrics.putMetric('inputFavTracks', allInputTracks.length);
-  const recentInputTracks = allInputTracks.slice(
-    0,
-    constants.EXPLORE_RELATED.MAX_RECENT_FAVORITES_TRACKS
-  );
-  const userInputTracks = recentInputTracks.slice(
-    0,
-    constants.EXPLORE_RELATED.MAX_USER_SOURCE_TRACKS
-  );
+  const userInputTracks = allInputTracks.slice(0, constants.EXPLORE_RELATED.MAX_USER_SOURCE_TRACKS);
   const hasUserInputTracks = !!userInputTracks.length;
   let sourceTrackIds = [...userInputTracks];
   let clientCountry = (
@@ -210,7 +203,7 @@ export default () => async (event, context) => {
     if (!isAllowed) logDev('excluding track for unicode script:', track.title);
     return isAllowed;
   });
-  // add in any promoted tracks payload from s3
+  // add in any promoted tracks payload from s3 - respecting country whitelisting if specified
   let promotedScTracks;
   try {
     promotedScTracks = await helpers.readJSONFromS3(`app/suggested_tracklist.json`);
@@ -267,7 +260,7 @@ export default () => async (event, context) => {
     return true;
   });
   const trackPerUploader = {};
-  // filter max suggested tracks x same album-artist key
+  // filter max suggested tracks x same artist/ uploader id
   relatedTrackList = relatedTrackList.filter(t => {
     const trackUploader = t.user.username;
     if (!(trackUploader in trackPerUploader)) trackPerUploader[trackUploader] = 0;

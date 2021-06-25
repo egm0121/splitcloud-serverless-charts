@@ -154,28 +154,22 @@ async function hydrateRadioStations(stationList) {
     .then(() => Object.values(finalTracks));
 }
 async function hydrateSoundcloudTracks(trackList, scApiToken) {
-  const finalTracks = {};
-  console.log('hydrating ', trackList.length);
-  return trackList
-    .map(track => {
-      const resolveTrack = Object.assign({}, track);
-      resolveTrack.fetch = () =>
-        fetchScTrackById(track.id, scApiToken).catch(err => {
-          console.warn(`sc track ${track.id} retrival failed`, err.message);
-          return Promise.resolve();
-        });
-      return resolveTrack;
-    })
-    .reduce((prevPromise, nextTrackObj, idx, initList) => {
-      const currTrackObj = initList[idx - 1];
-      return prevPromise.then(resp => {
-        if (resp) {
-          finalTracks[currTrackObj.id] = Object.assign({}, currTrackObj, resp.data);
-        }
-        return nextTrackObj.fetch();
-      });
-    }, Promise.resolve())
-    .then(() => Object.values(finalTracks));
+  const trackObjById = new Map();
+  const trackPromArr = trackList.map(track => {
+    trackObjById.set(parseInt(track.id, 10), track);
+    return fetchScTrackById(track.id, scApiToken).catch(err => {
+      console.warn(`sc track ${track.id} retrival failed`, err.message);
+      return Promise.resolve();
+    });
+  });
+  const resolvedTracksResp = await Promise.all(trackPromArr);
+
+  return resolvedTracksResp
+    .filter(resp => resp && resp.data)
+    .map(resp => {
+      const trackPayload = resp.data;
+      return { ...trackPayload, ...trackObjById.get(trackPayload.id) };
+    });
 }
 function extractResponseRows(response) {
   try {
@@ -242,6 +236,7 @@ function filterGenre(genreBlacklist) {
 function filterTrackNameExclude(titleBlacklist) {
   return t => !titleBlacklist.filter(word => t.title.toLowerCase().indexOf(word) > -1).length;
 }
+// TODO: rename to SplitCloudChartsService
 class ChartsService {
   constructor() {
     this.getTopChart = cacheDecorator.withCache(
@@ -325,86 +320,6 @@ class ChartsService {
       .then(t => hydrateSoundcloudTracks(t, soundcloudkey.BATCH_FETCHING_KEY))
       .then(t => t.filter(filterMaxDuration(MAX_TRACK_DURATION)))
       .then(sortByTotalPlays);
-  }
-
-  async getTopTrackForPeriod(limit, period, country, deviceId, category) {
-    return fetchAnalyticsReport(
-      limit,
-      country,
-      period.start,
-      deviceId,
-      category,
-      'playback-completed',
-      period.end
-    )
-      .then(extractResponseRows)
-      .then(t => t.filter(filterBySCValidId))
-      .catch(err => {
-        console.error('getYearlyPopularTrack GA report failed for device: ', deviceId);
-        console.error('GA error:', err.message);
-        return [];
-      });
-  }
-
-  async getYearlyPopularTrackByDimension(
-    limit = 10,
-    filterName,
-    filterValue,
-    side,
-    includeLastPeriod = false
-  ) {
-    const currYear = new Date().getFullYear();
-    const coupleOfMonths = [
-      { start: `${currYear}-01-01`, end: `${currYear}-02-28` },
-      { start: `${currYear}-03-01`, end: `${currYear}-04-30` },
-      { start: `${currYear}-05-01`, end: `${currYear}-06-30` },
-      { start: `${currYear}-07-01`, end: `${currYear}-08-31` },
-      { start: `${currYear}-09-01`, end: `${currYear}-10-31` },
-    ];
-    if (includeLastPeriod) {
-      coupleOfMonths.push({ start: `${currYear}-11-01`, end: `${currYear}-12-15` });
-    }
-    const category = side ? `side-${side}` : null;
-    const allTracks = [];
-    // eslint-disable-next-line no-restricted-syntax, prefer-const
-    for (let period of coupleOfMonths) {
-      let tracks = [];
-      if (filterName === 'deviceId') {
-        // eslint-disable-next-line no-await-in-loop
-        tracks = await this.getTopTrackForPeriod(limit, period, undefined, filterValue, category);
-      }
-      if (filterName === 'country') {
-        // eslint-disable-next-line no-await-in-loop
-        tracks = await this.getTopTrackForPeriod(limit, period, filterValue);
-      }
-      allTracks.push(...tracks);
-      console.log('got report', period);
-    }
-    const uniqueTracksMap = allTracks.reduce((map, currTrack) => {
-      if (currTrack.id in map) {
-        // eslint-disable-next-line no-param-reassign
-        map[currTrack.id].splitcloud_total_plays += currTrack.splitcloud_total_plays;
-      } else {
-        // eslint-disable-next-line no-param-reassign
-        map[currTrack.id] = currTrack;
-      }
-      return map;
-    }, {});
-    const unsortedList = Object.keys(uniqueTracksMap).map(trackId => uniqueTracksMap[trackId]);
-    const sortedList = sortByTotalPlays([...unsortedList]).slice(0, limit);
-    const hydratedList = await hydrateSoundcloudTracks(
-      sortedList,
-      soundcloudkey.BATCH_FETCHING_KEY
-    );
-    return sortByTotalPlays(hydratedList.filter(filterMaxDuration(MAX_TRACK_DURATION)));
-  }
-
-  async getYearlyPopularTrackByDeviceId(limit = 10, deviceId, side) {
-    return this.getYearlyPopularTrackByDimension(limit, 'deviceId', deviceId, side);
-  }
-
-  async getYearlyPopularTrackByCountry(limit = 10, countryName) {
-    return this.getYearlyPopularTrackByDimension(limit, 'country', countryName, undefined, true);
   }
 
   sortTrendingTracks(tracks) {

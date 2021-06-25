@@ -46,7 +46,7 @@ const logTracks = tracks => {
   const country = 'Pakistan';
   // console.log('POPULAR on ', currDate, ' country ', country);
   // await chartService.getTrendingChart(100, country).then(logTracks);
-  await chartService.getTopChart(300, country, '30daysAgo').then(logTracks);
+  await chartService.getTopChart(50, country, '30daysAgo').then(logTracks);
   // const playlists = require('./discover_playlists_payload_dev.json');
   // await discoverApi(playlists);
   // console.log('Average songs playback per day NEW USERS');
@@ -80,8 +80,6 @@ const logTracks = tracks => {
   // const activeDevices = await DeviceReports.getActiveDevices(15, undefined, '60daysAgo');
   // console.log(JSON.stringify(activeDevices.map(e => e.dimensions[0])));
   // console.log('active devices:', activeDevices.length);
-  // logTracks(await chartService.getYearlyPopularTrackByDeviceId(10, deviceId, 'L'));
-  // logTracks(await chartService.getYearlyPopularTrackByCountry(10, 'India'));
   // const rawEvents = await RawEventsExtractor.fetchDailyEvents('1DaysAgo', 'PLAYBACK-COMPLETED');
   // console.log(rawEvents.length);
   // console.log(
