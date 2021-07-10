@@ -10,6 +10,9 @@ const constants = require('../src/constants/constants');
 const getScreenshots = require('../key/getScreenshots');
 const SoundCloudChartsService = require('../src/modules/SoundCloudChartsService').default;
 const RawEventsExtractor = require('../src/modules/RawEventsExtractor');
+const ReferralsRepo  = require('../src/repositories/Referrals').default;
+const { default: Referrals } = require('../src/repositories/Referrals');
+const { default: restoreReferrals } = require('./restoreS3BasedReferrals');
 
 const logTracks = tracks => {
   console.log(
@@ -39,14 +42,14 @@ const logTracks = tracks => {
 };
 (async () => {
   const timeStart = performance.now();
-  // const currDate = moment().format('L');
+  const currDate = moment().format('L');
   // await chartService.getTrendingChart().then(logTracks);
   // await SoundCloudChartsService.getPopularChart().then(logTracks);
   // console.log('TRENDING on ', currDate);
   const country = 'Pakistan';
-  // console.log('POPULAR on ', currDate, ' country ', country);
-  // await chartService.getTrendingChart(100, country).then(logTracks);
-  await chartService.getTopChart(50, country, '30daysAgo').then(logTracks);
+  console.log('POPULAR on ', currDate, ' country ', country);
+  await chartService.getTrendingChart(100, country).then(logTracks);
+  //await chartService.getTopChart(50, country, '30daysAgo').then(logTracks);
   // const playlists = require('./discover_playlists_payload_dev.json');
   // await discoverApi(playlists);
   // console.log('Average songs playback per day NEW USERS');
@@ -88,6 +91,18 @@ const logTracks = tracks => {
   //     .map(res => res.dimensions.concat(res.metrics).join(','))
   //     .join('\n')
   // );
+  // await ReferralsRepo.insertPromocode('MyTestPromocode1');
+  // await ReferralsRepo.insertPromocode('MyTestPromocode2');
+  // await ReferralsRepo.batchInsertPromocodes(['promoX','promoY','promoZ'], 'v4');
+  // await ReferralsRepo.insertReferreeForDevice('CFF14B99-B153-490D-A9C2-DBB892FDFB87', 'myReferee1');
+  // await ReferralsRepo.insertReferreeForDevice('CFF14B99-B153-490D-A9C2-DBB892FDFB87', 'myReferee2');
+  // await ReferralsRepo.insertReferreeForDevice('CFF14B99-B153-490D-A9C2-DBB892FDFB87', 'myReferee3');
+  // await ReferralsRepo.insertReferreeForDevice('CFF14B99-B153-490D-A9C2-DBB892FDFB87', 'myReferee3');
+  // console.log(await ReferralsRepo.getAllReferreesForDevice('CFF14B99-B153-490D-A9C2-DBB892FDFB87'));
+  //console.log('fetching one promocode');
+  //console.log(await ReferralsRepo.getUnassignedPromocode());
+  //console.log(await Referrals.assignPromocodeToDevice('CFF14B99-B153-490D-A9C2-DBB892FDFB87'));
+  //await restoreReferrals();
   console.log('Time taken', (performance.now() - timeStart) / 1000);
   //   const grabScreenshot = async (year = '2019', deviceId, side) => {
   //     const targetUrl = `http://www.splitcloud-app.com/wrapped.html?id=${deviceId}&year=${year}&side=${side}&t=3`;

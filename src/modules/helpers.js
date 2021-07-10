@@ -6,6 +6,7 @@ AWS.config.update({ region: 'us-east-1' });
 const isDEV = process.env.STAGE === 'dev';
 const s3 = new AWS.S3();
 const SNS = new AWS.SNS();
+const ddb = new AWS.DynamoDB.DocumentClient();
 const getQueryParam = (event, param) =>
   event.queryStringParameters && event.queryStringParameters[param];
 const sqs = new AWS.SQS({ apiVersion: 'latest' });
@@ -232,6 +233,7 @@ module.exports = {
   getQueryParam,
   isDEV,
   sqs,
+  ddb,
   arrayInPlaceShuffle,
   arrayIntersect,
   selectVariantFromDeviceId,

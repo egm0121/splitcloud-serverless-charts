@@ -1,9 +1,9 @@
+/* eslint-disable no-restricted-syntax */
 /* eslint-disable no-await-in-loop */
-import PostGenerator from 'egm0121-rn-common-lib/modules/IGPostGenerator';
-import ScreenshotConfig from '../../key/getScreenshots.json';
 import SoundCloudChartsService from '../modules/SoundCloudChartsService';
 import RawEventsExtractor from '../modules/RawEventsExtractor';
 import AthenaQueryClient from '../modules/AthenaQueryClient';
+import Referrals from '../repositories/Referrals';
 
 const moment = require('moment');
 const { metricScope } = require('aws-embedded-metrics');
@@ -151,22 +151,6 @@ module.exports.countryChartsSubscribe = async event => {
         `charts/country/history/popular_country_${countryCode}_${weekOfYear}.json`,
         topChartData
       );
-      await helpers.pushToTopic(
-        {
-          MessageBody: `country charts created successfully for ${countryName}`,
-          MessageAttributes: {
-            countryCode: {
-              DataType: 'String',
-              StringValue: countryCode,
-            },
-            countryName: {
-              DataType: 'String',
-              StringValue: countryName,
-            },
-          },
-        },
-        process.env.CHART_CREATED_TOPIC
-      );
     } catch (err) {
       console.log(`error while updating country(${countryCode}) charts:`, err);
       if (err.message.indexOf('service is currently unavailable') > -1) {
@@ -231,37 +215,6 @@ module.exports.updateDiscoveryApi = async () => {
     body: {
       success: true,
       discovery,
-    },
-  };
-};
-
-module.exports.generateChartsPosts = async event => {
-  const messageAttr = event.Records[0].messageAttributes;
-  const countryCodeString = messageAttr.countryCode.stringValue;
-  const postGenerator = new PostGenerator({
-    apiKey: ScreenshotConfig.API_KEY,
-  });
-  console.log('generatePopular & trending posts for:', countryCodeString);
-  const [[generatePopularImage], [generateTrendingImage]] = await Promise.all([
-    postGenerator.generateChartPostsForCountries([countryCodeString], 'popular'),
-    postGenerator.generateChartPostsForCountries([countryCodeString], 'trending'),
-  ]);
-  const storeToS3Popular = helpers.saveBlobToS3(
-    `posts/popular/country_${generatePopularImage.countryCode}.png`,
-    generatePopularImage.blob,
-    'image/png'
-  );
-  const storeToS3Trending = helpers.saveBlobToS3(
-    `posts/trending/country_${generateTrendingImage.countryCode}.png`,
-    generateTrendingImage.blob,
-    'image/png'
-  );
-  const result = await Promise.all([storeToS3Popular, storeToS3Trending]);
-  return {
-    statusCode: 200,
-    body: {
-      success: true,
-      result,
     },
   };
 };
@@ -388,4 +341,42 @@ module.exports.historyGaEventExtract = async () => {
   return {
     statusCode: 200,
   };
+};
+
+module.exports.importPromocodesFromS3 = async () => {
+  let promoCodesFile = '';
+  try {
+    // first-line of the csv contains the date of the upload
+    // insert only if date is newer than the last batch
+    promoCodesFile = await helpers.readFileFromS3({
+      bucket: APP_BUCKET,
+      keyName: 'promocodes/list.csv',
+    });
+  } catch (err) {
+    console.error('no promocodes list available!');
+  }
+  const csvFile = promoCodesFile.split('\n');
+  const [emptyPrefix, lastModDate] = csvFile[0].split('Promotion code');
+  if (emptyPrefix !== '' || !lastModDate) {
+    console.error('Malformed promocodes list detected!');
+    return;
+  }
+  const promoCodesList = csvFile
+    .slice(1)
+    .filter(code => code && code.length > 10)
+    .map(code => code.replace('\r', ''));
+  console.log('found promocodes', promoCodesList.length);
+  await Referrals.batchInsertPromocodes(promoCodesList, lastModDate, Date.now());
+};
+
+module.exports.migrateLegacyPromocodes = async () => {
+  try {
+    const deviceIdMap = await helpers.readJSONFromS3(`referrers/rewarded/devicemap.json`);
+    for (const key of Object.keys(deviceIdMap)) {
+      console.log('restoring', key);
+      await Referrals.forcefullyAssignPromocodeToDevice(key, deviceIdMap[key]);
+    }
+  } catch (err) {
+    console.error('migration failed', err);
+  }
 };
