@@ -190,7 +190,7 @@ export default () => async (event, context) => {
     }
   }
 
-  // filter all tracks by input unicode scripts
+  // filter out all tracks by input unicode scripts
   const userTrackTitles = resolvedInputTracks.map(item => item.title).join(' ');
   console.log('source tracks titles', userTrackTitles);
   const allowedLangScripts = helpers.getStringScripts(userTrackTitles);
