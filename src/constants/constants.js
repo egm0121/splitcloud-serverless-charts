@@ -75,7 +75,9 @@ module.exports = {
     MIN_PLAYBACK_COUNT: 1000, // min number of plays needed for a track to be listed in the home feed
     MAX_TRACKS_PER_ALBUM: 3, // how many track per same artist/album to feature in the same feed
     SMART_FEED_COUNTRY: true, // disabled for perf testing of the feature ['US', 'EG', 'PK']
-    FEED_SC_CHARTS_COUNTRY: ['US', 'UK', 'CA'].concat(EU_COUNTRIES),
+    FEED_SC_CHARTS_COUNTRY: ['US', 'UK', 'CA', 'MX', 'BR', 'AR', 'CO', 'NP', 'EC', 'PE'].concat(
+      EU_COUNTRIES
+    ),
   },
   ATHENA_SPLITCLOUD_WRAPPED_DATABASE: 'splitcloud_wrapped_db',
   WRAPPED_EVENT_TABLE_PREFIX: 'raw_playback_events_',
