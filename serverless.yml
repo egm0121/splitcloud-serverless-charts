@@ -25,14 +25,12 @@ custom:
     schedule_discovery: rate(1 day)
     schedule_country_charts: cron(0 8 ? * MON *)
     schedule_wrapped_aggregate: cron(0 13 20 12 ? *)
+    schedule_import_promocodes: rate(1 day)
+    ddbReadUnit: 2
+    ddbWriteUnit: 1
     country_charts_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/splitcloud_charts_by_region"
     country_charts_arn: "arn:aws:sqs:us-east-1:348868901434:splitcloud_charts_by_region"
     charts_queue_enabled: true
-    post_generator_arn: "arn:aws:sqs:us-east-1:348868901434:post_generator_queue"
-    post_generator_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/post_generator_queue"
-    referrer_promocode_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/referrer_promocode_queue_prod"
-    referrer_queue_arn: "arn:aws:sqs:us-east-1:348868901434:referrer_promocode_queue_prod"
-    referrer_queue_enabled: true
     ga_extractor_arn: "arn:aws:sqs:us-east-1:348868901434:ga_extractor_queue_prod"
     ga_extractor_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/ga_extractor_queue_prod"
     ga_extractor_queue_enabled: true
@@ -43,14 +41,13 @@ custom:
     schedule_token:
     schedule_discovery:
     schedule_country_charts:
+    schedule_wrapped_aggregate:
+    schedule_import_promocodes:
+    ddbReadUnit: 1
+    ddbWriteUnit: 1
     country_charts_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/splitcloud_charts_by_region_dev"
     country_charts_arn: "arn:aws:sqs:us-east-1:348868901434:splitcloud_charts_by_region_dev"
     charts_queue_enabled: true
-    post_generator_arn: "arn:aws:sqs:us-east-1:348868901434:post_generator_queue_dev"
-    post_generator_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/post_generator_queue_dev"
-    referrer_promocode_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/referrer_promocode_queue_dev"
-    referrer_queue_arn: "arn:aws:sqs:us-east-1:348868901434:referrer_promocode_queue_dev"
-    referrer_queue_enabled: false
     ga_extractor_arn: "arn:aws:sqs:us-east-1:348868901434:ga_extractor_queue_dev"
     ga_extractor_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/ga_extractor_queue_dev"
     ga_extractor_queue_enabled: false
@@ -108,71 +105,55 @@ provider:
       - sqs:GetQueueUrl
       - sqs:ReceiveMessage
       - sqs:DeleteMessage
-      Resource: ${self:custom.${self:custom.myStage}.post_generator_arn}
-    - Effect: "Allow"
-      Action:
-      - sqs:SendMessage
-      - sqs:GetQueueUrl
-      - sqs:ReceiveMessage
-      - sqs:DeleteMessage
-      Resource: ${self:custom.${self:custom.myStage}.referrer_queue_arn}
-    - Effect: "Allow"
-      Action:
-      - sqs:SendMessage
-      - sqs:GetQueueUrl
-      - sqs:ReceiveMessage
-      - sqs:DeleteMessage
       Resource: ${self:custom.${self:custom.myStage}.ga_extractor_arn}
-    - Effect: "Allow"
+    - Effect: Allow
       Action:
-      - SNS:Publish
-      Resource: !Ref chartCreatedTopic
+      - dynamodb:Query
+      - dynamodb:Scan
+      - dynamodb:GetItem
+      - dynamodb:PutItem
+      - dynamodb:UpdateItem
+      - dynamodb:DeleteItem
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}"
   environment:
       BUCKET: ${self:custom.bucket}
       STAGE: ${self:custom.myStage}
       CACHE_BUCKET: ${self:custom.cache_bucket}
       APP_BUCKET: ${self:custom.app_bucket}
       COUNTRY_CHARTS_QUEUE: ${self:custom.${self:custom.myStage}.country_charts_queue}
-      REFERRER_PROMO_QUEUE: ${self:custom.${self:custom.myStage}.referrer_promocode_queue}
       GA_EXTRACTOR_QUEUE: ${self:custom.${self:custom.myStage}.ga_extractor_queue}
-      CHART_CREATED_TOPIC: !Ref chartCreatedTopic
+      DYNAMODB_TABLE: ${self:service}-${opt:stage, self:provider.stage}-db
 resources:
   Resources:
-    chartCreatedTopic:
-      Type: AWS::SNS::Topic
+    AppDynamoDbTable:
+      Type: 'AWS::DynamoDB::Table'
+      DeletionPolicy: Retain
       Properties:
-        TopicName: ${self:service}-${self:custom.myStage}-country-chart-created
-    referrerPromocodeQueue:
-      Type: "AWS::SQS::Queue"
-      Properties:
-        QueueName: referrer_promocode_queue_${self:custom.myStage}
+        AttributeDefinitions:
+          -
+            AttributeName: pk
+            AttributeType: S
+          -
+            AttributeName: sk
+            AttributeType: S
+        KeySchema:
+          -
+            AttributeName: pk
+            KeyType: HASH
+          -
+            AttributeName: sk
+            KeyType: "RANGE"
+        ProvisionedThroughput:
+          ReadCapacityUnits: ${self:custom.${self:custom.myStage}.ddbReadUnit}
+          WriteCapacityUnits: ${self:custom.${self:custom.myStage}.ddbWriteUnit}
+        TimeToLiveSpecification:
+          AttributeName: expireAt
+          Enabled: true
+        TableName: ${self:provider.environment.DYNAMODB_TABLE}
     gaExtractorQueue:
       Type: "AWS::SQS::Queue"
       Properties:
         QueueName: ga_extractor_queue_${self:custom.myStage}
-    snsToPostGeneratorSqsPolicy:
-      Type: AWS::SQS::QueuePolicy
-      Properties:
-        Queues:
-          - ${self:custom.${self:custom.myStage}.post_generator_queue}
-        PolicyDocument:
-          Version: "2012-10-17"
-          Statement:
-            - Sid: "allow-sns-messages"
-              Effect: Allow
-              Principal: "*"
-              Resource: ${self:custom.${self:custom.myStage}.post_generator_arn}
-              Action: "SQS:SendMessage"
-              Condition:
-                ArnEquals:
-                  "aws:SourceArn": !Ref chartCreatedTopic
-    countryChartTopicToPostGenQ:
-      Type: 'AWS::SNS::Subscription'
-      Properties:
-        TopicArn: !Ref chartCreatedTopic
-        Endpoint: ${self:custom.${self:custom.myStage}.post_generator_arn}
-        Protocol: sqs
-        RawMessageDelivery: 'true'
 functions:
   charts_endpoint:
     handler: src/handlers/api.chartsEndpoint
@@ -321,14 +302,6 @@ functions:
           arn: ${self:custom.${self:custom.myStage}.country_charts_arn}
           batchSize: 1
           enabled: ${self:custom.${self:custom.myStage}.charts_queue_enabled}
-  generateChartsPosts:
-    handler: src/handlers/batch.generateChartsPosts
-    timeout: 50
-    reservedConcurrency: 4
-    events:
-       - sqs:
-          arn: ${self:custom.${self:custom.myStage}.post_generator_arn}
-          batchSize: 1
   rawGaEventExtractor:
     handler: src/handlers/batch.rawGaEventExtractor
     timeout: 30
@@ -337,20 +310,19 @@ functions:
           arn: ${self:custom.${self:custom.myStage}.ga_extractor_arn}
           batchSize: 1
           enabled: ${self:custom.${self:custom.myStage}.ga_extractor_queue_enabled}
-  referrerPromoSub:
-    handler: src/handlers/batch.referrerPromoSub
-    timeout: 30
-    reservedConcurrency: 1
-    events:
-        - sqs:
-            arn: ${self:custom.${self:custom.myStage}.referrer_queue_arn}
-            batchSize: 1
-            enabled: ${self:custom.${self:custom.myStage}.referrer_queue_enabled}
   batchWrapped:
     handler: src/handlers/batch.computeWrappedAggregateTable
     timeout: 60
     events:
       - schedule: ${self:custom.${self:custom.myStage}.schedule_wrapped_aggregate}
+  importPromocodes:
+    handler: src/handlers/batch.importPromocodesFromS3
+    timeout: 60
+    events:
+      - schedule: ${self:custom.${self:custom.myStage}.schedule_import_promocodes}
+  migrateRewarded: 
+    handler: src/handlers/batch.migrateLegacyPromocodes
+    timeout: 60
 plugins:
   - serverless-domain-manager
   - serverless-offline

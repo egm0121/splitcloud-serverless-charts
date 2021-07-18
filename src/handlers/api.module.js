@@ -7,13 +7,13 @@ import blockVersionsMiddleware from '../middlewares/blockAppVersion';
 import metricsReporterMiddleware from '../middlewares/metricsReporter';
 import requestCountryCodeMiddleware from '../middlewares/requestCountryCode';
 import wrappedPlaylistGenerator from '../modules/wrappedPlaylistGenerator';
+import { handleUpdateReferrer, handleFetchPromocode } from './api/referrer';
 
 const helpers = require('../modules/helpers');
 const constants = require('../constants/constants');
 const formatters = require('../modules/formatters');
 
 const { APP_BUCKET } = process.env;
-const MIN_REFERRER_REWARD = 3;
 
 /**
  *
@@ -366,78 +366,16 @@ module.exports.ctaEndpoint = helpers.middleware([
   ctaHandler,
 ]);
 
-const fetchRewardedReferralsMap = async () => {
-  let deviceIdMap = {};
-  try {
-    deviceIdMap = await helpers.readJSONFromS3(`referrers/rewarded/devicemap.json`);
-  } catch (err) {
-    console.warn(`No rewarded deviceIds map found`);
-  }
-  return deviceIdMap;
-};
 /**
  * POST
  * /app/referrer
- * Updates referral with this deviceId if valid referral is found for installation
+ * Updates referral with this referee deviceId if valid referral is found for installation
  */
 module.exports.appReferrer = helpers.middleware([
   metricsReporterMiddleware(),
   corsHeadersMiddleware(),
   blockVersionsMiddleware(),
-  async (event, context, callback) => {
-    context.metrics.setNamespace('splitcloud-appReferrer');
-    const deviceId = helpers.getQueryParam(event, 'deviceId');
-    const bodyPayload = JSON.parse(event.body) || {};
-    const { referrerString } = bodyPayload;
-    const parsedReferrerParams = new URLSearchParams(referrerString);
-    console.log('parsed referrer info', parsedReferrerParams);
-    const referrerId = parsedReferrerParams ? parsedReferrerParams.get('utm_term') : '';
-    let referrerList;
-    if (parsedReferrerParams.get('utm_source') !== 'inapp' || !referrerId) {
-      callback(null, {
-        statusCode: 200,
-        body: JSON.stringify({ success: false, error: 'referrer id not found' }),
-      });
-      return;
-    }
-    try {
-      referrerList = await helpers.readJSONFromS3(`referrers/device/${referrerId}.json`);
-    } catch (err) {
-      referrerList = [];
-    }
-    if (referrerList.includes(deviceId)) {
-      console.log('referral present, skip');
-      callback(null, { statusCode: 200, body: JSON.stringify({ success: true }) });
-      return;
-    }
-    referrerList.push(deviceId);
-    context.metrics.putMetric('userReferrerInstall', 1);
-    try {
-      console.log(`updated referrers for ${referrerId}: ${referrerList.join(',')}`);
-      await helpers.saveFileToS3(`referrers/device/${referrerId}.json`, referrerList);
-    } catch (err) {
-      console.warn(`failed updating referral for ${referrerId}`, err);
-    }
-    const rewardedReferrals = await fetchRewardedReferralsMap();
-    // only assign a promocode to a referralId if the min number of referees has been reached and no promocode has been assigned yet.
-    if (referrerList.length >= MIN_REFERRER_REWARD && !rewardedReferrals[referrerId]) {
-      console.log(`will reward referrer: ${referrerId}. send message to sqs REFERRER_PROMO_QUEUE`);
-      helpers.sqs
-        .sendMessage({
-          DelaySeconds: 5,
-          MessageAttributes: {
-            referrerId: {
-              DataType: 'String',
-              StringValue: referrerId,
-            },
-          },
-          MessageBody: `assign promocode to referrer id: ${referrerId}`,
-          QueueUrl: process.env.REFERRER_PROMO_QUEUE,
-        })
-        .promise();
-    }
-    callback(null, { statusCode: 200, body: JSON.stringify({ success: true }) });
-  },
+  handleUpdateReferrer,
 ]);
 
 /**
@@ -449,19 +387,7 @@ module.exports.appPromocodeRef = helpers.middleware([
   metricsReporterMiddleware(),
   corsHeadersMiddleware(),
   blockVersionsMiddleware(),
-  async (event, context, callback) => {
-    context.metrics.setNamespace('splitcloud-appPromocodeRef');
-    const deviceId = helpers.getQueryParam(event, 'deviceId');
-    const rewardedMap = await fetchRewardedReferralsMap();
-    if (deviceId && rewardedMap[deviceId]) {
-      const promocode = rewardedMap[deviceId];
-      context.metrics.putMetric('rewardedPromocodeServed', 1);
-      console.log('referral promocode found for', deviceId);
-      callback(null, { statusCode: 200, body: JSON.stringify({ success: true, code: promocode }) });
-      return;
-    }
-    callback(null, { statusCode: 200, body: JSON.stringify({ success: false }) });
-  },
+  handleFetchPromocode,
 ]);
 
 /**

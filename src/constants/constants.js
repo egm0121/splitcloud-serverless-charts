@@ -1,6 +1,35 @@
 const radioCountryCodes = require('./radio_country_codes').default;
 const radioStations = require('./custom_stations').default;
 
+const EU_COUNTRIES = [
+  'BE',
+  'EL',
+  'LT',
+  'PT',
+  'BG',
+  'ES',
+  'LU',
+  'RO',
+  'CZ',
+  'FR',
+  'HU',
+  'SI',
+  'DK',
+  'HR',
+  'MT',
+  'SK',
+  'DE',
+  'IT',
+  'NL',
+  'FI',
+  'EE',
+  'CY',
+  'AT',
+  'SE',
+  'IE',
+  'LV',
+  'PL',
+];
 module.exports = {
   TAGS_BLACKLIST: {
     '2020': true,
@@ -46,14 +75,17 @@ module.exports = {
     MIN_PLAYBACK_COUNT: 1000, // min number of plays needed for a track to be listed in the home feed
     MAX_TRACKS_PER_ALBUM: 3, // how many track per same artist/album to feature in the same feed
     SMART_FEED_COUNTRY: true, // disabled for perf testing of the feature ['US', 'EG', 'PK']
-    FEED_SC_CHARTS_COUNTRY: ['US', 'UK', 'CA'],
+    FEED_SC_CHARTS_COUNTRY: ['US', 'UK', 'CA', 'MX', 'BR', 'AR', 'CO', 'NP', 'EC', 'PE'].concat(
+      EU_COUNTRIES
+    ),
   },
   ATHENA_SPLITCLOUD_WRAPPED_DATABASE: 'splitcloud_wrapped_db',
   WRAPPED_EVENT_TABLE_PREFIX: 'raw_playback_events_',
   WRAPPED_TOP_TRACKS_TABLE_PREFIX: 'plays_by_trackIdDeviceSide_',
   CTA: {
-    REFERRAL_FEATURE_EXPIRY: '2022-03-01T23:59:00.000Z',
+    REFERRAL_FEATURE_EXPIRY: '2024-01-01T23:59:00.000Z',
     GIVEAWAY_EXPIRY: '2020-08-31T23:59:00.000Z',
+    USE_DDB_REFERRALS: true,
   },
   EMOJI_FLAGS: {
     US: '🇺🇸',

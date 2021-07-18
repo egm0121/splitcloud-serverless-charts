@@ -1,4 +1,5 @@
 import wrappedPlaylistGenerator from '../../modules/wrappedPlaylistGenerator';
+import Referrals from '../../repositories/Referrals';
 
 const semverCompare = require('semver-compare');
 const helpers = require('../../modules/helpers');
@@ -139,13 +140,15 @@ const ctaHandleReferralFeatureAndroid = async (event, context, callback) => {
   const promoExpiry = new Date(constants.CTA.REFERRAL_FEATURE_EXPIRY);
   if (semverCompare(clientVersion, MIN_SHARE_SCREEN_IN_CTA_VERSION) === -1) return false;
   if (isAndroidId && new Date() < promoExpiry) {
-    let rewardedReferralMap = {};
-    try {
-      rewardedReferralMap = await helpers.readJSONFromS3(`referrers/rewarded/devicemap.json`);
-    } catch (err) {
-      console.error(`No devicemap found`);
+    let hasDDBReferral = false;
+    if (constants.CTA.USE_DDB_REFERRALS) {
+      try {
+        hasDDBReferral = await Referrals.getPromocodeForDevice(deviceId);
+      } catch (err) {
+        console.error('error checking ddb referral promocode in CTA');
+      }
     }
-    const hasPromoCode = rewardedReferralMap[deviceId];
+    const hasPromoCode = hasDDBReferral;
     const ctaLabel = hasPromoCode ? '✅ Remove Ads Unlocked!' : '👫 FREE Remove ADS 🎁';
     const ctaButtonColor = hasPromoCode ? '#2196F3' : '#FF7F50';
     callback(null, {
