@@ -111,6 +111,28 @@ const ctaHandleCountryPromotion = (event, context, callback) => {
   return false;
 };
 
+const ctaHandleSampleSurvey = (event, context, callback) => {
+  const surveyExpiry = new Date(constants.CTA.SURVEY_EXPIRY);
+  const surveyUrl = constants.CTA.SURVEY_URL;
+  const isRandEnabled = Math.random() <= 0.5; // 50% chance
+  if (surveyUrl && new Date() < surveyExpiry && isRandEnabled) {
+    callback(null, {
+      statusCode: 200,
+      headers: {
+        ...context.headers,
+      },
+      body: JSON.stringify({
+        ctaLabel: '✨ Give us your feedback ✨',
+        ctaUrl: constants.CTA.SURVEY_URL,
+        ctaButtonColor: '#9f0202',
+        ctaAction: { type: 'url' },
+      }),
+    });
+    return true;
+  }
+  return false;
+};
+
 const ctaHandleGiveaway = (event, context, callback) => {
   const { deviceId } = event.pathParameters;
   const isAndroidId = deviceId.length === 16;
@@ -132,34 +154,50 @@ const ctaHandleGiveaway = (event, context, callback) => {
   }
   return false;
 };
-
-const ctaHandleReferralFeatureAndroid = async (event, context, callback) => {
+const ctaHandleReferralHasRewardAndroid = async (event, context, callback) => {
   const { deviceId } = event.pathParameters;
   const isAndroidId = deviceId.length === 16;
   const clientVersion = helpers.getQueryParam(event, 'appVersion');
   const promoExpiry = new Date(constants.CTA.REFERRAL_FEATURE_EXPIRY);
+  const isFeatureActive = new Date() < promoExpiry;
+  // exclude old clients
   if (semverCompare(clientVersion, MIN_SHARE_SCREEN_IN_CTA_VERSION) === -1) return false;
-  if (isAndroidId && new Date() < promoExpiry) {
+  if (isAndroidId && isFeatureActive) {
+    // eslint-disable-next-line no-param-reassign
+    context.canUseReferralFeature = true;
     let hasDDBReferral = false;
-    if (constants.CTA.USE_DDB_REFERRALS) {
-      try {
-        hasDDBReferral = await Referrals.getPromocodeForDevice(deviceId);
-      } catch (err) {
-        console.error('error checking ddb referral promocode in CTA');
-      }
+    try {
+      hasDDBReferral = await Referrals.getPromocodeForDevice(deviceId);
+    } catch (err) {
+      console.error('error checking ddb referral promocode in CTA');
     }
-    const hasPromoCode = hasDDBReferral;
-    const ctaLabel = hasPromoCode ? '✅ Remove Ads Unlocked!' : '👫 FREE Remove ADS 🎁';
-    const ctaButtonColor = hasPromoCode ? '#2196F3' : '#FF7F50';
+    if (hasDDBReferral) {
+      callback(null, {
+        statusCode: 200,
+        headers: { ...context.headers },
+        body: JSON.stringify({
+          ctaLabel: '✅ Remove Ads Unlocked!',
+          ctaUrl: '',
+          ctaButtonColor: '#2196F3',
+          ctaAction: { type: 'share_app_screen' },
+        }),
+      });
+      return true;
+    }
+  }
+  return false;
+};
+const ctaHandleReferralPromoAndroid = async (event, context, callback) => {
+  if (context.canUseReferralFeature) {
     callback(null, {
       statusCode: 200,
       headers: {
         ...context.headers,
       },
       body: JSON.stringify({
-        ctaLabel,
+        ctaLabel: '👫 FREE Remove ADS 🎁',
         ctaUrl: '',
-        ctaButtonColor,
+        ctaButtonColor: '#FF7F50',
         ctaAction: { type: 'share_app_screen' },
       }),
     });
@@ -206,12 +244,20 @@ export default async (event, context, callback) => {
   const selectedVariant = helpers.selectVariantFromHash(deviceId) ? 'A' : 'B';
   // eslint-disable-next-line no-param-reassign
   context.selectedVariant = selectedVariant;
+  // show end of life notice to any outdated client
   if (ctaHandleEndOfLife(event, context, callback)) return true;
+  // show wrapped year end playlists for everyone that has it
   if (await ctaHandleWrappedYearlyPlaylist(event, context, callback)) return true;
+  // show redeem code is ready for users that have an assigned promocode
+  if (await ctaHandleReferralHasRewardAndroid(event, context, callback)) return true;
+  // show any country promotion currently active
   if (ctaHandleCountryPromotion(event, context, callback)) return true;
+  // show any giveaway currently active
   if (ctaHandleGiveaway(event, context, callback)) return true;
-  // TODO: make sure that users with activated referral are always presented the link the promo-code
-  if (await ctaHandleReferralFeatureAndroid(event, context, callback)) return true;
+  // show survey if any is currently active
+  if (ctaHandleSampleSurvey(event, context, callback)) return true;
+  // show the referral call to action for users that don't have it yet activated
+  if (await ctaHandleReferralPromoAndroid(event, context, callback)) return true;
   context.metrics.putMetric(`test_variant_${selectedVariant}`, 1);
   return ctaHandleDefaultStrategy(event, context, callback);
 };

@@ -86,6 +86,8 @@ module.exports = {
     REFERRAL_FEATURE_EXPIRY: '2024-01-01T23:59:00.000Z',
     GIVEAWAY_EXPIRY: '2020-08-31T23:59:00.000Z',
     USE_DDB_REFERRALS: true,
+    SURVEY_EXPIRY: '2021-08-15T23:59:00.000Z',
+    SURVEY_URL: 'https://forms.gle/NkqG7mKuba5CXsoa6',
   },
   EMOJI_FLAGS: {
     US: '🇺🇸',
