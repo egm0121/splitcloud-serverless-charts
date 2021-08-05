@@ -79,6 +79,7 @@ module.exports = {
       EU_COUNTRIES
     ),
   },
+  DISABLE_SC: true, // controls if streaming from soundcloud is available
   ATHENA_SPLITCLOUD_WRAPPED_DATABASE: 'splitcloud_wrapped_db',
   WRAPPED_EVENT_TABLE_PREFIX: 'raw_playback_events_',
   WRAPPED_TOP_TRACKS_TABLE_PREFIX: 'plays_by_trackIdDeviceSide_',
@@ -86,8 +87,10 @@ module.exports = {
     REFERRAL_FEATURE_EXPIRY: '2024-01-01T23:59:00.000Z',
     GIVEAWAY_EXPIRY: '2020-08-31T23:59:00.000Z',
     USE_DDB_REFERRALS: true,
-    SURVEY_EXPIRY: '2021-08-15T23:59:00.000Z',
-    SURVEY_URL: 'https://forms.gle/NkqG7mKuba5CXsoa6',
+    SURVEY_PERCENT: 1, // 0.5
+    SURVEY_EXPIRY: '2022-08-15T23:59:00.000Z', // 2021-08-15T23:59:00.000Z
+    SURVEY_URL: 'http://www.splitcloud-app.com/scissue.html', // https://forms.gle/NkqG7mKuba5CXsoa6
+    SURVEY_TEXT: 'Where are the songs?', // ✨ Give us your feedback ✨
   },
   EMOJI_FLAGS: {
     US: '🇺🇸',
