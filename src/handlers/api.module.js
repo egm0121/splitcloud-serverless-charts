@@ -343,6 +343,8 @@ module.exports.appConfigApi = helpers.middleware([
     let appConfig;
     try {
       appConfig = await helpers.readJSONFromS3(jsonCacheFileName);
+      // manage streaming availability
+      appConfig.disable_sc = constants.DISABLE_SC;
     } catch (err) {
       console.warn('failed fetching client config');
     }

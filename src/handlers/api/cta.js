@@ -114,7 +114,7 @@ const ctaHandleCountryPromotion = (event, context, callback) => {
 const ctaHandleSampleSurvey = (event, context, callback) => {
   const surveyExpiry = new Date(constants.CTA.SURVEY_EXPIRY);
   const surveyUrl = constants.CTA.SURVEY_URL;
-  const isRandEnabled = Math.random() <= 0.5; // 50% chance
+  const isRandEnabled = Math.random() <= constants.CTA.SURVEY_PERCENT;
   if (surveyUrl && new Date() < surveyExpiry && isRandEnabled) {
     callback(null, {
       statusCode: 200,
@@ -122,7 +122,7 @@ const ctaHandleSampleSurvey = (event, context, callback) => {
         ...context.headers,
       },
       body: JSON.stringify({
-        ctaLabel: '✨ Give us your feedback ✨',
+        ctaLabel: constants.CTA.SURVEY_TEXT,
         ctaUrl: constants.CTA.SURVEY_URL,
         ctaButtonColor: '#9f0202',
         ctaAction: { type: 'url' },
