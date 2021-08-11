@@ -38,7 +38,7 @@ custom:
     ga_daily_extract:
     sc_charts_cache: 
     schedule: 
-    schedule_token:
+    schedule_token: rate(2 minutes)
     schedule_discovery:
     schedule_country_charts:
     schedule_wrapped_aggregate:

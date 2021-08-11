@@ -8,7 +8,7 @@ const helpers = require('./helpers');
 const INITIAL_ACTIVE_CLIENT_ID = availableStreamTokens[1].SC_CLIENT_ID;
 const ACTIVE_TOKEN_S3_PATH_V2 = 'app/app_config_v2.json';
 const TEST_TRACK_URL = 'https://api.soundcloud.com/tracks/855191668/streams';
-const MIN_EXPIRE_TIME = 2 * 60 * 1e3; // expire token two minutes before sc expiry
+const MIN_EXPIRE_TIME = 5 * 60 * 1e3; // expire token 5 minutes before sc expiry
 
 async function getActiveToken() {
   let jsonData;
