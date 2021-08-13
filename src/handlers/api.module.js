@@ -1,4 +1,5 @@
 /* eslint-disable no-param-reassign */
+import axios from 'axios';
 import RadioApi from '../modules/radioApi';
 import ctaHandler from './api/cta';
 import feedGeneratorMiddleware, { testScoreWithDecaySorting } from './api/exploreRelated';
@@ -13,6 +14,7 @@ const helpers = require('../modules/helpers');
 const constants = require('../constants/constants');
 const formatters = require('../modules/formatters');
 
+const SC_RESOLVE_ENDPOINT = 'https://api.soundcloud.com/resolve';
 const { APP_BUCKET } = process.env;
 
 /**
@@ -246,6 +248,24 @@ module.exports.logCollector = helpers.middleware([
   },
 ]);
 /**
+ * /app/events/ingest
+ */
+module.exports.eventIngest = helpers.middleware([
+  corsHeadersMiddleware(),
+  blockVersionsMiddleware(),
+  async (event, context, callback) => {
+    const batchEventsPayload = JSON.parse(event.body);
+    console.log({ endpoint: 'eventIngest', logEvent: 'batchEventsReceived', batchEventsPayload });
+    callback(null, {
+      statusCode: 200,
+      headers: {
+        ...context.headers,
+      },
+      body: JSON.stringify({ success: true }),
+    });
+  },
+]);
+/**
  * Returns wrapped playlist for year -deviceId- side from cache or athena
  * /wrapped/{year}/{deviceId}/{side}
  */
@@ -357,7 +377,33 @@ module.exports.appConfigApi = helpers.middleware([
     });
   },
 ]);
-
+/**
+ * proxy to follow 302 redirects while passing Authorization headers
+ * for ios react-native fetch limitation.
+ *  /sc-proxy/resolve
+ */
+module.exports.scResolve = async (event, context, callback) => {
+  const scResourcePerma = helpers.getQueryParam(event, 'url');
+  const clientAuthToken = event.headers.Authorization;
+  try {
+    const scResp = await axios({
+      method: 'get',
+      url: `${SC_RESOLVE_ENDPOINT}?url=${scResourcePerma}`,
+      headers: {
+        Authorization: clientAuthToken,
+      },
+    });
+    return callback(null, {
+      statusCode: 200,
+      body: JSON.stringify(scResp.data),
+    });
+  } catch (err) {
+    return callback(null, {
+      statusCode: 400,
+      body: JSON.stringify(err.response.data),
+    });
+  }
+};
 /**
  *  /cta/{deviceId}/{side}
  */

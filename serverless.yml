@@ -38,7 +38,7 @@ custom:
     ga_daily_extract:
     sc_charts_cache: 
     schedule: 
-    schedule_token: rate(2 minutes)
+    schedule_token:
     schedule_discovery:
     schedule_country_charts:
     schedule_wrapped_aggregate:
@@ -219,6 +219,18 @@ functions:
     events:
       - http:
           path: app/config
+          method: get
+  scResolve:
+    handler: src/handlers/api.scResolve
+    events:
+      - http:
+          path: /sc-proxy/resolve
+          method: get
+  eventIngest:
+    handler: src/handlers/api.eventIngest
+    events:
+      - http:
+          path: app/events/ingest
           method: get
   radioListByCountrycode:
     handler: src/handlers/api.radioListByCountryCode
