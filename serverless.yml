@@ -231,7 +231,7 @@ functions:
     events:
       - http:
           path: app/events/ingest
-          method: get
+          method: post
   radioListByCountrycode:
     handler: src/handlers/api.radioListByCountryCode
     events:
