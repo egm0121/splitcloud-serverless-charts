@@ -220,6 +220,18 @@ functions:
       - http:
           path: app/config
           method: get
+  scResolve:
+    handler: src/handlers/api.scResolve
+    events:
+      - http:
+          path: /sc-proxy/resolve
+          method: get
+  eventIngest:
+    handler: src/handlers/api.eventIngest
+    events:
+      - http:
+          path: app/events/ingest
+          method: post
   radioListByCountrycode:
     handler: src/handlers/api.radioListByCountryCode
     events:
