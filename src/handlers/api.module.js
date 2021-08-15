@@ -7,6 +7,7 @@ import corsHeadersMiddleware from '../middlewares/corsHeaders';
 import blockVersionsMiddleware from '../middlewares/blockAppVersion';
 import metricsReporterMiddleware from '../middlewares/metricsReporter';
 import requestCountryCodeMiddleware from '../middlewares/requestCountryCode';
+import deviceIdMiddleware from '../middlewares/deviceId';
 import wrappedPlaylistGenerator from '../modules/wrappedPlaylistGenerator';
 import { handleUpdateReferrer, handleFetchPromocode } from './api/referrer';
 
@@ -354,6 +355,8 @@ module.exports.globalYearWrapped = helpers.middleware([
  */
 module.exports.appConfigApi = helpers.middleware([
   corsHeadersMiddleware(),
+  requestCountryCodeMiddleware(),
+  deviceIdMiddleware(),
   blockVersionsMiddleware({
     errBody: { STREAM_CLIENT_ID: 'invalidtokeninvalidtoken00000000', disable_sc: true },
     errCode: 200,
@@ -365,6 +368,13 @@ module.exports.appConfigApi = helpers.middleware([
       appConfig = await helpers.readJSONFromS3(jsonCacheFileName);
       // manage streaming availability
       appConfig.disable_sc = constants.DISABLE_SC;
+      if (
+        constants.DISABLE_SC_CONNECT &&
+        context.requestCountryCode === 'US' &&
+        context.isDeviceIOS
+      ) {
+        appConfig.disable_sc = true;
+      }
     } catch (err) {
       console.warn('failed fetching client config');
     }

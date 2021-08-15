@@ -13,7 +13,6 @@ class Referrals {
   constructor({ tableName, ddbClient } = {}) {
     this.tableName = tableName || 'splitcloud-serverless-charts-service-dev-db';
     this.client = ddbClient;
-    console.log('Referrals Repo init', { tableName: this.tableName });
   }
 
   toSecTimestamp(milliTs) {
