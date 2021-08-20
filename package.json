@@ -7,7 +7,7 @@
     "start": "node cli.js",
     "validate-config": "node ./scripts/validate-config-format",
     "deploy:dev": "source .env && npm run validate-config && serverless deploy -v --stage dev",
-    "deploy:prod": "source .env && npm run validate-config && serverless deploy -v --stage prod",
+    "deploy:prod": "echo \"CONFIRM PROD DEPLOY?\" && read -n 1 && source .env && npm run validate-config && serverless deploy -v --stage prod",
     "test": "echo \"Error: no test specified\" && exit 1",
     "discovery:dev": "serverless invoke -f discovery -l --stage dev",
     "discovery:prod": "serverless invoke -f discovery -l --stage prod",

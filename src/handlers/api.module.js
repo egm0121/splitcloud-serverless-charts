@@ -16,7 +16,7 @@ const constants = require('../constants/constants');
 const formatters = require('../modules/formatters');
 
 const SC_RESOLVE_ENDPOINT = 'https://api.soundcloud.com/resolve';
-const { APP_BUCKET } = process.env;
+const { APP_BUCKET, KINESIS_STREAM_NAME } = process.env;
 
 /**
  *
@@ -256,13 +256,31 @@ module.exports.eventIngest = helpers.middleware([
   blockVersionsMiddleware(),
   async (event, context, callback) => {
     const batchEventsPayload = JSON.parse(event.body);
-    console.log({ endpoint: 'eventIngest', logEvent: 'batchEventsReceived', batchEventsPayload });
+    let returnData = [];
+    if (batchEventsPayload && Array.isArray(batchEventsPayload)) {
+      returnData = await Promise.all(
+        batchEventsPayload.map(eventPayload => {
+          const serializedPayload = `${JSON.stringify({
+            ...eventPayload,
+            serverTS: Date.now(),
+          })}\n`;
+          return helpers.kinesisFirehose
+            .putRecord({
+              DeliveryStreamName: KINESIS_STREAM_NAME,
+              Record: {
+                Data: serializedPayload,
+              },
+            })
+            .promise();
+        })
+      );
+    }
     callback(null, {
       statusCode: 200,
       headers: {
         ...context.headers,
       },
-      body: JSON.stringify({ success: true }),
+      body: JSON.stringify({ success: true, data: returnData }),
     });
   },
 ]);
