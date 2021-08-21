@@ -14,7 +14,7 @@ const helpers = require('../modules/helpers');
 const constants = require('../constants/constants');
 
 const weekOfYear = moment().isoWeek();
-const { APP_BUCKET } = process.env;
+const { APP_BUCKET, KINESIS_STREAM_BUCKET } = process.env;
 const {
   ATHENA_SPLITCLOUD_WRAPPED_DATABASE,
   WRAPPED_EVENT_TABLE_PREFIX,
@@ -378,5 +378,55 @@ module.exports.migrateLegacyPromocodes = async () => {
     }
   } catch (err) {
     console.error('migration failed', err);
+  }
+};
+
+module.exports.aggregateNowPlay = async event => {
+  try {
+    const s3FileName = event.Records[0].s3.object.key;
+    console.log({ serviceName: 'aggregateNowPlay', s3FileName });
+    const streamFileContents = await helpers.readFileFromS3({
+      bucket: KINESIS_STREAM_BUCKET,
+      keyName: s3FileName,
+    });
+    const filterSoundCloudPlays = record =>
+      typeof record === 'object' &&
+      record.eventName === 'playback-completed' &&
+      record.eventProps.trackProvider === 'soundcloud';
+    const eventHitArr = streamFileContents
+      .split('\n')
+      .map(evtString => {
+        try {
+          return JSON.parse(evtString);
+        } catch (err) {
+          return undefined;
+        }
+      })
+      .filter(filterSoundCloudPlays);
+    const outputMap = eventHitArr.reduce((acc, currEvent) => {
+      const trackId = currEvent.trackId || currEvent.eventProps.trackId;
+      if (!acc[trackId]) {
+        acc[trackId] = {
+          id: String(trackId),
+          score: 1,
+        };
+      } else {
+        acc[trackId].score += 1;
+      }
+      return acc;
+    }, {});
+    const topTrackIdsSorted = Object.values(outputMap)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 20);
+    const hydratedTrackList = await chartService.hydrateScTrackObjects(topTrackIdsSorted, false);
+    await helpers.saveFileToS3(
+      {
+        bucket: APP_BUCKET,
+        keyName: `events/aggregated/nowplaying/global.json`,
+      },
+      hydratedTrackList
+    );
+  } catch (err) {
+    console.error('aggregate for nowPlaying api failed', err);
   }
 };

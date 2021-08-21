@@ -98,6 +98,10 @@ provider:
       Action:
         - glue:*
       Resource: "*"
+    - Effect: Allow
+      Action:
+        - firehose:*
+      Resource: "*"
     - Effect: "Allow"
       Action:
       - sqs:SendMessage
@@ -130,6 +134,7 @@ provider:
       GA_EXTRACTOR_QUEUE: ${self:custom.${self:custom.myStage}.ga_extractor_queue}
       DYNAMODB_TABLE: ${self:service}-${self:custom.myStage}-db
       KINESIS_STREAM_NAME: ${self:service}-${self:custom.myStage}-MyFirehose
+      KINESIS_STREAM_BUCKET: ${self:custom.${self:custom.myStage}.firehose_event_bucket}
 resources:
   Resources:
     FirehoseEventBucket:
@@ -168,7 +173,7 @@ resources:
     FirehoseRole:
       Type: AWS::IAM::Role
       Properties:
-        RoleName: ${self:service}-${self:provider.stage}-FirehoseRole
+        RoleName: ${self:service}-${self:custom.myStage}-FirehoseRole
         AssumeRolePolicyDocument:
           Version: '2012-10-17'
           Statement:
@@ -188,7 +193,7 @@ resources:
     MyFirehose:
       Type: AWS::KinesisFirehose::DeliveryStream
       Properties:
-        DeliveryStreamName: ${self:service}-${self:provider.stage}-MyFirehose
+        DeliveryStreamName: ${self:service}-${self:custom.myStage}-MyFirehose
         S3DestinationConfiguration:
           BucketARN: "arn:aws:s3:::${self:custom.${self:custom.myStage}.firehose_event_bucket}"
           BufferingHints:
@@ -378,6 +383,14 @@ functions:
   migrateRewarded: 
     handler: src/handlers/batch.migrateLegacyPromocodes
     timeout: 60
+  aggregateNowPlay:
+    handler: src/handlers/batch.aggregateNowPlay
+    timeout: 60
+    events:
+      - s3:
+          existing: true
+          bucket: ${self:custom.${self:custom.myStage}.firehose_event_bucket}
+          event: s3:ObjectCreated:*
 plugins:
   - serverless-domain-manager
   - serverless-offline

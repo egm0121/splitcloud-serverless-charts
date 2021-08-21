@@ -22,7 +22,7 @@ async function pushToTopic(messageObj, topic) {
 }
 async function saveBlobToS3(keyName, buffer, format = 'image/png') {
   const [path, extension] = keyName.split('.');
-  const finalKeyName = `${path}${isDEV ? '_dev' : ''}.${extension}`;
+  const finalKeyName = `${path}${isDEV ? '_dev' : ''}${extension ? `.${extension}` : ''}`;
   console.log('will write binary to s3 key:', finalKeyName);
   return s3
     .putObject({
@@ -43,7 +43,7 @@ async function saveFileToS3(keyOrObj, data, stringify = true) {
     bucketName = keyOrObj.bucket;
   }
   const [path, extension] = keyName.split('.');
-  const finalKeyName = `${path}${isDEV ? '_dev' : ''}.${extension}`;
+  const finalKeyName = `${path}${isDEV ? '_dev' : ''}${extension ? `.${extension}` : ''}`;
   console.log('will write to s3 key:', finalKeyName);
   return s3
     .putObject({
@@ -64,7 +64,7 @@ async function readFileFromS3(keyOrObj) {
     bucketName = keyOrObj.bucket;
   }
   const [path, extension] = keyName.split('.');
-  const finalKeyName = `${path}${isDEV ? '_dev' : ''}.${extension}`;
+  const finalKeyName = `${path}${isDEV ? '_dev' : ''}${extension ? `.${extension}` : ''}`;
   console.log('readFileFromS3:', finalKeyName);
   let resp;
   try {
@@ -86,7 +86,7 @@ async function readFileFromS3(keyOrObj) {
 }
 async function writeS3Cache(keyName, value, ttl = 'ttl7', stringify = true) {
   const [path, extension] = keyName.split('.');
-  const finalKeyName = `${path}${isDEV ? '_dev' : ''}.${extension}`;
+  const finalKeyName = `${path}${isDEV ? '_dev' : ''}${extension ? `.${extension}` : ''}`;
   console.log('will write to s3 cache bucket:', finalKeyName);
   return s3
     .putObject({
@@ -101,7 +101,7 @@ async function writeS3Cache(keyName, value, ttl = 'ttl7', stringify = true) {
 }
 async function readS3Cache(keyName) {
   const [path, extension] = keyName.split('.');
-  const finalKeyName = `${path}${isDEV ? '_dev' : ''}.${extension}`;
+  const finalKeyName = `${path}${isDEV ? '_dev' : ''}${extension ? `.${extension}` : ''}`;
   console.log('readS3Cache:', finalKeyName);
   let resp;
   try {
