@@ -204,6 +204,12 @@ resources:
             Fn::GetAtt: [FirehoseRole, Arn]
 functions:
   charts_endpoint:
+    handler: src/handlers/api.nowPlaying
+    events:
+      - http:
+          path: charts/nowplaying
+          method: get
+  charts_endpoint:
     handler: src/handlers/api.chartsEndpoint
     events:
       - http:

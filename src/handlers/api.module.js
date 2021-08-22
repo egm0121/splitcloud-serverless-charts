@@ -101,6 +101,40 @@ module.exports.searchTermsPopular = helpers.middleware([
   },
 ]);
 /**
+ * GET
+ * /charts/nowplaying
+ */
+module.exports.nowPlaying = helpers.middleware([
+  corsHeadersMiddleware(),
+  blockVersionsMiddleware(),
+  requestCountryCodeMiddleware(),
+  async (event, context, callback) => {
+    let clientCountry = context.requestCountryCode;
+    const hasCountryPlaylist = Object.keys(constants.TOP_COUNTRIES).includes(clientCountry);
+    if (!hasCountryPlaylist) {
+      clientCountry = 'GLOBAL';
+    }
+    const realtimeGlobalObjectPath = `events/aggregated/nowplaying/global.json`;
+    let trackList = [];
+    try {
+      trackList = await helpers.readJSONFromS3({
+        bucket: APP_BUCKET,
+        keyName: realtimeGlobalObjectPath,
+      });
+    } catch (err) {
+      trackList = [];
+    }
+    const resp = {
+      statusCode: 200,
+      headers: {
+        ...context.headers,
+      },
+      body: JSON.stringify(trackList),
+    };
+    callback(null, resp);
+  },
+]);
+/**
  * /top/regions
  */
 
@@ -254,6 +288,7 @@ module.exports.logCollector = helpers.middleware([
 module.exports.eventIngest = helpers.middleware([
   corsHeadersMiddleware(),
   blockVersionsMiddleware(),
+  requestCountryCodeMiddleware(),
   async (event, context, callback) => {
     const batchEventsPayload = JSON.parse(event.body);
     let returnData = [];
@@ -263,6 +298,7 @@ module.exports.eventIngest = helpers.middleware([
           const serializedPayload = `${JSON.stringify({
             ...eventPayload,
             serverTS: Date.now(),
+            country: context.requestCountryCode,
           })}\n`;
           return helpers.kinesisFirehose
             .putRecord({
