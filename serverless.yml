@@ -203,7 +203,7 @@ resources:
           RoleARN:
             Fn::GetAtt: [FirehoseRole, Arn]
 functions:
-  charts_endpoint:
+  charts_nowplay:
     handler: src/handlers/api.nowPlaying
     events:
       - http:
