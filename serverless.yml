@@ -197,7 +197,7 @@ resources:
         S3DestinationConfiguration:
           BucketARN: "arn:aws:s3:::${self:custom.${self:custom.myStage}.firehose_event_bucket}"
           BufferingHints:
-            IntervalInSeconds: 300
+            IntervalInSeconds: 120
             SizeInMBs: 50
           CompressionFormat: UNCOMPRESSED
           RoleARN:
