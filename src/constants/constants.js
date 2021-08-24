@@ -89,9 +89,9 @@ module.exports = {
     GIVEAWAY_EXPIRY: '2020-08-31T23:59:00.000Z',
     USE_DDB_REFERRALS: true,
     SURVEY_PERCENT: 0.5, // 1
-    SURVEY_EXPIRY: '2022-08-15T23:59:00.000Z', // 2021-08-15T23:59:00.000Z
-    SURVEY_URL: 'https://forms.gle/NkqG7mKuba5CXsoa6', // 'http://www.splitcloud-app.com/scissue.html',
-    SURVEY_TEXT: '✨ Give us your feedback ✨', // 'Where are the songs?'
+    SURVEY_EXPIRY: '2021-08-15T23:59:00.000Z', // disabled
+    SURVEY_URL: 'https://forms.gle/NkqG7mKuba5CXsoa6',
+    SURVEY_TEXT: '✨ Give us your feedback ✨',
   },
   EMOJI_FLAGS: {
     US: '🇺🇸',
