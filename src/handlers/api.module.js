@@ -14,6 +14,7 @@ import { handleUpdateReferrer, handleFetchPromocode } from './api/referrer';
 const helpers = require('../modules/helpers');
 const constants = require('../constants/constants');
 const formatters = require('../modules/formatters');
+const exceptionIosDevices = require('../../key/exception_devices.json');
 
 const SC_RESOLVE_ENDPOINT = 'https://api.soundcloud.com/resolve';
 const { APP_BUCKET, KINESIS_STREAM_NAME } = process.env;
@@ -423,9 +424,9 @@ module.exports.appConfigApi = helpers.middleware([
       // manage streaming availability
       appConfig.disable_sc = constants.DISABLE_SC;
       if (
-        constants.DISABLE_SC_CONNECT &&
-        context.requestCountryCode === 'US' &&
-        context.isDeviceIOS
+        constants.DISABLE_SC_IOS &&
+        context.isDeviceIOS &&
+        !exceptionIosDevices.includes(context.deviceId)
       ) {
         appConfig.disable_sc = true;
       }

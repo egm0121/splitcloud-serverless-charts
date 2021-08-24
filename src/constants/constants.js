@@ -80,7 +80,7 @@ module.exports = {
     ),
   },
   DISABLE_SC: false, // controls if streaming from soundcloud is available
-  DISABLE_SC_CONNECT: false,
+  DISABLE_SC_IOS: true,
   ATHENA_SPLITCLOUD_WRAPPED_DATABASE: 'splitcloud_wrapped_db',
   WRAPPED_EVENT_TABLE_PREFIX: 'raw_playback_events_',
   WRAPPED_TOP_TRACKS_TABLE_PREFIX: 'plays_by_trackIdDeviceSide_',
