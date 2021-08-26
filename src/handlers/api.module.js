@@ -14,9 +14,10 @@ import { handleUpdateReferrer, handleFetchPromocode } from './api/referrer';
 const helpers = require('../modules/helpers');
 const constants = require('../constants/constants');
 const formatters = require('../modules/formatters');
+const exceptionIosDevices = require('../../key/exception_devices.json');
 
 const SC_RESOLVE_ENDPOINT = 'https://api.soundcloud.com/resolve';
-const { APP_BUCKET } = process.env;
+const { APP_BUCKET, KINESIS_STREAM_NAME } = process.env;
 
 /**
  *
@@ -96,6 +97,40 @@ module.exports.searchTermsPopular = helpers.middleware([
         ...context.headers,
       },
       body: JSON.stringify(searchTermsList),
+    };
+    callback(null, resp);
+  },
+]);
+/**
+ * GET
+ * /charts/nowplaying
+ */
+module.exports.nowPlaying = helpers.middleware([
+  corsHeadersMiddleware(),
+  blockVersionsMiddleware(),
+  requestCountryCodeMiddleware(),
+  async (event, context, callback) => {
+    let clientCountry = context.requestCountryCode;
+    const hasCountryPlaylist = Object.keys(constants.TOP_COUNTRIES).includes(clientCountry);
+    if (!hasCountryPlaylist) {
+      clientCountry = 'GLOBAL';
+    }
+    const realtimeGlobalObjectPath = `events/aggregated/nowplaying/global.json`;
+    let trackList = [];
+    try {
+      trackList = await helpers.readJSONFromS3({
+        bucket: APP_BUCKET,
+        keyName: realtimeGlobalObjectPath,
+      });
+    } catch (err) {
+      trackList = [];
+    }
+    const resp = {
+      statusCode: 200,
+      headers: {
+        ...context.headers,
+      },
+      body: JSON.stringify(trackList),
     };
     callback(null, resp);
   },
@@ -254,15 +289,35 @@ module.exports.logCollector = helpers.middleware([
 module.exports.eventIngest = helpers.middleware([
   corsHeadersMiddleware(),
   blockVersionsMiddleware(),
+  requestCountryCodeMiddleware(),
   async (event, context, callback) => {
     const batchEventsPayload = JSON.parse(event.body);
-    console.log({ endpoint: 'eventIngest', logEvent: 'batchEventsReceived', batchEventsPayload });
+    let returnData = [];
+    if (batchEventsPayload && Array.isArray(batchEventsPayload)) {
+      returnData = await Promise.all(
+        batchEventsPayload.map(eventPayload => {
+          const serializedPayload = `${JSON.stringify({
+            ...eventPayload,
+            serverTS: Date.now(),
+            country: context.requestCountryCode,
+          })}\n`;
+          return helpers.kinesisFirehose
+            .putRecord({
+              DeliveryStreamName: KINESIS_STREAM_NAME,
+              Record: {
+                Data: serializedPayload,
+              },
+            })
+            .promise();
+        })
+      );
+    }
     callback(null, {
       statusCode: 200,
       headers: {
         ...context.headers,
       },
-      body: JSON.stringify({ success: true }),
+      body: JSON.stringify({ success: true, data: returnData }),
     });
   },
 ]);
@@ -369,9 +424,9 @@ module.exports.appConfigApi = helpers.middleware([
       // manage streaming availability
       appConfig.disable_sc = constants.DISABLE_SC;
       if (
-        constants.DISABLE_SC_CONNECT &&
-        context.requestCountryCode === 'US' &&
-        context.isDeviceIOS
+        constants.DISABLE_SC_IOS &&
+        context.isDeviceIOS &&
+        !exceptionIosDevices.includes(context.deviceId)
       ) {
         appConfig.disable_sc = true;
       }
@@ -395,10 +450,11 @@ module.exports.appConfigApi = helpers.middleware([
 module.exports.scResolve = async (event, context, callback) => {
   const scResourcePerma = helpers.getQueryParam(event, 'url');
   const clientAuthToken = event.headers.Authorization;
+  const scAPIUrl = `${SC_RESOLVE_ENDPOINT}?url=${scResourcePerma}`;
   try {
     const scResp = await axios({
       method: 'get',
-      url: `${SC_RESOLVE_ENDPOINT}?url=${scResourcePerma}`,
+      url: scAPIUrl,
       headers: {
         Authorization: clientAuthToken,
       },
@@ -408,9 +464,15 @@ module.exports.scResolve = async (event, context, callback) => {
       body: JSON.stringify(scResp.data),
     });
   } catch (err) {
+    console.warn({
+      lambdaName: 'scResolve',
+      logEvent: 'failed to resolve',
+      scAPIUrl,
+      error: err.toString(),
+    });
     return callback(null, {
       statusCode: 400,
-      body: JSON.stringify(err.response.data),
+      body: JSON.stringify(err.response && err.response.data),
     });
   }
 };

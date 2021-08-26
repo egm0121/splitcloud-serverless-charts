@@ -207,15 +207,19 @@ const ctaHandleReferralPromoAndroid = async (event, context, callback) => {
 };
 const ctaHandleDefaultStrategy = (event, context, callback) => {
   const { deviceId } = event.pathParameters;
-  const { selectedVariant } = context;
+  let { selectedVariant } = context;
   const isAndroidId = deviceId.length === 16;
   const ctaBgBlue = '#2196F3';
-  const ctaLabelA = 'Follow SplitCloud ✨';
+  let ctaLabelA = 'Follow SplitCloud ✨';
   const ctaLabelB = 'Follow SplitCloud ✨';
   const ctaButtonColor = ctaBgBlue;
   let ctaUrl = `http://www.splitcloud-app.com/follow.html`;
   if (isAndroidId) {
     ctaUrl = `http://www.splitcloud-app.com/follow_android_promo.html`;
+  } else {
+    ctaUrl = 'http://www.splitcloud-app.com/scissue.html';
+    ctaLabelA = 'Message from SplitCloud';
+    selectedVariant = 'A';
   }
   ctaUrl = `${ctaUrl}?variant=${selectedVariant}&v=5`;
   const ctaLabel = selectedVariant === 'A' ? ctaLabelA : ctaLabelB;

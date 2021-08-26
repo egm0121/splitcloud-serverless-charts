@@ -353,10 +353,10 @@ class ChartsService {
     return respArr.map(resp => resp.data);
   }
 
-  async hydrateScTrackObjects(rawTrackObjArr) {
+  async hydrateScTrackObjects(rawTrackObjArr, sortByPlays = true) {
     const validScTrackList = rawTrackObjArr.filter(filterBySCValidId);
     return hydrateSoundcloudTracks(validScTrackList, soundcloudkey.BATCH_FETCHING_KEY).then(
-      sortByTotalPlays
+      sortByPlays ? sortByTotalPlays : data => data
     );
   }
 

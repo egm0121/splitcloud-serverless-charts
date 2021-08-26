@@ -34,6 +34,7 @@ custom:
     ga_extractor_arn: "arn:aws:sqs:us-east-1:348868901434:ga_extractor_queue_prod"
     ga_extractor_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/ga_extractor_queue_prod"
     ga_extractor_queue_enabled: true
+    firehose_event_bucket: "com.splitcloud-app.firehose.prod"
   dev: 
     ga_daily_extract:
     sc_charts_cache: 
@@ -51,6 +52,7 @@ custom:
     ga_extractor_arn: "arn:aws:sqs:us-east-1:348868901434:ga_extractor_queue_dev"
     ga_extractor_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/ga_extractor_queue_dev"
     ga_extractor_queue_enabled: false
+    firehose_event_bucket: "com.splitcloud-app.firehose.dev"
   bucket: "www.splitcloud-app.com"
   cache_bucket: "com.splitcloud-app.cache"
   app_bucket: "com.splitcloud-app.app-sls"
@@ -86,11 +88,19 @@ provider:
       Resource: "arn:aws:s3:::${self:custom.app_bucket}*"
     - Effect: Allow
       Action:
+        - s3:*
+      Resource: "arn:aws:s3:::${self:custom.${self:custom.myStage}.firehose_event_bucket}*"
+    - Effect: Allow
+      Action:
         - athena:*
       Resource: "*"
     - Effect: Allow
       Action:
         - glue:*
+      Resource: "*"
+    - Effect: Allow
+      Action:
+        - firehose:*
       Resource: "*"
     - Effect: "Allow"
       Action:
@@ -122,9 +132,15 @@ provider:
       APP_BUCKET: ${self:custom.app_bucket}
       COUNTRY_CHARTS_QUEUE: ${self:custom.${self:custom.myStage}.country_charts_queue}
       GA_EXTRACTOR_QUEUE: ${self:custom.${self:custom.myStage}.ga_extractor_queue}
-      DYNAMODB_TABLE: ${self:service}-${opt:stage, self:provider.stage}-db
+      DYNAMODB_TABLE: ${self:service}-${self:custom.myStage}-db
+      KINESIS_STREAM_NAME: ${self:service}-${self:custom.myStage}-MyFirehose
+      KINESIS_STREAM_BUCKET: ${self:custom.${self:custom.myStage}.firehose_event_bucket}
 resources:
   Resources:
+    FirehoseEventBucket:
+      Type: 'AWS::S3::Bucket'
+      Properties:
+        BucketName: ${self:custom.${self:custom.myStage}.firehose_event_bucket}
     AppDynamoDbTable:
       Type: 'AWS::DynamoDB::Table'
       DeletionPolicy: Retain
@@ -154,7 +170,45 @@ resources:
       Type: "AWS::SQS::Queue"
       Properties:
         QueueName: ga_extractor_queue_${self:custom.myStage}
+    FirehoseRole:
+      Type: AWS::IAM::Role
+      Properties:
+        RoleName: ${self:service}-${self:custom.myStage}-FirehoseRole
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                  - firehose.amazonaws.com
+              Action: sts:AssumeRole
+        Policies:
+          - PolicyName: root
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: Allow
+                  Action: s3:*
+                  Resource: "arn:aws:s3:::${self:custom.${self:custom.myStage}.firehose_event_bucket}*"
+    MyFirehose:
+      Type: AWS::KinesisFirehose::DeliveryStream
+      Properties:
+        DeliveryStreamName: ${self:service}-${self:custom.myStage}-MyFirehose
+        S3DestinationConfiguration:
+          BucketARN: "arn:aws:s3:::${self:custom.${self:custom.myStage}.firehose_event_bucket}"
+          BufferingHints:
+            IntervalInSeconds: 120
+            SizeInMBs: 50
+          CompressionFormat: UNCOMPRESSED
+          RoleARN:
+            Fn::GetAtt: [FirehoseRole, Arn]
 functions:
+  charts_nowplay:
+    handler: src/handlers/api.nowPlaying
+    events:
+      - http:
+          path: charts/nowplaying
+          method: get
   charts_endpoint:
     handler: src/handlers/api.chartsEndpoint
     events:
@@ -335,6 +389,14 @@ functions:
   migrateRewarded: 
     handler: src/handlers/batch.migrateLegacyPromocodes
     timeout: 60
+  aggregateNowPlay:
+    handler: src/handlers/batch.aggregateNowPlay
+    timeout: 60
+    events:
+      - s3:
+          existing: true
+          bucket: ${self:custom.${self:custom.myStage}.firehose_event_bucket}
+          event: s3:ObjectCreated:*
 plugins:
   - serverless-domain-manager
   - serverless-offline
