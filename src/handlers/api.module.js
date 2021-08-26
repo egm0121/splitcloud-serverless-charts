@@ -450,10 +450,11 @@ module.exports.appConfigApi = helpers.middleware([
 module.exports.scResolve = async (event, context, callback) => {
   const scResourcePerma = helpers.getQueryParam(event, 'url');
   const clientAuthToken = event.headers.Authorization;
+  const scAPIUrl = `${SC_RESOLVE_ENDPOINT}?url=${scResourcePerma}`;
   try {
     const scResp = await axios({
       method: 'get',
-      url: `${SC_RESOLVE_ENDPOINT}?url=${scResourcePerma}`,
+      url: scAPIUrl,
       headers: {
         Authorization: clientAuthToken,
       },
@@ -463,9 +464,15 @@ module.exports.scResolve = async (event, context, callback) => {
       body: JSON.stringify(scResp.data),
     });
   } catch (err) {
+    console.warn({
+      lambdaName: 'scResolve',
+      logEvent: 'failed to resolve',
+      scAPIUrl,
+      error: err.toString(),
+    });
     return callback(null, {
       statusCode: 400,
-      body: JSON.stringify(err.response.data),
+      body: JSON.stringify(err.response && err.response.data),
     });
   }
 };
