@@ -46,7 +46,7 @@ export const handleUpdateReferrer = async (event, context, callback) => {
       console.log(`add referree for ${referrerId}: ${deviceId}`);
       await Referrals.assignPromocodeToDevice(referrerId);
       const remainingPromoCodes = await Referrals.getUnassignedPromocodesCount();
-      context.metrics.pushMetric('promocodeListSize', remainingPromoCodes);
+      context.metrics.putMetric('promocodeListSize', remainingPromoCodes);
     } catch (err) {
       console.warn(`failed assigning promocode to ${referrerId}`, err);
     }
