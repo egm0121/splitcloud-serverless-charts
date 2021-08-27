@@ -47,8 +47,8 @@ const logTracks = tracks => {
   // await SoundCloudChartsService.getPopularChart().then(logTracks);
   // console.log('TRENDING on ', currDate);
   const country = 'Pakistan';
-  console.log('POPULAR on ', currDate, ' country ', country);
-  await chartService.getTrendingChart(100, country).then(logTracks);
+  // console.log('POPULAR on ', currDate, ' country ', country);
+  // await chartService.getTrendingChart(100, country).then(logTracks);
   //await chartService.getTopChart(50, country, '30daysAgo').then(logTracks);
   // const playlists = require('./discover_playlists_payload_dev.json');
   // await discoverApi(playlists);
@@ -99,6 +99,7 @@ const logTracks = tracks => {
   // await ReferralsRepo.insertReferreeForDevice('CFF14B99-B153-490D-A9C2-DBB892FDFB87', 'myReferee3');
   // await ReferralsRepo.insertReferreeForDevice('CFF14B99-B153-490D-A9C2-DBB892FDFB87', 'myReferee3');
   // console.log(await ReferralsRepo.getAllReferreesForDevice('CFF14B99-B153-490D-A9C2-DBB892FDFB87'));
+  console.log('referrals count', await Referrals.getUnassignedPromocodesCount());
   //console.log('fetching one promocode');
   //console.log(await ReferralsRepo.getUnassignedPromocode());
   //console.log(await Referrals.assignPromocodeToDevice('CFF14B99-B153-490D-A9C2-DBB892FDFB87'));
