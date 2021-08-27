@@ -111,6 +111,23 @@ class Referrals {
     const result = await this.client.query(params).promise();
     return result.Items[0];
   }
+  /**
+   * This will return the total unassigned promocodes left
+   * It will return partial count if more than 1MB of matching items are found
+   */
+
+  async getUnassignedPromocodesCount() {
+    const params = {
+      TableName: this.tableName,
+      KeyConditionExpression: 'pk = :pk',
+      ExpressionAttributeValues: {
+        ':pk': Referrals.KEY.CODE_UNASSIGNED,
+      },
+      ProjectionExpression: 'pk',
+    };
+    const result = await this.client.query(params).promise();
+    return result.Count;
+  }
 
   async assignPromocodeToDevice(referrerId, attempt = 2) {
     const existingPromocode = await this.getPromocodeForDevice(referrerId);

@@ -37,14 +37,16 @@ export const handleUpdateReferrer = async (event, context, callback) => {
   } catch (err) {
     console.warn(`failed updating referral for ${referrerId}`, err);
   }
-  const existingPromocode = await Referrals.getPromocodeForDevice(referrerId);
+  const hasExistingPromocode = await Referrals.getPromocodeForDevice(referrerId);
   // only assign a promocode to a referralId if the min number of referees has been reached
   // and no promocode has been assigned yet.
-  if (referreeList.length + 1 >= MIN_REFERRER_REWARD && !existingPromocode) {
+  if (referreeList.length + 1 >= MIN_REFERRER_REWARD && !hasExistingPromocode) {
     console.log(`will reward referrer: ${referrerId}`);
     try {
       console.log(`add referree for ${referrerId}: ${deviceId}`);
       await Referrals.assignPromocodeToDevice(referrerId);
+      const remainingPromoCodes = await Referrals.getUnassignedPromocodesCount();
+      context.metrics.pushMetric('promocodeListSize', remainingPromoCodes);
     } catch (err) {
       console.warn(`failed assigning promocode to ${referrerId}`, err);
     }
