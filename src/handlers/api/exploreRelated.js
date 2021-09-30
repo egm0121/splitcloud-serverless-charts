@@ -42,6 +42,10 @@ const calculateTimeDecay = createdDate => {
 };
 
 export const testScoreWithDecaySorting = () => (event, context, callback, next) => {
+  if (context.relatedTrackList.length === 0) {
+    console.warn('empty relatedTrackList detected, ensure valid final source tracks were used');
+    return next();
+  }
   if (
     Array.isArray(constants.EXPLORE_RELATED.SMART_FEED_COUNTRY) &&
     !constants.EXPLORE_RELATED.SMART_FEED_COUNTRY.includes(context.requestCountryCode)
