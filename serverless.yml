@@ -389,8 +389,11 @@ functions:
   migrateRewarded: 
     handler: src/handlers/batch.migrateLegacyPromocodes
     timeout: 60
-  aggregateNowPlay:
-    handler: src/handlers/batch.aggregateNowPlay
+# this s3 events don't seem to pickup changes it the latest deployed lambda
+# if code seems not updated from the cloudwatch logs, deploy a version without 
+# any s3 bucket events and then re-deploy to re-enable the event to the new lambda version.   
+  aggregatedNowPlaying:
+    handler: src/handlers/batch.aggregatedNowPlaying
     timeout: 60
     events:
       - s3:

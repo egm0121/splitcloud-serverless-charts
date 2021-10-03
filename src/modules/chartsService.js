@@ -370,6 +370,7 @@ class ChartsService {
 
   async hydrateScTrackObjects(rawTrackObjArr, sortByPlays = true) {
     await SoundCloudApi.fetchScAccessToken();
+    console.log('hydrateScTrackObjects with token', SoundCloudApi.getScAccessToken());
     const validScTrackList = rawTrackObjArr.filter(filterBySCValidId);
     return hydrateSoundcloudTracks(validScTrackList).then(
       sortByPlays ? sortByTotalPlays : data => data

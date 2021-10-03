@@ -381,10 +381,10 @@ module.exports.migrateLegacyPromocodes = async () => {
   }
 };
 
-module.exports.aggregateNowPlay = async event => {
+module.exports.aggregatedNowPlaying = async event => {
   try {
     const s3FileName = event.Records[0].s3.object.key;
-    console.log({ serviceName: 'aggregateNowPlay', s3FileName });
+    console.log({ serviceName: 'aggregateNowPlay', s3FileName, v: 2 });
     const streamFileContents = await helpers.readFileFromS3({
       bucket: KINESIS_STREAM_BUCKET,
       keyName: s3FileName,
