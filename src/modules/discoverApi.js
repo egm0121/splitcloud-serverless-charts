@@ -1,34 +1,14 @@
 /* eslint-disable no-await-in-loop */
-const axios = require('axios');
-const scKey = require('../../key/soundcloud_key.json');
 const helpers = require('./helpers');
+const SoundCloudApi = require('../modules/SoundCloudChartsService').default;
 const constants = require('../constants/constants');
-
-const SC_API_ENDPOINT = 'http://api.soundcloud.com';
-
-async function resolveSCPlaylistById(scPlaylistId) {
-  const apiEndpoint = `${SC_API_ENDPOINT}/playlists/${scPlaylistId}/?client_id=${
-    scKey.SC_CLIENT_ID
-  }`;
-  console.log('request', apiEndpoint);
-  let payload;
-  try {
-    payload = await axios({ method: 'GET', url: apiEndpoint, timeout: 5000 });
-  } catch (err) {
-    payload = null;
-  }
-  if (!payload) return null;
-  const hasPlayableTracks = payload.data && payload.data.tracks.filter(t => t.streamable).length;
-  if (!hasPlayableTracks) return null;
-  delete payload.data.tracks;
-
-  return payload.data;
-}
 
 async function generateDicoverySection(sectionTitle, sectionDescription, playlistsIds) {
   const urnSectionName = sectionTitle.toLowerCase().replace(/(\s|:)/g, '_');
   const id = `splitcloud:selections:custom:${urnSectionName}`;
-  const resolvedPlaylists = await Promise.all(playlistsIds.map(resolveSCPlaylistById));
+  const resolvedPlaylists = await Promise.all(
+    playlistsIds.map(playlistId => SoundCloudApi.resolveSCPlaylistById(playlistId))
+  );
   console.log('resolved playlist data');
   return {
     urn: id,
@@ -132,7 +112,7 @@ module.exports = async function discoverApi(eventData) {
   if (eventData && !validateEventData(eventData)) {
     throw new Error('Event Data did not pass validation');
   }
-
+  await SoundCloudApi.fetchScAccessToken();
   const apiResponse = {
     collection: [],
   };

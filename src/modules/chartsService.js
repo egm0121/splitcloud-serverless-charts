@@ -3,13 +3,12 @@
 const axios = require('axios');
 const moment = require('moment');
 const cacheDecorator = require('egm0121-rn-common-lib/helpers/cacheDecorator').default;
-const soundcloudkey = require('../../key/soundcloud_key.json');
 const GAReporting = require('./reportingClient');
 const RadioApi = require('../modules/radioApi').default;
+const SoundCloudApi = require('../modules/SoundCloudChartsService').default;
 const constants = require('../constants/constants');
 
 const SC_API_ENDPOINT = 'api.soundcloud.com';
-const SC_V2_API_ENDPOINT = 'api-v2.soundcloud.com';
 const MAX_TRACK_DURATION = 25 * 60 * 1000; // 20min
 const radioApiInstance = new RadioApi();
 async function fetchAnalyticsReport(
@@ -112,21 +111,30 @@ async function fetchAnalyticsReport(
   const res = await reportingClient.reports.batchGet(reportRequest);
   return res;
 }
-async function fetchScTrackById(trackId, scApiToken = soundcloudkey.SC_CLIENT_ID) {
-  const trackUrl = `http://${SC_API_ENDPOINT}/tracks/${trackId}?client_id=${scApiToken}`;
-  return axios({ method: 'GET', url: trackUrl, timeout: 1500 });
+async function fetchScTrackById(trackId) {
+  const trackUrl = `http://${SC_API_ENDPOINT}/tracks/${trackId}`;
+  return axios({
+    method: 'GET',
+    url: trackUrl,
+    headers: {
+      Authorization: `OAuth ${SoundCloudApi.getScAccessToken()}`,
+    },
+    timeout: 1500,
+  });
 }
 
-async function fetchRelatedTracksById(trackId, scApiToken = soundcloudkey.SC_CLIENT_ID) {
-  const relatedUrl = `http://${SC_API_ENDPOINT}/tracks/${trackId}/related?client_id=${scApiToken}`;
-  return axios({ method: 'GET', url: relatedUrl, timeout: 1500 });
+async function fetchRelatedTracksById(trackId) {
+  const relatedUrl = `http://${SC_API_ENDPOINT}/tracks/${trackId}/related`;
+  return axios({
+    method: 'GET',
+    url: relatedUrl,
+    timeout: 1500,
+    headers: {
+      Authorization: `OAuth ${SoundCloudApi.getScAccessToken()}`,
+    },
+  });
 }
 
-async function fetchSoundCloudTrendingChart(scApiToken = soundcloudkey.SC_CLIENT_ID) {
-  const relatedUrl = `https://${SC_V2_API_ENDPOINT}/charts?limit=50&offset=0&streamable=true&kind=trending&genre=soundcloud:genres:all-music&client_id=${scApiToken}`;
-  const chartData = await axios({ method: 'GET', url: relatedUrl, timeout: 1500 });
-  return chartData.data.collection.map(item => item.track);
-}
 async function fetchRadioStationById(stationId) {
   return radioApiInstance.getStationById({ id: stationId });
 }
@@ -153,11 +161,11 @@ async function hydrateRadioStations(stationList) {
     }, Promise.resolve())
     .then(() => Object.values(finalTracks));
 }
-async function hydrateSoundcloudTracks(trackList, scApiToken) {
+async function hydrateSoundcloudTracks(trackList) {
   const trackObjById = new Map();
   const trackPromArr = trackList.map(track => {
     trackObjById.set(parseInt(track.id, 10), track);
-    return fetchScTrackById(track.id, scApiToken).catch(err => {
+    return fetchScTrackById(track.id).catch(err => {
       console.warn(`sc track ${track.id} retrival failed`, err.message);
       return Promise.resolve();
     });
@@ -248,7 +256,10 @@ class ChartsService {
   }
 
   getMostLikedChart(limit = 75, country = '') {
-    return fetchAnalyticsReport(limit, country, '7daysAgo', false, false, 'ADD_PLAYLIST_ITEM')
+    return SoundCloudApi.fetchScAccessToken()
+      .then(() =>
+        fetchAnalyticsReport(limit, country, '7daysAgo', false, false, 'ADD_PLAYLIST_ITEM')
+      )
       .then(extractResponseRows)
       .then(t => t.filter(filterBySCValidId))
       .then(hydrateSoundcloudTracks)
@@ -259,7 +270,8 @@ class ChartsService {
   }
 
   getTopChart(limit = 75, country = '', daysAgo) {
-    return fetchAnalyticsReport(limit, country, daysAgo)
+    return SoundCloudApi.fetchScAccessToken()
+      .then(() => fetchAnalyticsReport(limit, country, daysAgo))
       .then(extractResponseRows)
       .then(t => t.filter(filterBySCValidId))
       .then(hydrateSoundcloudTracks)
@@ -314,10 +326,11 @@ class ChartsService {
 
   getPopularTracksByDeviceId(limit = 10, startDate, deviceId, side) {
     const category = side ? `side-${side}` : null;
-    return fetchAnalyticsReport(limit, null, startDate, deviceId, category)
+    return SoundCloudApi.fetchScAccessToken()
+      .then(() => fetchAnalyticsReport(limit, null, startDate, deviceId, category))
       .then(extractResponseRows)
       .then(t => t.filter(filterBySCValidId))
-      .then(t => hydrateSoundcloudTracks(t, soundcloudkey.BATCH_FETCHING_KEY))
+      .then(t => hydrateSoundcloudTracks(t))
       .then(t => t.filter(filterMaxDuration(MAX_TRACK_DURATION)))
       .then(sortByTotalPlays);
   }
@@ -335,6 +348,7 @@ class ChartsService {
   }
 
   async fetchAllRelated(sourceTrackIds, maxRelatedTracks = Infinity) {
+    await SoundCloudApi.fetchScAccessToken();
     const allRelatedReq = sourceTrackIds.map(trackId =>
       this.fetchRelatedTracksById(trackId).catch(() => ({ data: [] }))
     );
@@ -348,20 +362,22 @@ class ChartsService {
   }
 
   async fetchScTrackList(trackList) {
+    await SoundCloudApi.fetchScAccessToken();
     const trackProms = trackList.map(id => this.fetchScTrackById(id).catch(() => ({ data: {} })));
     const respArr = await Promise.all(trackProms);
     return respArr.map(resp => resp.data);
   }
 
   async hydrateScTrackObjects(rawTrackObjArr, sortByPlays = true) {
+    await SoundCloudApi.fetchScAccessToken();
     const validScTrackList = rawTrackObjArr.filter(filterBySCValidId);
-    return hydrateSoundcloudTracks(validScTrackList, soundcloudkey.BATCH_FETCHING_KEY).then(
+    return hydrateSoundcloudTracks(validScTrackList).then(
       sortByPlays ? sortByTotalPlays : data => data
     );
   }
 
   getScTrendingChart() {
-    return fetchSoundCloudTrendingChart();
+    return Promise.reject(Error('deprecated'));
   }
 }
 module.exports = new ChartsService();

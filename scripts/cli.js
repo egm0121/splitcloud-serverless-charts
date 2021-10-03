@@ -46,10 +46,12 @@ const logTracks = tracks => {
   // await chartService.getTrendingChart().then(logTracks);
   // await SoundCloudChartsService.getPopularChart().then(logTracks);
   // console.log('TRENDING on ', currDate);
-  const country = 'Pakistan';
-  // console.log('POPULAR on ', currDate, ' country ', country);
+  const country = 'India';
+  console.log('POPULAR on ', currDate, ' country ', country);
   // await chartService.getTrendingChart(100, country).then(logTracks);
-  //await chartService.getTopChart(50, country, '30daysAgo').then(logTracks);
+  const token = await SoundCloudChartsService.fetchScAccessToken();
+  console.log('got a sc access token', token);
+  // await chartService.getTopChart(50, country, '30daysAgo').then(logTracks);
   // const playlists = require('./discover_playlists_payload_dev.json');
   // await discoverApi(playlists);
   // console.log('Average songs playback per day NEW USERS');
@@ -99,27 +101,10 @@ const logTracks = tracks => {
   // await ReferralsRepo.insertReferreeForDevice('CFF14B99-B153-490D-A9C2-DBB892FDFB87', 'myReferee3');
   // await ReferralsRepo.insertReferreeForDevice('CFF14B99-B153-490D-A9C2-DBB892FDFB87', 'myReferee3');
   // console.log(await ReferralsRepo.getAllReferreesForDevice('CFF14B99-B153-490D-A9C2-DBB892FDFB87'));
-  console.log('referrals count', await Referrals.getUnassignedPromocodesCount());
+  //console.log('referrals count', await Referrals.getUnassignedPromocodesCount());
   //console.log('fetching one promocode');
   //console.log(await ReferralsRepo.getUnassignedPromocode());
   //console.log(await Referrals.assignPromocodeToDevice('CFF14B99-B153-490D-A9C2-DBB892FDFB87'));
   //await restoreReferrals();
   console.log('Time taken', (performance.now() - timeStart) / 1000);
-  //   const grabScreenshot = async (year = '2019', deviceId, side) => {
-  //     const targetUrl = `http://www.splitcloud-app.com/wrapped.html?id=${deviceId}&year=${year}&side=${side}&t=3`;
-  //     let apiCall = 'https://api.rasterwise.com/v1/get-screenshot';
-  //     apiCall += `?apikey=${getScreenshots.API_KEY}`;
-  //     apiCall += `&url=${encodeURIComponent(targetUrl)}`;
-  //     apiCall += `&height=960&width=540&waitfor=true`;
-  //     console.log('apiCall is', apiCall);
-  //     const resp = await axios({ method: 'GET', url: apiCall, timeout: 30000 });
-  //     console.log(resp.data);
-  //     return axios({ method: 'GET', url: resp.data.screenshotImage, responseType: 'stream' }).then(
-  //       imgResp =>
-  //         imgResp.data.pipe(
-  //           fs.createWriteStream(`./screenshots/screenshot_${year}_${deviceId}_${side}.png`)
-  //         )
-  //     );
-  //   };
-  //   await grabScreenshot('2019', 'CFF14B99-B153-490D-A9C2-DBB892FDFB87', 'L');
 })();

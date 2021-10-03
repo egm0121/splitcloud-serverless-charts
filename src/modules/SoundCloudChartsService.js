@@ -1,20 +1,26 @@
+/* eslint-disable no-use-before-define */
 /* eslint-disable class-methods-use-this */
 import axios from 'axios';
 import cheerio from 'cheerio';
 import cacheDecorator from 'egm0121-rn-common-lib/helpers/cacheDecorator';
+import helpers from './helpers';
 
 const soundcloudkey = require('../../key/soundcloud_key.json');
 
 const SC_API_ENDPOINT = 'api.soundcloud.com';
 const SC_WEB_ENDPOINT = 'soundcloud.com';
+const ACTIVE_TOKEN_S3_PATH_V2 = 'app/app_config_v2.json';
 
 async function resolveScTrackPermalink(trackPerma) {
-  const trackUrl = `https://${SC_API_ENDPOINT}/resolve?client_id=${
-    soundcloudkey.SC_CLIENT_ID
-  }&url=${trackPerma}`;
-  const resp = await axios({ method: 'GET', url: trackUrl, timeout: 1500 }).catch(() =>
-    Promise.resolve({})
-  );
+  const trackUrl = `https://${SC_API_ENDPOINT}/resolve?url=${trackPerma}`;
+  const resp = await axios({
+    method: 'GET',
+    url: trackUrl,
+    timeout: 1500,
+    headers: {
+      Authorization: `OAuth ${SoundCloudApi.getScAccessToken()}`,
+    },
+  }).catch(() => Promise.resolve({}));
   return resp.data;
 }
 
@@ -24,12 +30,15 @@ async function fetchSoundCloudTrendingChart(scChartType, scCountry = 'all-countr
 }
 
 async function fetchUserTracks(userId) {
-  const trackUrl = `https://${SC_API_ENDPOINT}/users/${userId}/tracks?client_id=${
-    soundcloudkey.SC_CLIENT_ID
-  }`;
-  const resp = await axios({ method: 'GET', url: trackUrl, timeout: 1500 }).catch(() =>
-    Promise.resolve({})
-  );
+  const trackUrl = `https://${SC_API_ENDPOINT}/users/${userId}/tracks`;
+  const resp = await axios({
+    method: 'GET',
+    url: trackUrl,
+    timeout: 1500,
+    headers: {
+      Authorization: `OAuth ${SoundCloudApi.getScAccessToken()}`,
+    },
+  }).catch(() => Promise.resolve({}));
   return resp.data;
 }
 
@@ -50,6 +59,61 @@ class SoundCloudChartsService {
       trending: 'new',
       popular: 'top',
     };
+
+    this.accessToken = '';
+  }
+
+  /**
+   * fetch a valid access token from s3 since it is kept in sync by ActiveStreamToken service.
+   * @returns {str} accessToken
+   */
+  async fetchScAccessToken() {
+    if (this.accessToken) return this.accessToken;
+    let response = '';
+    try {
+      response = await helpers.readJSONFromS3({
+        keyName: ACTIVE_TOKEN_S3_PATH_V2,
+        bucket: process.env.BUCKET,
+        resolveExactPath: true,
+      });
+      if (response && response.STREAM_ACCESS_TOKEN) {
+        this.accessToken = response.STREAM_ACCESS_TOKEN;
+        console.log('got accessToken', this.accessToken, 'from app cache');
+        return this.accessToken;
+      }
+    } catch (err) {
+      console.error('fetchScAccessTokenError', err);
+    }
+    try {
+      response = await axios({
+        method: 'POST',
+        url: 'https://api.soundcloud.com/oauth2/token',
+        timeout: 2000,
+        headers: {
+          Accept: 'application/json; charset=utf-8',
+          'content-type': 'application/x-www-form-urlencoded;charset=utf-8',
+        },
+        data: new URLSearchParams({
+          grant_type: 'client_credentials',
+          client_id: soundcloudkey.SC_BK_CHARTS_CLIENT_ID,
+          client_secret: soundcloudkey.SC_BK_CHARTS_CLIENT_SECRET,
+        }),
+      });
+      this.accessToken = response.data.access_token;
+      console.log('got accessToken', this.accessToken, 'from soundcloud oauth');
+      return this.accessToken;
+    } catch (err) {
+      console.error(
+        'fetchScAccessTokenError',
+        err.response ? JSON.stringify(err.response.data.errors) : err
+      );
+    }
+    return this.accessToken;
+  }
+
+  getScAccessToken() {
+    if (!this.accessToken) throw new Error('No Access Token available');
+    return this.accessToken;
   }
 
   async fetchChartsPermalinks(chartType = 'trending') {
@@ -74,6 +138,7 @@ class SoundCloudChartsService {
   }
 
   async getChart(type) {
+    await this.fetchScAccessToken();
     const permalinks = await this.fetchChartsPermalinks(type);
     const tracks = await Promise.all(permalinks.map(resolveScTrackPermalink));
     return tracks.filter(filterStreambleTracks);
@@ -97,6 +162,7 @@ class SoundCloudChartsService {
   }
 
   async fetchAllUserLatest(sourceUserIds) {
+    await this.fetchScAccessToken();
     const uniqIds = [...new Set(sourceUserIds)];
     const allRelatedReq = uniqIds.map(trackId =>
       this.getLatestTracksForArtist(trackId).catch(() => [])
@@ -108,5 +174,27 @@ class SoundCloudChartsService {
       return finalList;
     }, []);
   }
+
+  async resolveSCPlaylistById(scPlaylistId) {
+    let payload;
+    try {
+      payload = await axios({
+        method: 'GET',
+        url: `${SC_API_ENDPOINT}/playlists/${scPlaylistId}/`,
+        timeout: 5000,
+        headers: {
+          Authorization: `OAuth ${this.getScAccessToken()}`,
+        },
+      });
+    } catch (err) {
+      payload = null;
+    }
+    if (!payload) return null;
+    const hasPlayableTracks = payload.data && payload.data.tracks.filter(t => t.streamable).length;
+    if (!hasPlayableTracks) return null;
+    delete payload.data.tracks;
+    return payload.data;
+  }
 }
-export default new SoundCloudChartsService();
+const SoundCloudApi = new SoundCloudChartsService();
+export default SoundCloudApi;
