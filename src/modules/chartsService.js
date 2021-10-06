@@ -128,7 +128,7 @@ async function fetchRelatedTracksById(trackId) {
   return axios({
     method: 'GET',
     url: relatedUrl,
-    timeout: 1500,
+    timeout: 3000,
     headers: {
       Authorization: `OAuth ${SoundCloudApi.getScAccessToken()}`,
     },
@@ -350,7 +350,10 @@ class ChartsService {
   async fetchAllRelated(sourceTrackIds, maxRelatedTracks = Infinity) {
     await SoundCloudApi.fetchScAccessToken();
     const allRelatedReq = sourceTrackIds.map(trackId =>
-      this.fetchRelatedTracksById(trackId).catch(() => ({ data: [] }))
+      this.fetchRelatedTracksById(trackId).catch(err => {
+        console.warn(`failed to fetch related sc track: ${err.toString()}`);
+        return { data: [] };
+      })
     );
     const responsesArr = await Promise.all(allRelatedReq);
     // flatten all related tracks in one list

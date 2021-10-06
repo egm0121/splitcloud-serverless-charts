@@ -126,6 +126,7 @@ export default () => async (event, context) => {
     chartService.fetchAllRelated(sourceTrackIds, constants.EXPLORE_RELATED.MAX_RELATED_TRACKS),
   ]);
   relatedTrackList.push(...allRelatedTracks);
+  context.metrics.putMetric('totalRelatedTracks', relatedTrackList.length);
   logDuration('fetch_input_and_related_tracks_sc_api');
   // generate input tracks allowed tags
   const relatedTagsSet = new Set();
