@@ -197,4 +197,5 @@ class SoundCloudChartsService {
   }
 }
 const SoundCloudApi = new SoundCloudChartsService();
+export { SoundCloudChartsService };
 export default SoundCloudApi;

@@ -1,3 +1,4 @@
+/* eslint-disable import/no-named-as-default */
 import moment from 'moment';
 import SoundCloudChartsService from '../../modules/SoundCloudChartsService';
 

@@ -1,3 +1,4 @@
+/* eslint-disable import/no-named-as-default */
 /* eslint-disable no-restricted-syntax */
 /* eslint-disable no-await-in-loop */
 import SoundCloudChartsService from '../modules/SoundCloudChartsService';
@@ -135,7 +136,7 @@ module.exports.countryChartsSubscribe = async event => {
         topSearchTerms
       );
       if (!topChartData.length && !trendingChartData.length) {
-        console.log(`Empty charts, skip country ${countryCode}`);
+        console.warn(`Empty charts, skip country ${countryCode}`);
         return false;
       }
       console.log(`Save to s3 top and trending charts for ${countryName}...`);
@@ -152,11 +153,11 @@ module.exports.countryChartsSubscribe = async event => {
         topChartData
       );
     } catch (err) {
-      console.log(`error while updating country(${countryCode}) charts:`, err);
+      console.error(`error while updating country(${countryCode}) charts:`, err);
       if (err.message.indexOf('service is currently unavailable') > -1) {
         console.log('GA report failed, mark message as failed');
-        throw err;
       }
+      throw err; // re-throw to mark current charts generation as failed
     }
     return true;
   };
