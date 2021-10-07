@@ -16,7 +16,7 @@ async function resolveScTrackPermalink(trackPerma) {
   const resp = await axios({
     method: 'GET',
     url: trackUrl,
-    timeout: 2500,
+    timeout: 2000,
     headers: {
       Authorization: `OAuth ${SoundCloudApi.getScAccessToken()}`,
     },
@@ -34,7 +34,7 @@ async function fetchUserTracks(userId) {
   const resp = await axios({
     method: 'GET',
     url: trackUrl,
-    timeout: 2500,
+    timeout: 2000,
     headers: {
       Authorization: `OAuth ${SoundCloudApi.getScAccessToken()}`,
     },

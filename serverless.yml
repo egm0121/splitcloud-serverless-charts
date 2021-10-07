@@ -258,6 +258,7 @@ functions:
           method: POST
   exploreRelated:
     handler: src/handlers/api.exploreRelated
+    timeout: 15
     events:
       - http:
           path: explore/related
