@@ -119,7 +119,7 @@ async function fetchScTrackById(trackId) {
     headers: {
       Authorization: `OAuth ${SoundCloudApi.getScAccessToken()}`,
     },
-    timeout: 1500,
+    timeout: 2500,
   });
 }
 
@@ -351,7 +351,11 @@ class ChartsService {
     await SoundCloudApi.fetchScAccessToken();
     const allRelatedReq = sourceTrackIds.map(trackId =>
       this.fetchRelatedTracksById(trackId).catch(err => {
-        console.warn(`failed to fetch related sc track: ${err.toString()}`);
+        console.warn({
+          msg: 'failed to fetch related sc track',
+          error: err.toString(),
+          accessToken: SoundCloudApi.getScAccessToken(),
+        });
         return { data: [] };
       })
     );

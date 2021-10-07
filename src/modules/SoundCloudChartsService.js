@@ -16,7 +16,7 @@ async function resolveScTrackPermalink(trackPerma) {
   const resp = await axios({
     method: 'GET',
     url: trackUrl,
-    timeout: 1500,
+    timeout: 2500,
     headers: {
       Authorization: `OAuth ${SoundCloudApi.getScAccessToken()}`,
     },
@@ -34,7 +34,7 @@ async function fetchUserTracks(userId) {
   const resp = await axios({
     method: 'GET',
     url: trackUrl,
-    timeout: 1500,
+    timeout: 2500,
     headers: {
       Authorization: `OAuth ${SoundCloudApi.getScAccessToken()}`,
     },
@@ -61,14 +61,23 @@ class SoundCloudChartsService {
     };
 
     this.accessToken = '';
+    this.refreshIntervalRef = false;
   }
 
   /**
    * fetch a valid access token from s3 since it is kept in sync by ActiveStreamToken service.
    * @returns {str} accessToken
    */
-  async fetchScAccessToken() {
-    if (this.accessToken) return this.accessToken;
+  async fetchScAccessToken(forceFetch) {
+    if (this.refreshIntervalRef) clearInterval(this.refreshIntervalRef);
+    this.refreshIntervalRef = setInterval(() => {
+      console.log('refresh accessToken from s3');
+      this.fetchScAccessToken(true);
+    }, 60 * 1e3);
+    if (this.accessToken && !forceFetch) {
+      console.log('got accessToken', this.accessToken, 'from instance cache');
+      return this.accessToken;
+    }
     let response = '';
     try {
       response = await helpers.readJSONFromS3({
@@ -78,7 +87,7 @@ class SoundCloudChartsService {
       });
       if (response && response.STREAM_ACCESS_TOKEN) {
         this.accessToken = response.STREAM_ACCESS_TOKEN;
-        console.log('got accessToken', this.accessToken, 'from app cache');
+        console.log('got accessToken', this.accessToken, 'from s3 cache');
         return this.accessToken;
       }
     } catch (err) {
@@ -88,7 +97,7 @@ class SoundCloudChartsService {
       response = await axios({
         method: 'POST',
         url: 'https://api.soundcloud.com/oauth2/token',
-        timeout: 2000,
+        timeout: 2500,
         headers: {
           Accept: 'application/json; charset=utf-8',
           'content-type': 'application/x-www-form-urlencoded;charset=utf-8',
