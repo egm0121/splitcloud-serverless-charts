@@ -59,25 +59,14 @@ class SoundCloudChartsService {
       trending: 'new',
       popular: 'top',
     };
-
-    this.accessToken = '';
-    this.refreshIntervalRef = false;
   }
 
   /**
    * fetch a valid access token from s3 since it is kept in sync by ActiveStreamToken service.
    * @returns {str} accessToken
    */
-  async fetchScAccessToken(forceFetch) {
+  async fetchScAccessToken() {
     if (this.refreshIntervalRef) clearInterval(this.refreshIntervalRef);
-    this.refreshIntervalRef = setInterval(() => {
-      console.log('refresh accessToken from s3');
-      this.fetchScAccessToken(true);
-    }, 60 * 1e3);
-    if (this.accessToken && !forceFetch) {
-      console.log('got accessToken', this.accessToken, 'from instance cache');
-      return this.accessToken;
-    }
     let response = '';
     try {
       response = await helpers.readJSONFromS3({

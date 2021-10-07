@@ -255,6 +255,16 @@ class ChartsService {
     );
   }
 
+  setMetricsReporter(metricsReporter) {
+    this.metricsReporter = metricsReporter;
+  }
+
+  putMetric(...args) {
+    if (this.metricsReporter) {
+      this.metricsReporter.putMetric(...args);
+    }
+  }
+
   getMostLikedChart(limit = 75, country = '') {
     return SoundCloudApi.fetchScAccessToken()
       .then(() =>
@@ -356,6 +366,11 @@ class ChartsService {
           error: err.toString(),
           accessToken: SoundCloudApi.getScAccessToken(),
         });
+        if (err.toString().indexOf('401') > -1) {
+          this.putMetric('fetchRelatedTrackAuthFailure', 1);
+        } else {
+          this.putMetric('fetchRelatedTrackOtherFailure', 1);
+        }
         return { data: [] };
       })
     );

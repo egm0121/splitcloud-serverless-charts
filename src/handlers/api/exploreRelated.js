@@ -1,5 +1,6 @@
 /* eslint-disable import/no-named-as-default */
 import moment from 'moment';
+import chartsService from '../../modules/chartsService';
 import SoundCloudChartsService from '../../modules/SoundCloudChartsService';
 
 const chartService = require('../../modules/chartsService');
@@ -82,7 +83,8 @@ export const testScoreWithDecaySorting = () => (event, context, callback, next) 
 
 export default () => async (event, context) => {
   // eslint-disable-next-line prefer-const
-  let allInputTracks = JSON.parse(event.body) || [];
+  chartsService.setMetricsReporter(context.metrics);
+  const allInputTracks = JSON.parse(event.body) || [];
   const startReq = Date.now();
   const logDuration = label =>
     console.log(
