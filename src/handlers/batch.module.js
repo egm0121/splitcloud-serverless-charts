@@ -47,7 +47,7 @@ module.exports.computeWrappedAggregateTable = async () => {
       \`song_id\` string,
       \`playback_mode\` string,
       \`country_code\` string,
-      \`eventTotal\` int
+      \`eventtotal\` int
      )
     ROW FORMAT DELIMITED FIELDS TERMINATED BY ','
     LOCATION 's3://${APP_BUCKET}/events/raw/events/PLAYBACK-COMPLETED/${currYear}'

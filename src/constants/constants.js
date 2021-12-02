@@ -122,7 +122,7 @@ module.exports = {
     DE: 'Germany',
     US: 'United States',
   },
-  WRAPPED_YEAR_MONTH: [1], // what months to show the cta to compute personal top of year list -> this has to happen after computeWrappedAggregateTable runs.
+  WRAPPED_YEAR_MONTH: [12, 1], // what months to show the cta to compute personal top of year list -> this has to happen after computeWrappedAggregateTable runs.
   WRAPPED_COUNTRY_YEAR_MONTH: [], // what months to show per country top of the year - depreacted feature
   YEAR_WRAPPED_COUNTRIES: {}, // deprecated feature
   COUNTRY_PROMOTION: {

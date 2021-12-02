@@ -24,7 +24,7 @@ custom:
     schedule_token: rate(2 minutes)
     schedule_discovery: rate(1 day)
     schedule_country_charts: cron(0 8 ? * MON *)
-    schedule_wrapped_aggregate: cron(0 13 20 12 ? *)
+    schedule_wrapped_aggregate: cron(0 13 01 12 ? *)
     schedule_import_promocodes: rate(1 day)
     ddbReadUnit: 2
     ddbWriteUnit: 1
@@ -56,6 +56,7 @@ custom:
   bucket: "www.splitcloud-app.com"
   cache_bucket: "com.splitcloud-app.cache"
   app_bucket: "com.splitcloud-app.app-sls"
+  rapsum_bucket: "trends.rapsum.com"
   customDomain:
     domainName: ${self:custom.domains.${self:custom.myStage}}
     basePath: ''
@@ -78,6 +79,10 @@ provider:
       Action:
         - s3:*
       Resource: "arn:aws:s3:::${self:custom.bucket}*"
+    - Effect: Allow
+      Action:
+        - s3:*
+      Resource: "arn:aws:s3:::${self:custom.rapsum_bucket}*"
     - Effect: Allow
       Action:
         - s3:*
@@ -130,6 +135,7 @@ provider:
       STAGE: ${self:custom.myStage}
       CACHE_BUCKET: ${self:custom.cache_bucket}
       APP_BUCKET: ${self:custom.app_bucket}
+      RAPSUM_BUCKET: ${self:custom.rapsum_bucket}
       COUNTRY_CHARTS_QUEUE: ${self:custom.${self:custom.myStage}.country_charts_queue}
       GA_EXTRACTOR_QUEUE: ${self:custom.${self:custom.myStage}.ga_extractor_queue}
       DYNAMODB_TABLE: ${self:service}-${self:custom.myStage}-db
@@ -203,6 +209,12 @@ resources:
           RoleARN:
             Fn::GetAtt: [FirehoseRole, Arn]
 functions:
+  rapsum_trends:
+    handler: src/handlers/api.rapsumTrends
+    events:
+      - http:
+          path: rapsum/trends
+          method: get
   charts_nowplay:
     handler: src/handlers/api.nowPlaying
     events:

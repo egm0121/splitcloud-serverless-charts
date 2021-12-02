@@ -17,13 +17,57 @@ const formatters = require('../modules/formatters');
 const exceptionIosDevices = require('../../key/exception_devices.json');
 
 const SC_RESOLVE_ENDPOINT = 'https://api.soundcloud.com/resolve';
-const { APP_BUCKET, KINESIS_STREAM_NAME } = process.env;
+const { APP_BUCKET, KINESIS_STREAM_NAME, RAPSUM_BUCKET } = process.env;
 
 /**
  *
  * REST API methods
  *
  * * */
+/**
+ * rapsum/trends - experimental endpoint
+ */
+const cachedRapsumData = {};
+let cachedRapsumHeaders = [];
+module.exports.rapsumTrends = helpers.middleware([
+  corsHeadersMiddleware(),
+  async (event, context, callback) => {
+    const term = helpers.getQueryParam(event, 'term');
+    if (!Object.keys(cachedRapsumData).length) {
+      const csvData = await helpers.readFileFromS3({
+        bucket: RAPSUM_BUCKET,
+        keyName: 'data/term_trends.csv',
+        resolveExactPath: true,
+      });
+      csvData.split('\n').forEach((dataRecord, idx) => {
+        const fields = dataRecord.split(',');
+        // first extract labels from header
+        if (!idx) {
+          cachedRapsumHeaders = fields.slice(1).map(yearMonth => +new Date(`${yearMonth}-01`));
+          return;
+        }
+        cachedRapsumData[fields[0]] = fields.slice(1);
+      });
+    }
+    if (cachedRapsumData[term]) {
+      callback(null, {
+        statusCode: 200,
+        headers: {
+          ...context.headers,
+        },
+        body: JSON.stringify({ headers: cachedRapsumHeaders, data: cachedRapsumData[term] }),
+      });
+    } else {
+      callback(null, {
+        statusCode: 200,
+        headers: {
+          ...context.headers,
+        },
+        body: JSON.stringify({ headers: cachedRapsumHeaders, data: [] }),
+      });
+    }
+  },
+]);
 /**
  * /regions
  */
