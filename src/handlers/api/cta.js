@@ -250,10 +250,10 @@ export default async (event, context, callback) => {
   context.selectedVariant = selectedVariant;
   // show end of life notice to any outdated client
   if (ctaHandleEndOfLife(event, context, callback)) return true;
+  // show redeem code is ready for  any user that have earned a promocode
+  if (await ctaHandleReferralHasRewardAndroid(event, context, callback)) return true;
   // show wrapped year end playlists for everyone that has it
   if (await ctaHandleWrappedYearlyPlaylist(event, context, callback)) return true;
-  // show redeem code is ready for users that have an assigned promocode
-  if (await ctaHandleReferralHasRewardAndroid(event, context, callback)) return true;
   // show any country promotion currently active
   if (ctaHandleCountryPromotion(event, context, callback)) return true;
   // show any giveaway currently active
