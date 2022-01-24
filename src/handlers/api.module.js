@@ -33,6 +33,8 @@ module.exports.rapsumTrends = helpers.middleware([
   corsHeadersMiddleware(),
   async (event, context, callback) => {
     const term = helpers.getQueryParam(event, 'term');
+    // TODO: implement plural match
+    // const exactMatch = helpers.getQueryParam(event, 'exactMatch') || false;
     if (!Object.keys(cachedRapsumData).length) {
       const csvData = await helpers.readFileFromS3({
         bucket: RAPSUM_BUCKET,
@@ -46,7 +48,8 @@ module.exports.rapsumTrends = helpers.middleware([
           cachedRapsumHeaders = fields.slice(1).map(yearMonth => +new Date(`${yearMonth}-01`));
           return;
         }
-        cachedRapsumData[fields[0]] = fields.slice(1);
+        const termClean = (fields[0] || '').trim();
+        cachedRapsumData[termClean] = fields.slice(1).map(d => parseInt(d, 10));
       });
     }
     if (cachedRapsumData[term]) {
