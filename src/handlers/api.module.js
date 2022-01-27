@@ -34,7 +34,7 @@ module.exports.rapsumTrends = helpers.middleware([
   async (event, context, callback) => {
     const term = helpers.getQueryParam(event, 'term');
     // TODO: implement plural match
-    // const exactMatch = helpers.getQueryParam(event, 'exactMatch') || false;
+    const exactMatch = helpers.getQueryParam(event, 'exact') || false;
     if (!Object.keys(cachedRapsumData).length) {
       const csvData = await helpers.readFileFromS3({
         bucket: RAPSUM_BUCKET,
@@ -48,17 +48,26 @@ module.exports.rapsumTrends = helpers.middleware([
           cachedRapsumHeaders = fields.slice(1).map(yearMonth => +new Date(`${yearMonth}-01`));
           return;
         }
-        const termClean = (fields[0] || '').trim();
+        let termClean = (fields[0] || '').trim();
+        // temporary workaroud, fix the bug in the csv generation of terms
+        termClean = termClean.match(/\D/) ? termClean.replace(/\d$/, '') : termClean;
         cachedRapsumData[termClean] = fields.slice(1).map(d => parseInt(d, 10));
       });
     }
     if (cachedRapsumData[term]) {
+      let finalData = cachedRapsumData[term];
+      if (!exactMatch) {
+        const pluralMatch = cachedRapsumData[`${term}s`];
+        if (pluralMatch) {
+          finalData = finalData.map((termCount, termIdx) => termCount + pluralMatch[termIdx]);
+        }
+      }
       callback(null, {
         statusCode: 200,
         headers: {
           ...context.headers,
         },
-        body: JSON.stringify({ headers: cachedRapsumHeaders, data: cachedRapsumData[term] }),
+        body: JSON.stringify({ headers: cachedRapsumHeaders, data: finalData }),
       });
     } else {
       callback(null, {
