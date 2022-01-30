@@ -173,18 +173,19 @@ class SoundCloudChartsService {
     }, []);
   }
 
-  async resolveSCPlaylistById(scPlaylistId) {
+  async resolveSCPlaylistById(scPlaylistId, withTracks = true) {
     let payload;
     try {
       payload = await axios({
         method: 'GET',
-        url: `${SC_API_ENDPOINT}/playlists/${scPlaylistId}/`,
+        url: `https://${SC_API_ENDPOINT}/playlists/${scPlaylistId}/?show_tracks=${withTracks}`,
         timeout: 5000,
         headers: {
           Authorization: `OAuth ${this.getScAccessToken()}`,
         },
       });
     } catch (err) {
+      console.error('resolveSCPlaylistById error', err);
       payload = null;
     }
     if (!payload) return null;

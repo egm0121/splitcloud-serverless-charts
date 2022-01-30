@@ -75,6 +75,7 @@ async function generateSectionsForCountries(countriesList) {
   }
   return returnArr;
 }
+// eslint-disable-next-line no-unused-vars
 async function generateWrappedCountriesSection(countriesList) {
   const currMonth = new Date().getUTCMonth() + 1;
   let currYear = new Date().getUTCFullYear();
@@ -125,11 +126,11 @@ module.exports = async function discoverApi(eventData) {
     : [];
   const discoveryCountries = constants.DISCOVERY_COUNTRIES;
   const regionalTopSections = await generateSectionsForCountries(discoveryCountries);
-  const regionalWrappedSection = await generateWrappedCountriesSection(
+  /* const regionalWrappedSection = await generateWrappedCountriesSection(
     constants.YEAR_WRAPPED_COUNTRIES
-  );
+  ); */
   apiResponse.collection = [
-    ...regionalWrappedSection,
+    // ...regionalWrappedSection,
     ...allSectionsResolved,
     ...regionalTopSections,
   ];
