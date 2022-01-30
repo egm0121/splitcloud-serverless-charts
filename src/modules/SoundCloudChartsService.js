@@ -85,7 +85,7 @@ class SoundCloudChartsService {
     try {
       response = await axios({
         method: 'POST',
-        url: 'https://api.soundcloud.com/oauth2/token',
+        url: `https://${SC_API_ENDPOINT}/oauth2/token`,
         timeout: 2500,
         headers: {
           Accept: 'application/json; charset=utf-8',

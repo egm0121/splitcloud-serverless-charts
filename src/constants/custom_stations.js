@@ -63,7 +63,7 @@ export default {
       name: 'Радио Фантастики',
       url: 'http://fantasyradioru.no-ip.biz:8002/live',
       homepage: 'https://fantasyradio.ru/',
-      favicon: 'https://fantasyradio.ru/favicon.png',
+      favicon: 'https://fantasyradio.ru/favicon.ico',
       tags: 'urban,pop,fantasyradio,russia,fantasy',
       country: 'Russia',
       countrycode: 'RU',
