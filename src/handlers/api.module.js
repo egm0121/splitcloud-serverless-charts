@@ -33,7 +33,6 @@ module.exports.rapsumTrends = helpers.middleware([
   corsHeadersMiddleware(),
   async (event, context, callback) => {
     const term = helpers.getQueryParam(event, 'term');
-    // TODO: implement plural match
     const exactMatch = helpers.getQueryParam(event, 'exact') || false;
     if (!Object.keys(cachedRapsumData).length) {
       const csvData = await helpers.readFileFromS3({
@@ -48,9 +47,7 @@ module.exports.rapsumTrends = helpers.middleware([
           cachedRapsumHeaders = fields.slice(1).map(yearMonth => +new Date(`${yearMonth}-01`));
           return;
         }
-        let termClean = (fields[0] || '').trim();
-        // temporary workaroud, fix the bug in the csv generation of terms
-        termClean = termClean.match(/\D/) ? termClean.replace(/\d$/, '') : termClean;
+        const termClean = (fields[0] || '').trim();
         cachedRapsumData[termClean] = fields.slice(1).map(d => parseInt(d, 10));
       });
     }
