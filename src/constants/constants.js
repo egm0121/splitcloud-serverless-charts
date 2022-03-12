@@ -122,6 +122,7 @@ module.exports = {
     DE: 'Germany',
     US: 'United States',
   },
+  COUNTY_CODES_BLACKLIST: ['RU', 'BY'],
   WRAPPED_YEAR_MONTH: [12, 1], // what months to show the cta to compute personal top of year list -> this has to happen after computeWrappedAggregateTable runs.
   WRAPPED_COUNTRY_YEAR_MONTH: [], // what months to show per country top of the year - depreacted feature
   YEAR_WRAPPED_COUNTRIES: {}, // deprecated feature
@@ -133,6 +134,14 @@ module.exports = {
     //   ctaLabel: 'Remove ADS for 20₹ 🎉',
     //   ctaUrl: 'http://www.splitcloud-app.com/promo_IN_20.html',
     // },
+    RU: {
+      ctaLabel: '💔 Supporting Ukraine 🇺🇦',
+      ctaUrl: 'https://www.globalcitizen.org/en/content/ways-to-help-ukraine-conflict/',
+    },
+    BY: {
+      ctaLabel: '💔 Supporting Ukraine 🇺🇦',
+      ctaUrl: 'https://www.globalcitizen.org/en/content/ways-to-help-ukraine-conflict/',
+    },
   },
   TOP_COUNTRIES: {
     IN: 'India',

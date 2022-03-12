@@ -10,6 +10,7 @@ import requestCountryCodeMiddleware from '../middlewares/requestCountryCode';
 import deviceIdMiddleware from '../middlewares/deviceId';
 import wrappedPlaylistGenerator from '../modules/wrappedPlaylistGenerator';
 import { handleUpdateReferrer, handleFetchPromocode } from './api/referrer';
+import blockRegionMiddleware from '../middlewares/blockAppRegion';
 
 const helpers = require('../modules/helpers');
 const constants = require('../constants/constants');
@@ -467,6 +468,11 @@ module.exports.appConfigApi = helpers.middleware([
   deviceIdMiddleware(),
   blockVersionsMiddleware({
     errBody: { STREAM_CLIENT_ID: 'invalidtokeninvalidtoken00000000', disable_sc: true },
+    errCode: 200,
+  }),
+  blockRegionMiddleware({
+    countryCodeBlacklist: constants.COUNTY_CODES_BLACKLIST,
+    errBody: { STREAM_CLIENT_ID: 'unsupportedcountrytoken', disable_sc: true, disable_radio: true },
     errCode: 200,
   }),
   async (event, context, callback) => {
