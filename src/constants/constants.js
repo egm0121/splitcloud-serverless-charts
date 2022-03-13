@@ -134,13 +134,11 @@ module.exports = {
     //   ctaLabel: 'Remove ADS for 20₹ 🎉',
     //   ctaUrl: 'http://www.splitcloud-app.com/promo_IN_20.html',
     // },
-    RU: {
+    GLOBAL: {
       ctaLabel: '💔 Supporting Ukraine 🇺🇦',
-      ctaUrl: 'https://www.globalcitizen.org/en/content/ways-to-help-ukraine-conflict/',
-    },
-    BY: {
-      ctaLabel: '💔 Supporting Ukraine 🇺🇦',
-      ctaUrl: 'https://www.globalcitizen.org/en/content/ways-to-help-ukraine-conflict/',
+      ctaUrl: 'http://www.splitcloud-app.com/promo_ukraine.html',
+      ctaExpiry: '2022-04-30T23:59:00.000Z',
+      ctaButtonColor: '#005bba',
     },
   },
   TOP_COUNTRIES: {

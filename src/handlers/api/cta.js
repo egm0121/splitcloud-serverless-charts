@@ -82,18 +82,21 @@ const ctaHandleWrappedYearlyPlaylist = async (event, context, callback) => {
 };
 const ctaHandleCountryPromotion = (event, context, callback) => {
   const { deviceId } = event.pathParameters;
-  const isAndroidId = deviceId.length === 16;
   const clientCountry = (
     helpers.getQueryParam(event, 'region') ||
     event.headers['CloudFront-Viewer-Country'] ||
     'US'
   ).toUpperCase();
+  const isNotExipired = expiryTs => Date.now() < new Date(expiryTs);
+  let promo = constants.COUNTRY_PROMOTION[clientCountry];
+  // global country promotion gets precedence
   if (
-    isAndroidId &&
-    clientCountry in constants.COUNTRY_PROMOTION &&
-    context.selectedVariant === 'B'
+    constants.COUNTRY_PROMOTION.GLOBAL &&
+    isNotExipired(constants.COUNTRY_PROMOTION.GLOBAL.ctaExpiry)
   ) {
-    const promo = constants.COUNTRY_PROMOTION[clientCountry];
+    promo = constants.COUNTRY_PROMOTION.GLOBAL;
+  }
+  if (promo && isNotExipired(promo.ctaExpiry)) {
     callback(null, {
       statusCode: 200,
       headers: {
