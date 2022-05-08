@@ -119,7 +119,7 @@ async function fetchScTrackById(trackId) {
     headers: {
       Authorization: `OAuth ${SoundCloudApi.getScAccessToken()}`,
     },
-    timeout: 2000,
+    timeout: constants.SC_API_REQ_TIMEOUT,
   });
 }
 
@@ -128,7 +128,7 @@ async function fetchRelatedTracksById(trackId) {
   return axios({
     method: 'GET',
     url: relatedUrl,
-    timeout: 2500,
+    timeout: constants.SC_API_SLOW_REQ_TIMEOUT,
     headers: {
       Authorization: `OAuth ${SoundCloudApi.getScAccessToken()}`,
     },
