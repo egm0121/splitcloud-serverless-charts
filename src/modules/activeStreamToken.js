@@ -172,7 +172,8 @@ async function selectActiveStreamToken(metricsLogger) {
     activeTokenObj && activeTokenObj.STREAM_ACCESS_EXP
   );
   console.log('isTokenStillValid', activeAccessToken, 'result:', tokenValidityState);
-  // if current token is valid but client quota has been exceeded
+  // if current token expired or quota has been exceeded for the current clientId
+  // select the least used clientId from the pool.
   if (tokenValidityState === 'max_quota' || tokenValidityState === 'expired') {
     console.log('current clientId above quota, select new clientId from', tokensUsageObj);
     const tokensUsageMap = Object.keys(tokensUsageObj)
@@ -207,9 +208,7 @@ async function selectActiveStreamToken(metricsLogger) {
         break;
       }
     }
-    if (!newValidTokenFound) {
-      console.log(JSON.stringify({ logAlarm: 'allTokenExpired', isError: true }));
-    }
+    metricsLogger.putMetric('tokenPoolExausted', !newValidTokenFound);
     return getActiveToken();
   }
   console.log(`active clientId ${activeClientId} is still below hit limit`);
