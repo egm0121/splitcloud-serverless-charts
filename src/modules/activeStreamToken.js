@@ -208,7 +208,7 @@ async function selectActiveStreamToken(metricsLogger) {
         break;
       }
     }
-    metricsLogger.putMetric('tokenPoolExausted', !newValidTokenFound);
+    metricsLogger.putMetric('tokenPoolExausted', newValidTokenFound ? 0 : 1);
     return getActiveToken();
   }
   console.log(`active clientId ${activeClientId} is still below hit limit`);
