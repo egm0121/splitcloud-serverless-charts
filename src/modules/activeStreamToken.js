@@ -9,6 +9,7 @@ const INITIAL_ACTIVE_CLIENT_ID = availableStreamTokens[1].SC_CLIENT_ID;
 const ACTIVE_TOKEN_S3_PATH_V2 = 'app/app_config_v2.json';
 const TEST_TRACK_URL = 'https://api.soundcloud.com/tracks/855191668/streams';
 const MIN_EXPIRE_TIME = 5 * 60 * 1e3; // expire token 5 minutes before sc expiry
+axios.defaults.timeout = 5000; // 5 seconds timeout per request
 
 async function getActiveToken() {
   let jsonData;
@@ -33,6 +34,7 @@ async function checkTokenIsValid(token, expireAt) {
       headers: {
         Authorization: `OAuth ${token}`,
       },
+      timeout: 10 * 1e3, // longer timeout to fetch the test track
       validateStatus: status => status >= 200 && status <= 302,
     });
     if (resp.status >= 400) {

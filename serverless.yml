@@ -21,7 +21,7 @@ custom:
   prod: 
     ga_daily_extract: cron(0 10 * * ? *)
     sc_charts_cache: rate(1 day)
-    schedule_token: rate(2 minutes)
+    schedule_token: rate(3 minutes)
     schedule_discovery: rate(1 day)
     schedule_country_charts: cron(0 8 ? * MON *)
     schedule_wrapped_aggregate: cron(0 13 01 12 ? *)
@@ -346,7 +346,7 @@ functions:
 # batch & offline running lambda functions
   token:
     handler: src/handlers/batch.selectActiveToken
-    timeout: 30
+    timeout: 45
     events:
       - schedule: ${self:custom.${self:custom.myStage}.schedule_token}
   discovery:
