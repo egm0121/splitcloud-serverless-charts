@@ -30,7 +30,10 @@ const { APP_BUCKET, KINESIS_STREAM_NAME, RAPSUM_BUCKET } = process.env;
  * rapsum/trends - experimental endpoint
  */
 const cachedRapsumData = {};
+const cachedRapsumTopList = [];
 let cachedRapsumHeaders = [];
+const formatExplicit = term => explicitList[term] || term;
+
 module.exports.rapsumTrends = helpers.middleware([
   corsHeadersMiddleware(),
   async (event, context, callback) => {
@@ -52,18 +55,18 @@ module.exports.rapsumTrends = helpers.middleware([
         }
         const termClean = (fields[0] || '').trim();
         cachedRapsumData[termClean] = fields.slice(1).map(d => parseInt(d, 10));
+        if (idx <= 50) {
+          cachedRapsumTopList.push([formatExplicit(termClean), ...cachedRapsumData[termClean]]);
+        }
       });
     }
     if (popChart) {
-      const list = Object.keys(cachedRapsumData)
-        .slice(0, 50)
-        .map(t => explicitList[t] || t);
       callback(null, {
         statusCode: 200,
         headers: {
           ...context.headers,
         },
-        body: JSON.stringify({ list }),
+        body: JSON.stringify({ cachedRapsumTopList }),
       });
       return;
     }
