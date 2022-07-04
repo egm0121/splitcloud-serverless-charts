@@ -11,6 +11,7 @@ import deviceIdMiddleware from '../middlewares/deviceId';
 import wrappedPlaylistGenerator from '../modules/wrappedPlaylistGenerator';
 import { handleUpdateReferrer, handleFetchPromocode } from './api/referrer';
 import blockRegionMiddleware from '../middlewares/blockAppRegion';
+import explicitList from '../constants/explicit_list';
 
 const helpers = require('../modules/helpers');
 const constants = require('../constants/constants');
@@ -35,6 +36,7 @@ module.exports.rapsumTrends = helpers.middleware([
   async (event, context, callback) => {
     const term = helpers.getQueryParam(event, 'term');
     const exactMatch = helpers.getQueryParam(event, 'exact') || false;
+    const popChart = helpers.getQueryParam(event, 'chart') || '' === 'popular';
     if (!Object.keys(cachedRapsumData).length) {
       const csvData = await helpers.readFileFromS3({
         bucket: RAPSUM_BUCKET,
@@ -51,6 +53,19 @@ module.exports.rapsumTrends = helpers.middleware([
         const termClean = (fields[0] || '').trim();
         cachedRapsumData[termClean] = fields.slice(1).map(d => parseInt(d, 10));
       });
+    }
+    if (popChart) {
+      const list = Object.keys(cachedRapsumData)
+        .slice(0, 50)
+        .map(t => explicitList[t] || t);
+      callback(null, {
+        statusCode: 200,
+        headers: {
+          ...context.headers,
+        },
+        body: JSON.stringify({ list }),
+      });
+      return;
     }
     if (cachedRapsumData[term]) {
       let finalData = cachedRapsumData[term];
