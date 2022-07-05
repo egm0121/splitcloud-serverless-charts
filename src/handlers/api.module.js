@@ -11,7 +11,6 @@ import deviceIdMiddleware from '../middlewares/deviceId';
 import wrappedPlaylistGenerator from '../modules/wrappedPlaylistGenerator';
 import { handleUpdateReferrer, handleFetchPromocode } from './api/referrer';
 import blockRegionMiddleware from '../middlewares/blockAppRegion';
-import explicitList from '../constants/explicit_list';
 
 const helpers = require('../modules/helpers');
 const constants = require('../constants/constants');
@@ -32,7 +31,6 @@ const { APP_BUCKET, KINESIS_STREAM_NAME, RAPSUM_BUCKET } = process.env;
 const cachedRapsumData = {};
 const cachedRapsumTopList = [];
 let cachedRapsumHeaders = [];
-const formatExplicit = term => explicitList[term] || term;
 
 module.exports.rapsumTrends = helpers.middleware([
   corsHeadersMiddleware(),
@@ -56,7 +54,7 @@ module.exports.rapsumTrends = helpers.middleware([
         const termClean = (fields[0] || '').trim();
         cachedRapsumData[termClean] = fields.slice(1).map(d => parseInt(d, 10));
         if (idx <= 50) {
-          cachedRapsumTopList.push([formatExplicit(termClean), ...cachedRapsumData[termClean]]);
+          cachedRapsumTopList.push([termClean, ...cachedRapsumData[termClean]]);
         }
       });
     }
