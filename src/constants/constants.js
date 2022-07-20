@@ -136,10 +136,17 @@ module.exports = {
     //   ctaLabel: 'Remove ADS for 20₹ 🎉',
     //   ctaUrl: 'http://www.splitcloud-app.com/promo_IN_20.html',
     // },
+    // GLOBAL: {
+    //   ctaLabel: '💔 Supporting Ukraine 🇺🇦',
+    //   ctaUrl: 'http://www.splitcloud-app.com/promo_ukraine.html',
+    //   ctaExpiry: '2022-04-30T23:59:00.000Z',
+    //   ctaButtonColor: '#005bba',
+    // },
+    //
     GLOBAL: {
-      ctaLabel: '💔 Supporting Ukraine 🇺🇦',
-      ctaUrl: 'http://www.splitcloud-app.com/promo_ukraine.html',
-      ctaExpiry: '2022-04-30T23:59:00.000Z',
+      ctaLabel: 'Get offline music! ✈️',
+      ctaUrl: 'https://forms.gle/vDt6QkFezosJmMUP6',
+      ctaExpiry: '2023-01-01T23:59:00.000Z',
       ctaButtonColor: '#005bba',
     },
   },
