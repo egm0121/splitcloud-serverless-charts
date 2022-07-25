@@ -3,6 +3,7 @@ const helpers = require('../modules/helpers');
 
 const { DYNAMODB_TABLE } = process.env;
 
+const waitFor = ms => new Promise(res => setTimeout(res, ms));
 /**
  * Dynamo Table structure
  * | pk | sk | attrs
@@ -163,7 +164,9 @@ class Referrals {
             unassignedPromocode.sk
           }, retrying...`
         );
-        return setTimeout(() => this.assignPromocodeToDevice(referrerId, attempt - 1), 500);
+        // in case of confict wait and retry to assign a new promocode
+        await waitFor(500);
+        return this.assignPromocodeToDevice(referrerId, attempt - 1);
       }
       throw err;
     }
