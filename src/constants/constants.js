@@ -73,7 +73,7 @@ module.exports = {
     MAX_SOURCE_TRACKS: 25 + 5, // always use at least 5 tracks from splitcloud weekly popular chart
     MAX_RELATED_TRACKS: 30, // how many related tracks to use per each source track
     MIN_PLAYBACK_COUNT: 1000, // min number of plays needed for a track to be listed in the home feed
-    MAX_TRACKS_PER_ALBUM: 3, // how many track per same artist/album to feature in the same feed
+    MAX_TRACKS_PER_ALBUM: 3, // how many track per same artist+album to feature in the same feed
     SMART_FEED_COUNTRY: true, // disabled for perf testing of the feature ['US', 'EG', 'PK']
     FEED_SC_CHARTS_COUNTRY: ['US', 'UK', 'CA', 'MX', 'BR', 'AR', 'CO', 'NP', 'EC', 'PE'].concat(
       EU_COUNTRIES
@@ -105,7 +105,7 @@ module.exports = {
     EG: '🇪🇬',
     PE: '🇵🇪',
   },
-  IG_POST_COUNTRIES: ['US', 'IN', 'TH', 'PK', 'MX'],
+  IG_POST_COUNTRIES: ['US', 'IN', 'PK', 'MX'],
   SC_SYSTEM_PLAYLIST_USER: {
     permalink_url: 'https://soundcloud.com/splitcloud',
     permalink: 'splitcloud',
@@ -120,7 +120,6 @@ module.exports = {
     EG: 'Egypt',
     MX: 'Mexico',
     PE: 'Peru',
-    TH: 'Thailand',
     DE: 'Germany',
     US: 'United States',
   },
@@ -147,7 +146,7 @@ module.exports = {
       ctaLabel: 'Get offline music! ✈️',
       ctaUrl: 'https://forms.gle/vDt6QkFezosJmMUP6',
       ctaExpiry: '2023-01-01T23:59:00.000Z',
-      ctaButtonColor: '#005bba',
+      ctaButtonColor: '#ff6f00',
     },
   },
   TOP_COUNTRIES: {
@@ -160,7 +159,6 @@ module.exports = {
     DZ: 'Algeria',
     US: 'United States',
     EG: 'Egypt',
-    TH: 'Thailand',
     IT: 'Italy',
     BR: 'Brazil',
     AR: 'Argentina',
@@ -177,7 +175,6 @@ module.exports = {
     BD: 'Bangladesh',
     EC: 'Ecuador',
     GB: 'United Kingdom',
-    RU: 'Russia',
   },
   SUPPORTED_UNICODE_SCRIPTS: [
     { name: 'latin', regexp: /\p{Script=Latin}/u },
