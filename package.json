@@ -1,6 +1,6 @@
 {
   "name": "splitcloud-serverless-charts",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "charts based on ga reports for most listened songs on SplitCloud app",
   "main": "index.js",
   "scripts": {

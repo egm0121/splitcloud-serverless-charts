@@ -78,7 +78,10 @@ async function fetchAccessTokenForClientId(clientId) {
       exp: Date.now() + parseInt(resp.data.expires_in, 10) * 1e3,
     };
   } catch (err) {
-    console.error('fetchAccessToken failed', err.response);
+    console.error('fetchAccessToken failed with error:', err, ' response:', err.response);
+    if (!err.response) {
+      accessTokenObj.didTimeout = true;
+    }
   }
   return accessTokenObj;
 }
@@ -184,12 +187,14 @@ async function selectActiveStreamToken(metricsLogger) {
       .sort((a, b) => a[1] - b[1]); // sort by least used first
 
     let newValidTokenFound = false;
+    let accessTokenReqTimeoutCount = 0;
     // eslint-disable-next-line no-restricted-syntax
     for (const currClientIdInfo of tokensUsageMap) {
       const currClientId = currClientIdInfo[0];
       console.log('potential new clientId, validate it', currClientId);
       // eslint-disable-next-line no-await-in-loop
       const accessTokenForClient = await fetchAccessTokenForClientId(currClientId);
+      if (accessTokenForClient.didTimeout) accessTokenReqTimeoutCount += 1;
       // eslint-disable-next-line no-await-in-loop
       const newTokenValidityState = await checkTokenIsValid(
         accessTokenForClient.token,
@@ -211,6 +216,7 @@ async function selectActiveStreamToken(metricsLogger) {
       }
     }
     metricsLogger.putMetric('tokenPoolExausted', newValidTokenFound ? 0 : 1);
+    metricsLogger.putMetric('tokenRequestTimeoutCount', accessTokenReqTimeoutCount);
     return getActiveToken();
   }
   console.log(`active clientId ${activeClientId} is still below hit limit`);
