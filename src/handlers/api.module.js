@@ -483,7 +483,11 @@ module.exports.appConfigApi = helpers.middleware([
   requestCountryCodeMiddleware(),
   deviceIdMiddleware(),
   blockVersionsMiddleware({
-    errBody: { STREAM_CLIENT_ID: 'invalidtokeninvalidtoken00000000', disable_sc: true },
+    errBody: {
+      STREAM_CLIENT_ID: 'invalidtokeninvalidtoken00000000',
+      disable_sc: true,
+      disable_radio: true,
+    },
     errCode: 200,
   }),
   blockRegionMiddleware({
