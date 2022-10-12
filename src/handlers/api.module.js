@@ -561,7 +561,15 @@ module.exports.scResolve = async (event, context, callback) => {
 module.exports.ctaEndpoint = helpers.middleware([
   metricsReporterMiddleware(),
   corsHeadersMiddleware(),
-  blockVersionsMiddleware(),
+  blockVersionsMiddleware({
+    errBody: {
+      ctaUrl: 'http://www.splitcloud-app.com/getapp.html?ref=unsupportedVersion',
+      ctaLabel: 'New SplitCloud update ⚡️',
+      ctaButtonColor: '#FF7F50',
+      ctaAction: { type: 'url' },
+    },
+    errCode: 200,
+  }),
   ctaHandler,
 ]);
 
