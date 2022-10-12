@@ -563,7 +563,7 @@ module.exports.ctaEndpoint = helpers.middleware([
   corsHeadersMiddleware(),
   blockVersionsMiddleware({
     errBody: {
-      ctaUrl: 'http://www.splitcloud-app.com/getapp.html?ref=unsupportedVersion',
+      ctaUrl: 'http://www.splitcloud-app.com/getapp/index.html?ref=unsupportedVersion',
       ctaLabel: 'New SplitCloud update ⚡️',
       ctaButtonColor: '#FF7F50',
       ctaAction: { type: 'url' },
