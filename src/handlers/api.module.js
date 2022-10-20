@@ -508,6 +508,8 @@ module.exports.appConfigApi = helpers.middleware([
         !exceptionIosDevices.includes(context.deviceId)
       ) {
         appConfig.disable_sc = true;
+        appConfig.STREAM_CLIENT_ID = 'invalidtokeninvalidtoken00000000';
+        appConfig.STREAM_ACCESS_TOKEN = '0-000000--00000000000000000000000';
       }
     } catch (err) {
       console.warn('failed fetching client config');
