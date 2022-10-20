@@ -79,7 +79,7 @@ module.exports = {
       EU_COUNTRIES
     ),
   },
-  DISABLE_SC: false, // controls if streaming from soundcloud is available
+  DISABLE_SC: true, // controls if streaming from soundcloud is available
   DISABLE_SC_IOS: true,
   ATHENA_SPLITCLOUD_WRAPPED_DATABASE: 'splitcloud_wrapped_db',
   WRAPPED_EVENT_TABLE_PREFIX: 'raw_playback_events_',

@@ -200,7 +200,7 @@ module.exports.nowPlaying = helpers.middleware([
       headers: {
         ...context.headers,
       },
-      body: JSON.stringify(trackList),
+      body: constants.DISABLE_SC ? JSON.stringify([]) : JSON.stringify(trackList),
     };
     callback(null, resp);
   },
