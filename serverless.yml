@@ -19,21 +19,21 @@ custom:
     dev: dev-rest.splitcloud-app.com
   myStage: ${opt:stage, self:provider.stage}
   prod: 
-    ga_daily_extract: cron(0 10 * * ? *)
-    sc_charts_cache: rate(1 day)
-    schedule_token: rate(3 minutes)
-    schedule_discovery: rate(1 day)
-    schedule_country_charts: cron(0 8 ? * MON *)
-    schedule_wrapped_aggregate: cron(0 13 01 12 ? *)
-    schedule_import_promocodes: rate(1 day)
-    ddbReadUnit: 2
+    ga_daily_extract: #cron(0 10 * * ? *)
+    sc_charts_cache: #rate(1 day)
+    schedule_token: #rate(3 minutes)
+    schedule_discovery: #rate(1 day)
+    schedule_country_charts: #cron(0 8 ? * MON *)
+    schedule_wrapped_aggregate: #cron(0 13 01 12 ? *)
+    schedule_import_promocodes: #rate(1 day)
+    ddbReadUnit: 1
     ddbWriteUnit: 1
     country_charts_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/splitcloud_charts_by_region"
     country_charts_arn: "arn:aws:sqs:us-east-1:348868901434:splitcloud_charts_by_region"
-    charts_queue_enabled: true
+    charts_queue_enabled: false
     ga_extractor_arn: "arn:aws:sqs:us-east-1:348868901434:ga_extractor_queue_prod"
     ga_extractor_queue: "https://sqs.us-east-1.amazonaws.com/348868901434/ga_extractor_queue_prod"
-    ga_extractor_queue_enabled: true
+    ga_extractor_queue_enabled: false
     firehose_event_bucket: "com.splitcloud-app.firehose.prod"
   dev: 
     ga_daily_extract:
@@ -209,6 +209,7 @@ resources:
           RoleARN:
             Fn::GetAtt: [FirehoseRole, Arn]
 functions:
+  #TODO: extract rapsum trends to own severless application
   rapsum_trends:
     handler: src/handlers/api.rapsumTrends
     events:
@@ -219,30 +220,35 @@ functions:
     handler: src/handlers/api.nowPlaying
     events:
       - http:
+          enabled: false
           path: charts/nowplaying
           method: get
   charts_endpoint:
     handler: src/handlers/api.chartsEndpoint
     events:
       - http:
+          enabled: false
           path: charts
           method: get
   searchTermsPopular:
     handler: src/handlers/api.searchTermsPopular
     events:
       - http:
+          enabled: false
           path: searchterms/popular
           method: get
   top_regions:
     handler: src/handlers/api.topRegions
     events:
       - http:
+          enabled: false
           path: regions
           method: get
   postsRegions:
     handler: src/handlers/api.postsRegions
     events:
       - http:
+          enabled: false
           path: posts/regions
           method: get
   log_collector:
@@ -260,12 +266,14 @@ functions:
     handler: src/handlers/api.appReferrer
     events: 
       - http:
+          enabled: false
           path: app/referrer
           method: POST
   appPromoReferrer:
     handler: src/handlers/api.appPromocodeRef
     events: 
       - http:
+          enabled: false
           path: app/promocode/referrer
           method: POST
   exploreRelated:
@@ -273,6 +281,7 @@ functions:
     timeout: 15
     events:
       - http:
+          enabled: false
           path: explore/related
           method: POST
   radio_countrycodes:
@@ -291,18 +300,21 @@ functions:
     handler: src/handlers/api.scResolve
     events:
       - http:
+          enabled: false
           path: /sc-proxy/resolve
           method: get
   eventIngest:
     handler: src/handlers/api.eventIngest
     events:
       - http:
+          enabled: false
           path: app/events/ingest
           method: post
   radioListByCountrycode:
     handler: src/handlers/api.radioListByCountryCode
     events:
       - http:
+          enabled: false
           path: radio/list/countrycode/{countrycode}
           method: get
           request:
@@ -314,6 +326,7 @@ functions:
     timeout: 30
     events:
       - http:
+          enabled: false
           path: wrapped/global/{kind}
           method: get
   yearWrapped:
@@ -321,6 +334,7 @@ functions:
     timeout: 30
     events:
       - http:
+          enabled: false
           path: wrapped/{year}/{deviceId}/{side}
           method: get
           cors: true
@@ -335,6 +349,7 @@ functions:
     handler: src/handlers/api.ctaEndpoint
     events:
       - http:
+          enabled: false
           path: cta/{deviceId}/{side}
           method: get
           cors: true
@@ -408,11 +423,11 @@ functions:
   aggregatedNowPlaying:
     handler: src/handlers/batch.aggregatedNowPlaying
     timeout: 60
-    events:
-      - s3:
-          existing: true
-          bucket: ${self:custom.${self:custom.myStage}.firehose_event_bucket}
-          event: s3:ObjectCreated:*
+    #events:
+     # - s3:
+     #     existing: true
+     #     bucket: ${self:custom.${self:custom.myStage}.firehose_event_bucket}
+     #     event: s3:ObjectCreated:*
 plugins:
   - serverless-domain-manager
   - serverless-offline
