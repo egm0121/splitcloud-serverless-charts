@@ -503,8 +503,7 @@ module.exports.appConfigApi = helpers.middleware([
       // manage streaming availability
       appConfig.disable_sc = constants.DISABLE_SC;
       if (
-        constants.DISABLE_SC_IOS &&
-        context.isDeviceIOS &&
+        (constants.DISABLE_SC || (constants.DISABLE_SC_IOS && context.isDeviceIOS)) &&
         !exceptionIosDevices.includes(context.deviceId)
       ) {
         appConfig.disable_sc = true;
