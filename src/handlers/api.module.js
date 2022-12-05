@@ -483,12 +483,11 @@ module.exports.appConfigApi = helpers.middleware([
   requestCountryCodeMiddleware(),
   deviceIdMiddleware(),
   blockVersionsMiddleware({
-    errBody: {
-      STREAM_CLIENT_ID: 'invalidtokeninvalidtoken00000000',
-      disable_sc: true,
-      disable_radio: true,
+    errBody: null,
+    errHeaders: {
+      Location: 'http://www.splitcloud-app.com/app/app_config_9.json',
     },
-    errCode: 200,
+    errCode: 302,
   }),
   blockRegionMiddleware({
     countryCodeBlacklist: constants.COUNTY_CODES_BLACKLIST,

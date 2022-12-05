@@ -11,8 +11,9 @@ const isUnsupportedVersion = clientVersion =>
 
 const blockVersionsMiddleware = (opts = {}) => (event, context, callback, next) => {
   const clientVersion = helpers.getQueryParam(event, 'appVersion');
-  const errBody = opts.errBody || { error: 'unsupported client version' };
+  const errBody = 'errBody' in opts ? opts.errBody : { error: 'unsupported client version' };
   const errCode = opts.errCode || 400;
+  const errHeaders = opts.errHeaders || {};
   if (isUnsupportedVersion(clientVersion) || VERSION_BLOCKLIST.includes(clientVersion)) {
     console.warn({
       middleware: 'blockVersions',
@@ -24,8 +25,9 @@ const blockVersionsMiddleware = (opts = {}) => (event, context, callback, next) 
       statusCode: errCode,
       headers: {
         ...context.headers,
+        ...errHeaders,
       },
-      body: JSON.stringify(errBody),
+      body: errBody ? JSON.stringify(errBody) : null,
     });
   }
   return next();
