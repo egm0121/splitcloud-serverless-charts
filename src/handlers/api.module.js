@@ -581,7 +581,13 @@ module.exports.ctaEndpoint = helpers.middleware([
 module.exports.appReferrer = helpers.middleware([
   metricsReporterMiddleware(),
   corsHeadersMiddleware(),
-  blockVersionsMiddleware(),
+  blockVersionsMiddleware({
+    errBody: null,
+    errHeaders: {
+      Location: 'http://www.splitcloud-app.com/app/app_config_9.json',
+    },
+    errCode: 302,
+  }),
   handleUpdateReferrer,
 ]);
 
