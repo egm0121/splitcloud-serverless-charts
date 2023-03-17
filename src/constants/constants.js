@@ -87,8 +87,8 @@ module.exports = {
   SC_API_REQ_TIMEOUT: 2000,
   SC_API_SLOW_REQ_TIMEOUT: 3500,
   CTA: {
-    REFERRAL_FEATURE_EXPIRY: '2024-01-01T23:59:00.000Z',
-    GIVEAWAY_EXPIRY: '2020-08-31T23:59:00.000Z',
+    REFERRAL_FEATURE_EXPIRY: '2025-01-01T23:59:00.000Z',
+    GIVEAWAY_EXPIRY: '2020-08-31T23:59:00.000Z', // disabled giveaway feature
     USE_DDB_REFERRALS: true,
     SURVEY_PERCENT: 0.5, // 1
     SURVEY_EXPIRY: '2021-08-15T23:59:00.000Z', // disabled
@@ -124,7 +124,7 @@ module.exports = {
     US: 'United States',
   },
   COUNTY_CODES_BLACKLIST: ['RU', 'BY'],
-  WRAPPED_YEAR_MONTH: [12, 1], // what months to show the cta to compute personal top of year list -> this has to happen after computeWrappedAggregateTable runs.
+  WRAPPED_YEAR_MONTH: [], // what months to show the cta to compute personal top of year list -> this has to happen after computeWrappedAggregateTable runs.
   WRAPPED_COUNTRY_YEAR_MONTH: [], // what months to show per country top of the year - depreacted feature
   YEAR_WRAPPED_COUNTRIES: {}, // deprecated feature
   COUNTRY_PROMOTION: {
@@ -142,12 +142,12 @@ module.exports = {
     //   ctaButtonColor: '#005bba',
     // },
     //
-    GLOBAL: {
-      ctaLabel: 'Get offline music! ✈️',
-      ctaUrl: 'https://forms.gle/vDt6QkFezosJmMUP6',
-      ctaExpiry: '2023-01-01T23:59:00.000Z',
-      ctaButtonColor: '#ff6f00',
-    },
+    // GLOBAL: {
+    //   ctaLabel: 'Get offline music! ✈️',
+    //   ctaUrl: 'https://forms.gle/vDt6QkFezosJmMUP6',
+    //   ctaExpiry: '2023-01-01T23:59:00.000Z',
+    //   ctaButtonColor: '#ff6f00',
+    // },
   },
   TOP_COUNTRIES: {
     IN: 'India',

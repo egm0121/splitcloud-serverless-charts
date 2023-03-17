@@ -349,7 +349,7 @@ functions:
     handler: src/handlers/api.ctaEndpoint
     events:
       - http:
-          enabled: false
+          enabled: true
           path: cta/{deviceId}/{side}
           method: get
           cors: true
